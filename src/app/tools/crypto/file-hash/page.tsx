@@ -16,6 +16,7 @@ type HashResults = {
 
 function FileHashContent() {
   const [file, setFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState(0);
   const [isHashing, setIsHashing] = useState(false);
   const [results, setResults] = useState<HashResults | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -26,6 +27,7 @@ function FileHashContent() {
 
   const reset = () => {
     setFile(null);
+    setProgress(0);
     setResults(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -64,46 +66,86 @@ function FileHashContent() {
     return hex;
   };
 
+  const CHUNK_SIZE = 1024 * 1024 * 10; // 10MB chunks
+
+  const arrayBufferToWordArray = (ab: ArrayBuffer) => {
+    const i8a = new Uint8Array(ab);
+    const words = [];
+    for (let i = 0; i < i8a.length; i += 4) {
+      words.push((i8a[i] << 24) | (i8a[i + 1] << 16) | (i8a[i + 2] << 8) | (i8a[i + 3]));
+    }
+    return CryptoJS.lib.WordArray.create(words, i8a.length);
+  };
+
   const startHashing = async () => {
     if (!file) return;
     setIsHashing(true);
     
     try {
-      // Use native Web Crypto API for SHA hashes (blazing fast)
-      // Note: for very large files (>2GB), loading the entire ArrayBuffer might crash the tab,
-      // but modern browsers easily handle 1GB+ ArrayBuffers instantly.
-      const buffer = await file.arrayBuffer();
-      
-      const [sha1Buf, sha256Buf, sha512Buf] = await Promise.all([
-        crypto.subtle.digest("SHA-1", buffer),
-        crypto.subtle.digest("SHA-256", buffer),
-        crypto.subtle.digest("SHA-512", buffer)
-      ]);
+      if (file.size <= 100 * 1024 * 1024) {
+        // FAST PATH: For files <= 100MB, use Native Web Crypto (Loads whole file in RAM but is instant)
+        const buffer = await file.arrayBuffer();
+        const [sha1Buf, sha256Buf, sha512Buf] = await Promise.all([
+          crypto.subtle.digest("SHA-1", buffer),
+          crypto.subtle.digest("SHA-256", buffer),
+          crypto.subtle.digest("SHA-512", buffer)
+        ]);
 
-      // WebCrypto does not support MD5 natively. We use CryptoJS for MD5.
-      // We convert the ArrayBuffer to CryptoJS WordArray directly.
-      const md5Hex = (() => {
-        // Very fast ArrayBuffer to WordArray conversion
-        const ui8a = new Uint8Array(buffer);
-        const words = [];
-        for (let i = 0; i < ui8a.length; i += 4) {
-          words.push((ui8a[i] << 24) | (ui8a[i + 1] << 16) | (ui8a[i + 2] << 8) | (ui8a[i + 3]));
+        const md5Hex = CryptoJS.MD5(arrayBufferToWordArray(buffer)).toString(CryptoJS.enc.Hex);
+
+        setResults({
+          md5: md5Hex,
+          sha1: bufferToHex(sha1Buf),
+          sha256: bufferToHex(sha256Buf),
+          sha512: bufferToHex(sha512Buf),
+        });
+      } else {
+        // STREAMING PATH: For files > 100MB, process in chunks using CryptoJS to prevent RAM crashes
+        const md5 = CryptoJS.algo.MD5.create();
+        const sha1 = CryptoJS.algo.SHA1.create();
+        const sha256 = CryptoJS.algo.SHA256.create();
+        const sha512 = CryptoJS.algo.SHA512.create();
+
+        let offset = 0;
+
+        const readChunk = (start: number): Promise<ArrayBuffer> => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as ArrayBuffer);
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(file.slice(start, start + CHUNK_SIZE));
+          });
+        };
+
+        while (offset < file.size) {
+          const chunk = await readChunk(offset);
+          const wordArr = arrayBufferToWordArray(chunk);
+          
+          md5.update(wordArr);
+          sha1.update(wordArr);
+          sha256.update(wordArr);
+          sha512.update(wordArr);
+          
+          offset += chunk.byteLength;
+          setProgress(Math.round((offset / file.size) * 100));
+          
+          // Yield to main thread so UI updates
+          await new Promise(r => setTimeout(r, 0));
         }
-        const wordArr = CryptoJS.lib.WordArray.create(words, ui8a.length);
-        return CryptoJS.MD5(wordArr).toString(CryptoJS.enc.Hex);
-      })();
 
-      setResults({
-        md5: md5Hex,
-        sha1: bufferToHex(sha1Buf),
-        sha256: bufferToHex(sha256Buf),
-        sha512: bufferToHex(sha512Buf),
-      });
+        setResults({
+          md5: md5.finalize().toString(CryptoJS.enc.Hex),
+          sha1: sha1.finalize().toString(CryptoJS.enc.Hex),
+          sha256: sha256.finalize().toString(CryptoJS.enc.Hex),
+          sha512: sha512.finalize().toString(CryptoJS.enc.Hex),
+        });
+      }
     } catch (err) {
       console.error("Hashing failed", err);
-      alert("Error processing file. File might be too large for browser RAM (usually >1GB limits).");
+      alert("Error processing file.");
     } finally {
       setIsHashing(false);
+      setProgress(0);
     }
   };
 
