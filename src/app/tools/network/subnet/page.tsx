@@ -62,14 +62,14 @@ function SubnetCalculatorContent() {
             <div className="space-y-2">
               <Label htmlFor="cidr" className="text-zinc-500 font-mono text-xs uppercase tracking-wider">CIDR Prefix (/{state.cidr})</Label>
               <div className="flex items-center gap-4">
-                <Input
+                <input
                   id="cidr"
                   type="range"
                   min="0"
                   max="32"
                   value={state.cidr}
                   onChange={(e) => setState({ cidr: e.target.value })}
-                  className="flex-1 accent-[#00ff9c]"
+                  className="flex-1 accent-[#00ff9c] cursor-pointer"
                 />
                 <Input
                   type="number"

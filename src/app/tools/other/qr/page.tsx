@@ -287,13 +287,13 @@ export default function QrGenerator() {
                     <Label className="text-[10px] font-mono text-zinc-600">Logo Size</Label>
                     <span className="text-[10px] font-mono text-zinc-400">{logoSize}px</span>
                   </div>
-                  <input 
+                  <input
                     type="range" 
                     min={20} 
                     max={120} 
                     value={logoSize} 
                     onChange={(e) => setLogoSize(parseInt(e.target.value))}
-                    className="w-full accent-[#00ff9c]"
+                    className="w-full accent-[#00ff9c] cursor-pointer"
                   />
                   {level !== "H" && logoSize > 60 && (
                     <span className="text-[10px] font-mono text-[#ffb000]">Warning: Large logos may make the QR unreadable. Set Error Correction to 'H'.</span>

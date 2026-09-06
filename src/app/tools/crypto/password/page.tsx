@@ -149,7 +149,7 @@ function PasswordGeneratorContent() {
                   max="128"
                   value={length}
                   onChange={(e) => setState({ len: e.target.value })}
-                  className="flex-1 h-2 bg-[#1a1a1a] rounded-lg appearance-none cursor-pointer accent-[#00ff9c]"
+                  className="flex-1 accent-[#00ff9c] cursor-pointer"
                 />
               </div>
             </div>
