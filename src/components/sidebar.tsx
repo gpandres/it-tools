@@ -55,6 +55,7 @@ const categories = [
     name: "CRYPTOGRAPHY",
     tools: [
       { name: "Hash Generators", path: "/tools/crypto/hash" },
+      { name: "File Hash Analyzer", path: "/tools/crypto/file-hash" },
       { name: "Password Gen & Audit", path: "/tools/crypto/password" },
       { name: "UUID/ULID", path: "/tools/crypto/uuid" },
     ],

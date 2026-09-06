@@ -97,6 +97,9 @@ export function CommandMenu() {
             <CommandItem onSelect={() => runCommand(() => router.push("/tools/crypto/hash"))}>
               Hash Generators
             </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => router.push("/tools/crypto/file-hash"))}>
+              File Hash Analyzer
+            </CommandItem>
             <CommandItem onSelect={() => runCommand(() => router.push("/tools/crypto/password"))}>
               Password Gen & Audit
             </CommandItem>
