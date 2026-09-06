@@ -3,7 +3,9 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import Fuse from "fuse.js";
 
+import { toolsRegistry, CATEGORIES, ToolDefinition } from "@/lib/tools";
 import {
   CommandDialog,
   CommandEmpty,
@@ -15,6 +17,7 @@ import {
 
 export function CommandMenu() {
   const [open, setOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
   const router = useRouter();
 
   React.useEffect(() => {
@@ -31,7 +34,51 @@ export function CommandMenu() {
   const runCommand = React.useCallback((command: () => unknown) => {
     setOpen(false);
     command();
+    setSearchQuery("");
   }, []);
+
+  // Configure Fuse.js
+  const fuse = React.useMemo(
+    () =>
+      new Fuse(toolsRegistry, {
+        keys: [
+          { name: "name", weight: 3 },
+          { name: "aliases", weight: 2 },
+          { name: "keywords", weight: 1.5 },
+          { name: "category", weight: 1 },
+          { name: "vendors", weight: 1 },
+          { name: "technologies", weight: 1 },
+        ],
+        threshold: 0.3, // Tolerance to typos
+        ignoreLocation: true,
+      }),
+    []
+  );
+
+  // Derive tools to render
+  const filteredTools = React.useMemo(() => {
+    if (!searchQuery.trim()) {
+      return toolsRegistry;
+    }
+    const results = fuse.search(searchQuery);
+    return results.map((result) => result.item);
+  }, [searchQuery, fuse]);
+
+  // Group tools for display if not searching
+  const groupedTools = React.useMemo(() => {
+    const groups: Record<string, ToolDefinition[]> = {};
+    CATEGORIES.forEach((c) => (groups[c] = []));
+
+    filteredTools.forEach((tool) => {
+      if (groups[tool.category]) {
+        groups[tool.category].push(tool);
+      } else {
+        groups[tool.category] = [tool];
+      }
+    });
+
+    return groups;
+  }, [filteredTools]);
 
   return (
     <>
@@ -48,66 +95,59 @@ export function CommandMenu() {
           <span className="text-xs">⌘</span>K
         </kbd>
       </button>
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Type a command or search..." />
+      <CommandDialog
+        open={open}
+        onOpenChange={(val) => {
+          setOpen(val);
+          if (!val) setSearchQuery("");
+        }}
+        commandProps={{ shouldFilter: false }}
+      >
+        <CommandInput
+          placeholder="Type a command or search (e.g. 'wildcard', 'firewall', 'chmod')..."
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+        />
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="CYBERSECURITY / BLUE TEAM">
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/security/scorecard"))}>
-              Headers & TLS Scorecard
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/security/log-parser"))}>
-              Local Log Parser
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/security/pcap"))}>
-              PCAP Analyzer
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/security/defanger"))}>
-              URL Defanger
-            </CommandItem>
-          </CommandGroup>
-          <CommandGroup heading="DEVOPS">
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/devops/chmod"))}>
-              Chmod Calculator
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/devops/docker"))}>
-              Docker Converter
-            </CommandItem>
-          </CommandGroup>
-          <CommandGroup heading="NETWORKING">
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/network/subnet"))}>
-              Subnetting Calculator
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/network/vlsm"))}>
-              VLSM Calculator
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/network/cidr"))}>
-              CIDR Converter
-            </CommandItem>
-          </CommandGroup>
-          <CommandGroup heading="Encoding">
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/encoding/base64"))}>
-              Base64
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/encoding/url"))}>
-              URL Encode/Decode
-            </CommandItem>
-          </CommandGroup>
-          <CommandGroup heading="CRYPTOGRAPHY">
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/crypto/hash"))}>
-              Hash Generators
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/crypto/file-hash"))}>
-              File Hash Analyzer
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/crypto/password"))}>
-              Password Gen & Audit
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => router.push("/tools/crypto/uuid"))}>
-              UUID/ULID
-            </CommandItem>
-          </CommandGroup>
-          {/* Add more groups as needed */}
+          <CommandEmpty>No tools found.</CommandEmpty>
+
+          {searchQuery.trim() ? (
+            // Flat list when searching
+            <CommandGroup heading="Search Results">
+              {filteredTools.map((tool) => (
+                <CommandItem
+                  key={tool.id}
+                  value={tool.id} // value is needed for cmdk even if not filtering
+                  onSelect={() => runCommand(() => router.push(tool.path))}
+                >
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[#00ff9c] font-medium">{tool.name}</span>
+                    <span className="text-xs text-zinc-500">{tool.description}</span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          ) : (
+            // Grouped list when empty
+            CATEGORIES.map((category) => {
+              const tools = groupedTools[category];
+              if (!tools || tools.length === 0) return null;
+
+              return (
+                <CommandGroup key={category} heading={category}>
+                  {tools.map((tool) => (
+                    <CommandItem
+                      key={tool.id}
+                      value={tool.id}
+                      onSelect={() => runCommand(() => router.push(tool.path))}
+                    >
+                      {tool.name}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              );
+            })
+          )}
         </CommandList>
       </CommandDialog>
     </>

@@ -1,0 +1,358 @@
+export type ToolDefinition = {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  path: string;
+  keywords: string[];
+  aliases?: string[];
+  technologies?: string[];
+  vendors?: string[];
+  offline?: boolean; // True if the tool processes everything locally
+};
+
+export const CATEGORIES = [
+  "NETWORKING",
+  "CYBERSECURITY / BLUE TEAM",
+  "DEVOPS",
+  "CRYPTOGRAPHY",
+  "ENCODING / DECODING",
+  "TEXT",
+  "OTHER TOOLS"
+] as const;
+
+export type Category = typeof CATEGORIES[number];
+
+export const toolsRegistry: ToolDefinition[] = [
+  // ==========================================
+  // NETWORKING
+  // ==========================================
+  {
+    id: "subnet-calculator",
+    name: "Subnetting Calculator",
+    description: "Calculate network addresses, broadcast, ranges, and wildcard masks.",
+    category: "NETWORKING",
+    path: "/tools/network/subnet",
+    keywords: ["subnet", "cidr", "mask", "network", "broadcast", "ip", "wildcard", "inverse mask"],
+    aliases: ["IP Calculator", "Wildcard Calculator"],
+    technologies: ["IPv4", "Networking"],
+    vendors: ["Cisco", "MikroTik", "Juniper"],
+    offline: true,
+  },
+  {
+    id: "vlsm-calculator",
+    name: "VLSM Calculator",
+    description: "Variable Length Subnet Masking calculator to divide a network into subnets of different sizes.",
+    category: "NETWORKING",
+    path: "/tools/network/vlsm",
+    keywords: ["vlsm", "subnet", "mask", "variable length", "ip", "divide", "split"],
+    aliases: ["VLSM", "Subnet Splitter"],
+    technologies: ["IPv4", "Networking"],
+    offline: true,
+  },
+  {
+    id: "cidr-converter",
+    name: "CIDR Converter",
+    description: "Convert between CIDR notation (e.g. /24) and subnet mask (e.g. 255.255.255.0).",
+    category: "NETWORKING",
+    path: "/tools/network/cidr",
+    keywords: ["cidr", "mask", "prefix", "notation", "routing"],
+    aliases: ["Prefix Calculator", "Subnet Mask Converter"],
+    technologies: ["IPv4", "Networking"],
+    offline: true,
+  },
+  {
+    id: "ip-converter",
+    name: "IP to Bin/Hex",
+    description: "Convert IPv4 addresses between decimal, binary, and hexadecimal formats.",
+    category: "NETWORKING",
+    path: "/tools/network/ip-converter",
+    keywords: ["ip", "binary", "hex", "decimal", "convert", "format"],
+    aliases: ["IP Converter", "Binary IP"],
+    technologies: ["IPv4"],
+    offline: true,
+  },
+  {
+    id: "mac-validator",
+    name: "MAC Validator",
+    description: "Validate MAC addresses and find OUI / Vendor information.",
+    category: "NETWORKING",
+    path: "/tools/network/mac",
+    keywords: ["mac", "address", "oui", "vendor", "hardware", "nic", "ethernet", "validate", "format"],
+    aliases: ["MAC Lookup", "OUI Lookup"],
+    technologies: ["Ethernet", "Networking"],
+    offline: true,
+  },
+
+  // ==========================================
+  // CYBERSECURITY / BLUE TEAM
+  // ==========================================
+  {
+    id: "headers-scorecard",
+    name: "Headers & TLS Scorecard",
+    description: "Analyze HTTP security headers and TLS configuration of any public website.",
+    category: "CYBERSECURITY / BLUE TEAM",
+    path: "/tools/security/scorecard",
+    keywords: ["security", "headers", "tls", "ssl", "https", "hsts", "csp", "x-frame-options", "audit"],
+    aliases: ["Security Scorecard", "Header Analyzer"],
+    technologies: ["HTTP", "TLS", "Web"],
+    offline: false, // Requires internet to scan
+  },
+  {
+    id: "log-parser",
+    name: "Local Log Parser",
+    description: "Extract IPs, emails, and IOCs from logs without uploading them anywhere.",
+    category: "CYBERSECURITY / BLUE TEAM",
+    path: "/tools/security/log-parser",
+    keywords: ["log", "parse", "extract", "ioc", "ip", "email", "syslog", "apache", "nginx", "regex"],
+    aliases: ["IOC Extractor", "Log Analyzer"],
+    technologies: ["Linux", "Syslog", "Apache", "Nginx", "SIEM"],
+    offline: true,
+  },
+  {
+    id: "pcap-analyzer",
+    name: "PCAP Analyzer",
+    description: "Analyze packet captures and flows directly in the browser.",
+    category: "CYBERSECURITY / BLUE TEAM",
+    path: "/tools/security/pcap",
+    keywords: ["pcap", "packet", "capture", "wireshark", "tcpdump", "network", "flow", "traffic"],
+    aliases: ["Packet Analyzer", "Wireshark Online"],
+    technologies: ["TCP/IP", "PCAP"],
+    offline: true,
+  },
+  {
+    id: "url-defanger",
+    name: "URL Defanger",
+    description: "Defang IOCs and decode corporate Safelinks (Microsoft, Proofpoint) for incident reports.",
+    category: "CYBERSECURITY / BLUE TEAM",
+    path: "/tools/security/defanger",
+    keywords: ["defang", "refang", "url", "safelink", "proofpoint", "ioc", "phishing", "malware", "hxxp"],
+    aliases: ["Safelink Decoder", "IOC Defanger"],
+    technologies: ["Phishing", "Email Security"],
+    vendors: ["Microsoft", "Proofpoint"],
+    offline: true,
+  },
+
+  // ==========================================
+  // DEVOPS
+  // ==========================================
+  {
+    id: "chmod-calculator",
+    name: "Chmod Calculator",
+    description: "Calculate Linux file permissions using an interactive visual grid.",
+    category: "DEVOPS",
+    path: "/tools/devops/chmod",
+    keywords: ["chmod", "permissions", "linux", "unix", "owner", "group", "public", "rwx", "octal"],
+    aliases: ["Permission Calculator", "Linux Permissions"],
+    technologies: ["Linux", "Unix"],
+    offline: true,
+  },
+  {
+    id: "docker-converter",
+    name: "Docker Converter",
+    description: "Convert docker run commands to docker-compose.yml files.",
+    category: "DEVOPS",
+    path: "/tools/devops/docker",
+    keywords: ["docker", "compose", "run", "container", "yaml", "yml", "convert"],
+    aliases: ["Docker Compose Builder", "Docker Run Parser"],
+    technologies: ["Docker", "Containers"],
+    offline: true,
+  },
+
+  // ==========================================
+  // CRYPTOGRAPHY
+  // ==========================================
+  {
+    id: "hash-generators",
+    name: "Hash Generators",
+    description: "Generate MD5, SHA-1, SHA-256, SHA-512 hashes from text.",
+    category: "CRYPTOGRAPHY",
+    path: "/tools/crypto/hash",
+    keywords: ["hash", "md5", "sha1", "sha256", "sha512", "digest", "text", "crypto"],
+    aliases: ["Text Hasher"],
+    technologies: ["Cryptography"],
+    offline: true,
+  },
+  {
+    id: "file-hash-analyzer",
+    name: "File Hash Analyzer",
+    description: "Verify file integrity with MD5/SHA. Processes heavy files locally via native WebCrypto.",
+    category: "CRYPTOGRAPHY",
+    path: "/tools/crypto/file-hash",
+    keywords: ["hash", "file", "md5", "sha1", "sha256", "sha512", "checksum", "integrity", "iso", "verify"],
+    aliases: ["File Checksum", "File Hasher"],
+    technologies: ["Cryptography"],
+    offline: true,
+  },
+  {
+    id: "password-gen-audit",
+    name: "Password Gen & Audit",
+    description: "Generate strong passwords and audit their entropy and crack time locally.",
+    category: "CRYPTOGRAPHY",
+    path: "/tools/crypto/password",
+    keywords: ["password", "generator", "audit", "zxcvbn", "entropy", "security", "strength"],
+    aliases: ["Password Generator", "Password Strength"],
+    technologies: ["Security"],
+    offline: true,
+  },
+  {
+    id: "uuid-ulid",
+    name: "UUID/ULID Generator",
+    description: "Generate Universally Unique Identifiers (UUID) and Universally Unique Lexicographically Sortable Identifiers (ULID).",
+    category: "CRYPTOGRAPHY",
+    path: "/tools/crypto/uuid",
+    keywords: ["uuid", "ulid", "guid", "generate", "unique", "identifier"],
+    aliases: ["GUID Generator"],
+    technologies: ["Database", "Development"],
+    offline: true,
+  },
+
+  // ==========================================
+  // ENCODING / DECODING
+  // ==========================================
+  {
+    id: "base64-encoder",
+    name: "Base64 Encoder",
+    description: "Encode and decode text to/from Base64 format.",
+    category: "ENCODING / DECODING",
+    path: "/tools/encoding/base64",
+    keywords: ["base64", "encode", "decode", "text", "format"],
+    aliases: ["Base64 Converter"],
+    offline: true,
+  },
+  {
+    id: "url-encoder",
+    name: "URL Encoder",
+    description: "Encode and decode URLs and query parameters.",
+    category: "ENCODING / DECODING",
+    path: "/tools/encoding/url",
+    keywords: ["url", "uri", "encode", "decode", "percent", "escape"],
+    aliases: ["URI Encoder"],
+    technologies: ["Web"],
+    offline: true,
+  },
+  {
+    id: "number-base-converter",
+    name: "Number Base Converter",
+    description: "Convert numbers between Binary, Octal, Decimal, and Hexadecimal.",
+    category: "ENCODING / DECODING",
+    path: "/tools/encoding/number-base",
+    keywords: ["number", "base", "binary", "octal", "decimal", "hexadecimal", "hex", "convert"],
+    aliases: ["Hex Converter", "Binary Converter"],
+    offline: true,
+  },
+  {
+    id: "json-yaml-converter",
+    name: "JSON / YAML Converter",
+    description: "Convert data between JSON and YAML formats.",
+    category: "ENCODING / DECODING",
+    path: "/tools/encoding/json-yaml",
+    keywords: ["json", "yaml", "yml", "convert", "format", "parse"],
+    aliases: ["YAML to JSON", "JSON to YAML"],
+    technologies: ["JSON", "YAML"],
+    offline: true,
+  },
+  {
+    id: "jwt-master",
+    name: "JWT Master Tool",
+    description: "Decode and inspect JSON Web Tokens (JWT) locally without compromising the signature.",
+    category: "ENCODING / DECODING",
+    path: "/tools/encoding/jwt",
+    keywords: ["jwt", "token", "decode", "inspect", "json web token", "auth", "claims", "header", "payload"],
+    aliases: ["JWT Decoder"],
+    technologies: ["JWT", "Auth"],
+    offline: true,
+  },
+
+  // ==========================================
+  // TEXT
+  // ==========================================
+  {
+    id: "regex-tester",
+    name: "Regex Tester",
+    description: "Test regular expressions against text in real-time.",
+    category: "TEXT",
+    path: "/tools/text/regex",
+    keywords: ["regex", "regular expression", "match", "test", "pattern", "pcre", "javascript"],
+    aliases: ["Regex Matcher"],
+    technologies: ["Regex"],
+    offline: true,
+  },
+  {
+    id: "text-diff",
+    name: "Text Diff",
+    description: "Compare two blocks of text and find the differences.",
+    category: "TEXT",
+    path: "/tools/text/diff",
+    keywords: ["diff", "compare", "difference", "text", "changes", "compare files"],
+    aliases: ["File Compare"],
+    offline: true,
+  },
+  {
+    id: "json-formatter",
+    name: "JSON Formatter",
+    description: "Beautify and format JSON strings with syntax highlighting.",
+    category: "TEXT",
+    path: "/tools/text/json",
+    keywords: ["json", "format", "beautify", "pretty", "minify", "parse", "validate"],
+    aliases: ["JSON Beautifier", "JSON Validator"],
+    technologies: ["JSON"],
+    offline: true,
+  },
+  {
+    id: "word-counter",
+    name: "Word Counter",
+    description: "Count characters, words, lines, and bytes in a text.",
+    category: "TEXT",
+    path: "/tools/text/counter",
+    keywords: ["word", "character", "count", "lines", "length", "size", "bytes"],
+    aliases: ["Character Counter"],
+    offline: true,
+  },
+  {
+    id: "lorem-ipsum",
+    name: "Lorem Ipsum",
+    description: "Generate placeholder lorem ipsum text.",
+    category: "TEXT",
+    path: "/tools/text/lorem",
+    keywords: ["lorem", "ipsum", "placeholder", "text", "generate", "dummy"],
+    aliases: ["Text Generator"],
+    offline: true,
+  },
+
+  // ==========================================
+  // OTHER TOOLS
+  // ==========================================
+  {
+    id: "cron-parser",
+    name: "Cron Parser",
+    description: "Parse cron expressions and translate them to human readable text.",
+    category: "OTHER TOOLS",
+    path: "/tools/other/cron",
+    keywords: ["cron", "schedule", "parser", "crontab", "time", "human"],
+    aliases: ["Crontab Generator", "Cron Explainer"],
+    technologies: ["Linux", "Unix"],
+    offline: true,
+  },
+  {
+    id: "qr-code",
+    name: "QR Code Generator",
+    description: "Generate highly customizable QR codes.",
+    category: "OTHER TOOLS",
+    path: "/tools/other/qr",
+    keywords: ["qr", "code", "generate", "barcode", "2d", "image", "wifi"],
+    aliases: ["QR Generator"],
+    offline: true,
+  },
+  {
+    id: "color-converter",
+    name: "Color Converter",
+    description: "Convert colors between HEX, RGB, HSL, and CMYK formats.",
+    category: "OTHER TOOLS",
+    path: "/tools/other/color",
+    keywords: ["color", "hex", "rgb", "hsl", "cmyk", "convert", "css"],
+    aliases: ["CSS Color Converter"],
+    technologies: ["CSS", "Web"],
+    offline: true,
+  }
+];
