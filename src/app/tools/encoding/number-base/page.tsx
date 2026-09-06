@@ -72,13 +72,13 @@ export default function NumberBaseConverter() {
       if (base !== 10) setDecimal(bigNum.toString(10));
       else setDecimal(value);
 
-      if (base !== 16) setHex((isNegative ? "-" : "") + (bigNum < 0n ? -bigNum : bigNum).toString(16).toUpperCase());
+      if (base !== 16) setHex((isNegative ? "-" : "") + (bigNum < BigInt(0) ? -bigNum : bigNum).toString(16).toUpperCase());
       else setHex(value.toUpperCase());
 
-      if (base !== 2) setBinary((isNegative ? "-" : "") + (bigNum < 0n ? -bigNum : bigNum).toString(2));
+      if (base !== 2) setBinary((isNegative ? "-" : "") + (bigNum < BigInt(0) ? -bigNum : bigNum).toString(2));
       else setBinary(value);
 
-      if (base !== 8) setOctal((isNegative ? "-" : "") + (bigNum < 0n ? -bigNum : bigNum).toString(8));
+      if (base !== 8) setOctal((isNegative ? "-" : "") + (bigNum < BigInt(0) ? -bigNum : bigNum).toString(8));
       else setOctal(value);
 
     } catch (e) {

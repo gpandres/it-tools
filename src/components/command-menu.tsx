@@ -52,7 +52,12 @@ export function CommandMenu() {
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Networking">
+          <CommandGroup heading="CYBERSECURITY / BLUE TEAM">
+            <CommandItem onSelect={() => runCommand(() => router.push("/tools/security/scorecard"))}>
+              Headers & TLS Scorecard
+            </CommandItem>
+          </CommandGroup>
+          <CommandGroup heading="NETWORKING">
             <CommandItem onSelect={() => runCommand(() => router.push("/tools/network/subnet"))}>
               Subnetting Calculator
             </CommandItem>

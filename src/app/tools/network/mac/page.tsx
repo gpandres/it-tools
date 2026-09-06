@@ -43,7 +43,6 @@ const COMMON_VENDORS: Record<string, string> = {
   "000404": "SGI",
   "000405": "ACCNET",
   "000874": "Dell Inc.",
-  "001422": "Dell Inc.",
   "0015C5": "Dell Inc.",
   "001D09": "Dell Inc.",
   "CC46D6": "Cisco Systems, Inc",

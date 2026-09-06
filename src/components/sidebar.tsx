@@ -36,6 +36,12 @@ const categories = [
     ],
   },
   {
+    name: "CYBERSECURITY / BLUE TEAM",
+    tools: [
+      { name: "Headers & TLS Scorecard", path: "/tools/security/scorecard" },
+    ],
+  },
+  {
     name: "CRYPTOGRAPHY",
     tools: [
       { name: "Hash Generators", path: "/tools/crypto/hash" },
