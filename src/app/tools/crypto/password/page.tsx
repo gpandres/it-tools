@@ -285,12 +285,13 @@ function PasswordGeneratorContent() {
   );
 }
 
-function TimeRow({ label, desc, time }: { label: string, desc: string, time: string }) {
+function TimeRow({ label, desc, time }: { label: string, desc: string, time: string | number }) {
   // Color code based on time unit
   let color = "text-zinc-300";
-  if (time === "centuries") color = "text-[#00ff9c] font-bold";
-  else if (time.includes("years") || time.includes("months")) color = "text-yellow-400";
-  else if (time === "instant" || time.includes("seconds") || time.includes("minutes") || time.includes("hours")) color = "text-red-500 font-bold";
+  const timeStr = time.toString();
+  if (timeStr === "centuries") color = "text-[#00ff9c] font-bold";
+  else if (timeStr.includes("years") || timeStr.includes("months")) color = "text-yellow-400";
+  else if (timeStr === "instant" || timeStr.includes("seconds") || timeStr.includes("minutes") || timeStr.includes("hours")) color = "text-red-500 font-bold";
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2">
