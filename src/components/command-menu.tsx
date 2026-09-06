@@ -56,6 +56,12 @@ export function CommandMenu() {
             <CommandItem onSelect={() => runCommand(() => router.push("/tools/security/scorecard"))}>
               Headers & TLS Scorecard
             </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => router.push("/tools/security/log-parser"))}>
+              Local Log Parser
+            </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => router.push("/tools/security/pcap"))}>
+              PCAP Analyzer
+            </CommandItem>
           </CommandGroup>
           <CommandGroup heading="NETWORKING">
             <CommandItem onSelect={() => runCommand(() => router.push("/tools/network/subnet"))}>
@@ -74,6 +80,17 @@ export function CommandMenu() {
             </CommandItem>
             <CommandItem onSelect={() => runCommand(() => router.push("/tools/encoding/url"))}>
               URL Encode/Decode
+            </CommandItem>
+          </CommandGroup>
+          <CommandGroup heading="CRYPTOGRAPHY">
+            <CommandItem onSelect={() => runCommand(() => router.push("/tools/crypto/hash"))}>
+              Hash Generators
+            </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => router.push("/tools/crypto/password"))}>
+              Password Gen & Audit
+            </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => router.push("/tools/crypto/uuid"))}>
+              UUID/ULID
             </CommandItem>
           </CommandGroup>
           {/* Add more groups as needed */}

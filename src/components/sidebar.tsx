@@ -16,13 +16,13 @@ const categories = [
     ],
   },
   {
-    name: "ENCODING / CONVERTERS",
+    name: "ENCODING / DECODING",
     tools: [
-      { name: "Base64", path: "/tools/encoding/base64" },
-      { name: "URL Encode/Decode", path: "/tools/encoding/url" },
-      { name: "JWT Decoder", path: "/tools/encoding/jwt" },
-      { name: "JSON/YAML/TOML", path: "/tools/encoding/json-yaml" },
-      { name: "Number Base", path: "/tools/encoding/number-base" },
+      { name: "Base64 Encoder", path: "/tools/encoding/base64" },
+      { name: "URL Encoder", path: "/tools/encoding/url" },
+      { name: "Number Base Converter", path: "/tools/encoding/number-base" },
+      { name: "JSON / YAML Converter", path: "/tools/encoding/json-yaml" },
+      { name: "JWT Master Tool", path: "/tools/encoding/jwt" },
     ],
   },
   {
@@ -39,13 +39,15 @@ const categories = [
     name: "CYBERSECURITY / BLUE TEAM",
     tools: [
       { name: "Headers & TLS Scorecard", path: "/tools/security/scorecard" },
+      { name: "Local Log Parser", path: "/tools/security/log-parser" },
+      { name: "PCAP Analyzer", path: "/tools/security/pcap" },
     ],
   },
   {
     name: "CRYPTOGRAPHY",
     tools: [
       { name: "Hash Generators", path: "/tools/crypto/hash" },
-      { name: "Password Generator", path: "/tools/crypto/password" },
+      { name: "Password Gen & Audit", path: "/tools/crypto/password" },
       { name: "UUID/ULID", path: "/tools/crypto/uuid" },
     ],
   },

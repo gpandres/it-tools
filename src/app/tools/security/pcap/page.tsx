@@ -1,0 +1,556 @@
+"use client";
+
+import { ToolLayout } from "@/components/tool-layout";
+import { Button } from "@/components/ui/button";
+import { useState, useMemo, useRef } from "react";
+import { Upload, FileDown, Search, ArrowRight, ShieldAlert, Cpu, Clock, Activity, ArrowLeftRight, ChevronLeft, ChevronRight } from "lucide-react";
+
+interface ParsedPacket {
+  id: number;
+  tsSec: number;
+  tsUsec: number;
+  inclLen: number;
+  origLen: number;
+  srcMac: string;
+  dstMac: string;
+  etherType: number;
+  srcIp: string;
+  dstIp: string;
+  protocol: number;
+  protocolName: string;
+  payloadOffset: number;
+  raw: Uint8Array;
+}
+
+export default function PcapViewer() {
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  
+  const [packets, setPackets] = useState<ParsedPacket[]>([]);
+  const [globalHeader, setGlobalHeader] = useState<{ magic: string, version: string, linkType: number } | null>(null);
+  
+  const [selectedPacketId, setSelectedPacketId] = useState<number | null>(null);
+  const [filterQuery, setFilterQuery] = useState("");
+  
+  // New features state
+  const [timeFormat, setTimeFormat] = useState<"unix" | "local">("unix");
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 250;
+
+  const selectedPacket = useMemo(() => {
+    if (selectedPacketId === null) return null;
+    return packets.find(p => p.id === selectedPacketId) || null;
+  }, [packets, selectedPacketId]);
+
+  const filteredPackets = useMemo(() => {
+    if (!filterQuery) return packets;
+    const q = filterQuery.toLowerCase();
+    return packets.filter(p => 
+      p.srcIp.includes(q) || 
+      p.dstIp.includes(q) || 
+      p.protocolName.toLowerCase().includes(q)
+    );
+  }, [packets, filterQuery]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredPackets.length / ITEMS_PER_PAGE);
+  const paginatedPackets = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filteredPackets.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredPackets, page]);
+
+  // Handle page change when filtering
+  useMemo(() => {
+    setPage(1);
+  }, [filterQuery]);
+
+  // Analytics
+  const analytics = useMemo(() => {
+    if (packets.length === 0) return null;
+    
+    const srcIps: Record<string, number> = {};
+    const dstIps: Record<string, number> = {};
+    const protos: Record<string, number> = {};
+    
+    for (const p of packets) {
+      if (p.srcIp) srcIps[p.srcIp] = (srcIps[p.srcIp] || 0) + 1;
+      if (p.dstIp) dstIps[p.dstIp] = (dstIps[p.dstIp] || 0) + 1;
+      protos[p.protocolName] = (protos[p.protocolName] || 0) + 1;
+    }
+    
+    const getTop = (dict: Record<string, number>, max = 5) => {
+      return Object.entries(dict)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, max);
+    };
+
+    return {
+      topSrcIps: getTop(srcIps),
+      topDstIps: getTop(dstIps),
+      topProtos: getTop(protos)
+    };
+  }, [packets]);
+
+  const formatMac = (bytes: Uint8Array, offset: number) => {
+    const mac = [];
+    for (let i = 0; i < 6; i++) {
+      mac.push(bytes[offset + i].toString(16).padStart(2, '0'));
+    }
+    return mac.join(':');
+  };
+
+  const formatIp = (bytes: Uint8Array, offset: number) => {
+    return `${bytes[offset]}.${bytes[offset + 1]}.${bytes[offset + 2]}.${bytes[offset + 3]}`;
+  };
+
+  const getProtocolName = (proto: number) => {
+    switch (proto) {
+      case 1: return "ICMP";
+      case 6: return "TCP";
+      case 17: return "UDP";
+      default: return `Proto-${proto}`;
+    }
+  };
+
+  const parsePcap = (buffer: ArrayBuffer) => {
+    try {
+      setLoading(true);
+      setErrorMsg("");
+      
+      // Delay to allow UI to render loading state
+      setTimeout(() => {
+        try {
+          const view = new DataView(buffer);
+          const bytes = new Uint8Array(buffer);
+          
+          if (buffer.byteLength < 24) throw new Error("File too small to be a PCAP");
+
+          const magic = view.getUint32(0, false);
+          let le = false; // little-endian
+          
+          if (magic === 0xa1b2c3d4 || magic === 0xa1b23c4d) {
+            le = false;
+          } else if (magic === 0xd4c3b2a1 || magic === 0x4d3cb2a1) {
+            le = true;
+          } else if (magic === 0x0a0d0d0a) {
+            throw new Error("PCAPNG format detected. Only standard PCAP is supported.");
+          } else {
+            throw new Error(`Invalid PCAP Magic Number: 0x${magic.toString(16)}`);
+          }
+
+          const version = `${view.getUint16(4, le)}.${view.getUint16(6, le)}`;
+          const linkType = view.getUint32(20, le);
+          
+          if (linkType !== 1) {
+            console.warn("Only Ethernet (LinkType 1) is fully supported for deep parsing.");
+          }
+
+          let offset = 24;
+          let packetCount = 0;
+          const parsed: ParsedPacket[] = [];
+
+          while (offset + 16 <= buffer.byteLength) {
+            if (packetCount > 50000) {
+              setErrorMsg("Displaying first 50,000 packets to prevent out-of-memory errors.");
+              break;
+            }
+
+            const tsSec = view.getUint32(offset, le);
+            const tsUsec = view.getUint32(offset + 4, le);
+            const inclLen = view.getUint32(offset + 8, le);
+            const origLen = view.getUint32(offset + 12, le);
+
+            offset += 16;
+            
+            // Safety check for corrupted packets
+            if (inclLen > 100000 || offset + inclLen > buffer.byteLength) {
+              break;
+            }
+
+            const rawPacket = bytes.slice(offset, offset + inclLen);
+            
+            let srcMac = "", dstMac = "", etherType = 0;
+            let srcIp = "", dstIp = "", protocol = 0, protocolName = "Unknown";
+            
+            if (linkType === 1 && inclLen >= 14) {
+              dstMac = formatMac(rawPacket, 0);
+              srcMac = formatMac(rawPacket, 6);
+              etherType = (rawPacket[12] << 8) | rawPacket[13];
+              
+              if (etherType === 0x0800 && inclLen >= 34) { // IPv4
+                protocol = rawPacket[23];
+                protocolName = getProtocolName(protocol);
+                srcIp = formatIp(rawPacket, 26);
+                dstIp = formatIp(rawPacket, 30);
+              } else if (etherType === 0x0806) {
+                protocolName = "ARP";
+              } else if (etherType === 0x86dd) {
+                protocolName = "IPv6";
+              }
+            }
+
+            parsed.push({
+              id: ++packetCount,
+              tsSec,
+              tsUsec,
+              inclLen,
+              origLen,
+              srcMac,
+              dstMac,
+              etherType,
+              srcIp,
+              dstIp,
+              protocol,
+              protocolName,
+              payloadOffset: 0,
+              raw: rawPacket
+            });
+
+            offset += inclLen;
+          }
+
+          setGlobalHeader({
+            magic: magic.toString(16),
+            version,
+            linkType
+          });
+          setPackets(parsed);
+          setLoading(false);
+          setPage(1);
+        } catch (e: any) {
+          setErrorMsg(e.message);
+          setLoading(false);
+          setPackets([]);
+        }
+      }, 50); // small delay
+    } catch (e: any) {
+      setErrorMsg(e.message);
+      setLoading(false);
+      setPackets([]);
+    }
+  };
+
+  const handleFileUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        parsePcap(e.target.result as ArrayBuffer);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const toHexDump = (buffer: Uint8Array) => {
+    let hexString = "";
+    let asciiString = "";
+    let output = "";
+
+    // Limit dump to 2000 bytes to avoid lag on huge packets
+    const limit = Math.min(buffer.length, 2000);
+
+    for (let i = 0; i < limit; i++) {
+      if (i % 16 === 0) {
+        if (i !== 0) output += `${hexString.padEnd(48, ' ')}  |${asciiString}|\n`;
+        hexString = "";
+        asciiString = "";
+        output += `${i.toString(16).padStart(4, '0')}  `;
+      }
+      
+      const byte = buffer[i];
+      hexString += byte.toString(16).padStart(2, '0') + " ";
+      asciiString += (byte >= 32 && byte <= 126) ? String.fromCharCode(byte) : ".";
+    }
+
+    if (hexString !== "") {
+      output += `${hexString.padEnd(48, ' ')}  |${asciiString}|\n`;
+    }
+
+    if (buffer.length > limit) {
+      output += `\n... [${buffer.length - limit} bytes truncated] ...`;
+    }
+
+    return output;
+  };
+
+  const formatTime = (tsSec: number, tsUsec: number) => {
+    if (timeFormat === "unix") {
+      return `${tsSec}.${tsUsec.toString().padStart(6, '0')}`;
+    }
+    const d = new Date(tsSec * 1000);
+    return `${d.toLocaleDateString()} ${d.toLocaleTimeString()}.${tsUsec.toString().padStart(6, '0')}`;
+  };
+
+  return (
+    <ToolLayout 
+      title="PCAP Analyzer" 
+      description="Zero-dependency PCAP binary viewer. Parse network captures directly in your browser without uploading."
+      fullWidth={true}
+    >
+      <div className="flex flex-col gap-6 w-full mx-auto min-h-[calc(100vh-200px)]">
+        
+        {/* DRAG AND DROP AREA */}
+        {!packets.length && (
+          <div 
+            className={`border-2 border-dashed ${isDragging ? "border-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] bg-[#050505] hover:border-zinc-700"} flex flex-col items-center justify-center p-20 transition-all cursor-pointer h-[400px]`}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              if (e.dataTransfer.files?.[0]) handleFileUpload(e.dataTransfer.files[0]);
+            }}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={(e) => e.target.files && handleFileUpload(e.target.files[0])} 
+              className="hidden" 
+              accept=".pcap,application/vnd.tcpdump.pcap"
+            />
+            <Cpu className="w-16 h-16 text-zinc-600 mb-6" />
+            <h3 className="font-mono text-xl text-zinc-300 mb-2 uppercase tracking-widest">Drop a .pcap file here</h3>
+            <p className="font-mono text-zinc-500 text-sm">Or click to browse. Fully optimized offline engine.</p>
+            {loading && <p className="text-[#00ff9c] font-mono mt-4 animate-pulse">Decoding binary... Please wait.</p>}
+            {errorMsg && <p className="text-red-500 font-mono mt-4 flex items-center"><ShieldAlert className="w-4 h-4 mr-2" /> {errorMsg}</p>}
+          </div>
+        )}
+
+        {/* WORKSPACE */}
+        {packets.length > 0 && (
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 h-[800px]">
+            
+            {/* PACKET LIST (LEFT) */}
+            <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col xl:col-span-8 overflow-hidden relative">
+              <header className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a] shrink-0 gap-4">
+                <div className="flex items-center gap-4">
+                  <span className="text-[#00ff9c] text-sm font-semibold glow flex items-center uppercase tracking-widest">
+                    Packet Grid
+                  </span>
+                  {globalHeader && (
+                    <span className="text-xs font-mono text-zinc-500 bg-[#1a1a1a] px-2 py-1">
+                      v{globalHeader.version} / {globalHeader.linkType === 1 ? "Ethernet" : globalHeader.linkType}
+                    </span>
+                  )}
+                  <button 
+                    onClick={() => setTimeFormat(prev => prev === "unix" ? "local" : "unix")}
+                    className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest px-2 py-1 bg-[#1a1a1a] text-zinc-400 hover:text-zinc-200"
+                  >
+                    <Clock className="w-3 h-3" />
+                    {timeFormat}
+                  </button>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center bg-black border border-[#1a1a1a]">
+                    <Search className="w-3 h-3 text-zinc-500 ml-2" />
+                    <input 
+                      type="text"
+                      placeholder="Filter IP / Protocol..."
+                      value={filterQuery}
+                      onChange={(e) => setFilterQuery(e.target.value)}
+                      className="bg-transparent border-none text-xs font-mono text-zinc-300 w-40 px-2 py-1.5 focus:outline-none placeholder:text-zinc-600"
+                    />
+                  </div>
+                  <Button 
+                    variant="ghost" size="sm"
+                    onClick={() => { setPackets([]); setSelectedPacketId(null); setFilterQuery(""); setGlobalHeader(null); setErrorMsg(""); }}
+                    className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-red-400 hover:bg-red-950/20 border border-[#1a1a1a]"
+                  >
+                    Close File
+                  </Button>
+                </div>
+              </header>
+
+              {errorMsg && (
+                <div className="bg-orange-500/10 border-b border-orange-500/20 px-4 py-2 text-xs font-mono text-orange-400 flex items-center">
+                  <ShieldAlert className="w-3 h-3 mr-2 shrink-0" />
+                  {errorMsg}
+                </div>
+              )}
+
+              <div className="flex-1 overflow-auto bg-black custom-scrollbar">
+                <table className="w-full text-left border-collapse cursor-default min-w-max">
+                  <thead className="bg-[#0a0a0a] sticky top-0 z-10 border-b border-[#1a1a1a] shadow-md">
+                    <tr>
+                      <th className="px-4 py-2 font-mono text-xs text-zinc-500 font-medium border-r border-[#1a1a1a] w-16 text-center">No.</th>
+                      <th className="px-4 py-2 font-mono text-xs text-blue-400 uppercase tracking-wider font-semibold border-r border-[#1a1a1a] w-48">Time</th>
+                      <th className="px-4 py-2 font-mono text-xs text-blue-400 uppercase tracking-wider font-semibold border-r border-[#1a1a1a]">Source</th>
+                      <th className="px-4 py-2 font-mono text-xs text-blue-400 uppercase tracking-wider font-semibold border-r border-[#1a1a1a]">Destination</th>
+                      <th className="px-4 py-2 font-mono text-xs text-blue-400 uppercase tracking-wider font-semibold border-r border-[#1a1a1a] w-24 text-center">Proto</th>
+                      <th className="px-4 py-2 font-mono text-xs text-blue-400 uppercase tracking-wider font-semibold w-24 text-right">Length</th>
+                    </tr>
+                  </thead>
+                  <tbody className="font-mono text-[11px] divide-y divide-[#1a1a1a]">
+                    {paginatedPackets.length === 0 ? (
+                      <tr><td colSpan={6} className="text-center p-8 text-zinc-600">No packets match filter.</td></tr>
+                    ) : paginatedPackets.map((p) => {
+                      const isSelected = selectedPacketId === p.id;
+                      
+                      let bgClass = "hover:bg-[#050505]";
+                      
+                      if (isSelected) {
+                        bgClass = "bg-blue-900/20";
+                      } else {
+                        if (p.protocolName === "TCP") bgClass = "hover:bg-blue-900/10 text-blue-200/70";
+                        else if (p.protocolName === "UDP") bgClass = "hover:bg-purple-900/10 text-purple-200/70";
+                        else if (p.protocolName === "ICMP") bgClass = "hover:bg-pink-900/10 text-pink-200/70";
+                        else if (p.protocolName === "ARP") bgClass = "hover:bg-yellow-900/10 text-yellow-200/70";
+                      }
+
+                      return (
+                        <tr 
+                          key={p.id} 
+                          onClick={() => setSelectedPacketId(isSelected ? null : p.id)}
+                          className={`transition-colors ${bgClass} ${isSelected ? 'border-l-2 border-blue-500' : 'border-l-2 border-transparent'}`}
+                        >
+                          <td className="px-4 py-1.5 border-r border-[#1a1a1a] text-center text-zinc-600">{p.id}</td>
+                          <td className="px-4 py-1.5 border-r border-[#1a1a1a]">{formatTime(p.tsSec, p.tsUsec)}</td>
+                          <td className="px-4 py-1.5 border-r border-[#1a1a1a]">{p.srcIp || p.srcMac}</td>
+                          <td className="px-4 py-1.5 border-r border-[#1a1a1a]">{p.dstIp || p.dstMac}</td>
+                          <td className={`px-4 py-1.5 border-r border-[#1a1a1a] text-center font-bold ${
+                            p.protocolName === "TCP" ? "text-blue-400" : 
+                            p.protocolName === "UDP" ? "text-purple-400" : 
+                            p.protocolName === "ICMP" ? "text-pink-400" : "text-zinc-400"
+                          }`}>{p.protocolName}</td>
+                          <td className="px-4 py-1.5 text-right">{p.origLen}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Pagination Controls */}
+              <footer className="px-4 py-2 bg-[#0a0a0a] border-t border-[#1a1a1a] flex justify-between items-center text-[10px] font-mono text-zinc-500 shrink-0">
+                <div className="flex items-center gap-4">
+                  <span className="text-zinc-400">Total Packets: {filteredPackets.length}</span>
+                </div>
+                
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="p-1 border border-[#1a1a1a] hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-zinc-300">Page {page} of {totalPages}</span>
+                    <button 
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      className="p-1 border border-[#1a1a1a] hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </footer>
+            </article>
+
+            {/* RIGHT PANEL (DETAILS OR ANALYTICS) */}
+            <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col xl:col-span-4 overflow-hidden">
+              <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a] shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#ffb000] text-xs">{selectedPacket ? "[HEX]" : "[STAT]"}</span>
+                  <span className="text-[#ffb000] text-sm font-semibold uppercase tracking-widest glow-amber">
+                    {selectedPacket ? "Packet Dump" : "Capture Analytics"}
+                  </span>
+                </div>
+                {selectedPacket && (
+                  <Button 
+                    variant="ghost" size="sm"
+                    onClick={() => setSelectedPacketId(null)}
+                    className="h-6 px-2 text-[10px] font-mono rounded-none text-zinc-400 hover:text-red-400 hover:bg-red-950/20 border border-[#1a1a1a]"
+                  >
+                    View Analytics
+                  </Button>
+                )}
+              </header>
+              
+              <div className="flex-1 overflow-auto bg-black p-4 custom-scrollbar">
+                {!selectedPacket && analytics ? (
+                  <div className="space-y-6 animate-in fade-in duration-300">
+                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4">
+                      <h4 className="text-xs font-mono text-blue-400 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 mb-3 flex items-center gap-2">
+                        <Activity className="w-3 h-3" /> Protocol Distribution
+                      </h4>
+                      <div className="space-y-2">
+                        {analytics.topProtos.map(([proto, count]) => (
+                          <div key={proto} className="flex justify-between items-center text-xs font-mono">
+                            <span className="text-zinc-400">{proto}</span>
+                            <span className="text-zinc-300 bg-[#1a1a1a] px-2 py-0.5">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4">
+                      <h4 className="text-xs font-mono text-purple-400 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 mb-3 flex items-center gap-2">
+                        <ArrowLeftRight className="w-3 h-3" /> Top Sources
+                      </h4>
+                      <div className="space-y-2">
+                        {analytics.topSrcIps.map(([ip, count]) => (
+                          <div key={ip} className="flex justify-between items-center text-[10px] font-mono">
+                            <span className="text-zinc-400">{ip}</span>
+                            <span className="text-zinc-300 bg-[#1a1a1a] px-2 py-0.5">{count} pkts</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-4">
+                      <h4 className="text-xs font-mono text-pink-400 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 mb-3 flex items-center gap-2">
+                        <ArrowLeftRight className="w-3 h-3" /> Top Destinations
+                      </h4>
+                      <div className="space-y-2">
+                        {analytics.topDstIps.map(([ip, count]) => (
+                          <div key={ip} className="flex justify-between items-center text-[10px] font-mono">
+                            <span className="text-zinc-400">{ip}</span>
+                            <span className="text-zinc-300 bg-[#1a1a1a] px-2 py-0.5">{count} pkts</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="text-center text-[10px] font-mono text-zinc-600 mt-4">
+                      Select a packet to view raw hex dump
+                    </div>
+                  </div>
+                ) : selectedPacket ? (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4 font-mono text-xs">
+                      <div>
+                        <div className="text-zinc-500 uppercase tracking-widest text-[10px] mb-1">Frame Length</div>
+                        <div className="text-zinc-300">{selectedPacket.origLen} bytes</div>
+                      </div>
+                      <div>
+                        <div className="text-zinc-500 uppercase tracking-widest text-[10px] mb-1">Capture Length</div>
+                        <div className="text-zinc-300">{selectedPacket.inclLen} bytes</div>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="text-zinc-500 uppercase tracking-widest text-[10px] mb-1">Ethernet II MACs</div>
+                        <div className="text-zinc-400">Src: <span className="text-zinc-300">{selectedPacket.srcMac}</span></div>
+                        <div className="text-zinc-400">Dst: <span className="text-zinc-300">{selectedPacket.dstMac}</span></div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="text-zinc-500 uppercase tracking-widest text-[10px] mb-2 border-b border-[#1a1a1a] pb-1">Hex & ASCII Dump</div>
+                      <pre className="font-mono text-[10px] md:text-xs text-blue-400/80 break-all whitespace-pre-wrap">
+                        {toHexDump(selectedPacket.raw)}
+                      </pre>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </article>
+          </div>
+        )}
+      </div>
+    </ToolLayout>
+  );
+}

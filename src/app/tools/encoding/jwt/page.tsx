@@ -4,9 +4,10 @@ import { ToolLayout } from "@/components/tool-layout";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { useState, useRef, useEffect } from "react";
-import { Copy, Check, X } from "lucide-react";
+import { useState, useRef, useMemo } from "react";
+import { Copy, Check, X, ShieldAlert, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 function base64UrlEncode(str: string) {
   const bytes = new TextEncoder().encode(str);
@@ -56,17 +57,10 @@ export default function JwtDecoder() {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  let headerRaw = "";
-  let payloadRaw = "";
-  let signatureRaw = "";
   let isValidFormat = false;
-
   const parts = token.trim().split(".");
   if (parts.length === 3) {
     isValidFormat = true;
-    headerRaw = parts[0];
-    payloadRaw = parts[1];
-    signatureRaw = parts[2];
   }
 
   const handleTokenChange = (newToken: string) => {
@@ -177,12 +171,67 @@ export default function JwtDecoder() {
     rebuildToken(headerInput, payloadInput, secret, newMode);
   };
 
+  // Vulnerability Analysis
+  const securityChecks = useMemo(() => {
+    if (!isValidFormat || !headerInput || !payloadInput) return null;
+
+    try {
+      const headerObj = JSON.parse(headerInput);
+      const payloadObj = JSON.parse(payloadInput);
+      const alg = (headerObj.alg || "").toUpperCase();
+      const checks = [];
+
+      // 1. Check Algorithm = none
+      if (alg === "NONE") {
+        checks.push({ status: "critical", title: 'Algorithm "none" detected', desc: "The token accepts an unsigned state. An attacker can bypass signature verification entirely." });
+      } else if (alg) {
+        checks.push({ status: "secure", title: "Algorithm present", desc: `Token uses ${alg} for signing.` });
+      }
+
+      // 2. Check weak algorithms
+      if (alg === "HS128" || alg === "RS128") {
+        checks.push({ status: "warning", title: "Weak Algorithm", desc: "The signing algorithm used (128-bit) is considered weak against modern brute-force capabilities." });
+      }
+
+      // 3. Algorithm Confusion Detection
+      if (alg.startsWith("RS") || alg.startsWith("ES") || alg.startsWith("PS")) {
+        checks.push({ status: "warning", title: "Potential Algorithm Confusion", desc: "This token uses asymmetric encryption. Ensure your backend strictly enforces this algorithm and doesn't accidentally accept HMAC (HS256) using the public key as a secret." });
+      }
+
+      // 4. Missing standard claims
+      if (!payloadObj.exp) {
+        checks.push({ status: "warning", title: "Missing 'exp' claim", desc: "Token never expires automatically. If stolen, it remains valid forever." });
+      }
+      if (!payloadObj.iat) {
+        checks.push({ status: "warning", title: "Missing 'iat' claim", desc: "Cannot determine when the token was issued." });
+      }
+      if (!payloadObj.nbf) {
+        checks.push({ status: "warning", title: "Missing 'nbf' claim", desc: "Cannot verify if the token is being used prematurely." });
+      }
+
+      // 5. Expiration Validation
+      if (payloadObj.exp) {
+        const expTime = payloadObj.exp * 1000;
+        const now = Date.now();
+        if (now > expTime) {
+          checks.push({ status: "critical", title: "Token Expired", desc: `The token expired on ${new Date(expTime).toLocaleString()}` });
+        } else {
+          checks.push({ status: "secure", title: "Token Active", desc: `The token expires in the future (${new Date(expTime).toLocaleString()}).` });
+        }
+      }
+
+      return checks;
+    } catch {
+      return null;
+    }
+  }, [headerInput, payloadInput, isValidFormat]);
+
   return (
     <ToolLayout 
       title="JWT Decoder / Encoder" 
       description="Decode and edit JSON Web Tokens locally. Verify signatures or sign your own payload."
     >
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
         <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col xl:h-[calc(100vh-200px)]">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
@@ -190,6 +239,55 @@ export default function JwtDecoder() {
               <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Encoded JWT</span>
             </div>
             <div className="flex items-center gap-2">
+              {token && isValidFormat && (
+                <Dialog>
+                  <DialogTrigger render={<Button variant="ghost" size="sm" className="h-6 px-2 text-xs font-mono rounded-none text-[#00ff9c] hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 transition-colors border border-[#00ff9c]/30 hover:border-[#00ff9c]/60" />}>
+                    <ShieldCheck className="w-3 h-3 mr-1" />
+                    Audit
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[450px] border-[#00ff9c]/30 border-dashed bg-[#050505] shadow-2xl p-0 overflow-hidden !rounded-none">
+                    <DialogHeader className="p-4 border-b border-[#00ff9c]/20 bg-[#0a0a0a]">
+                      <DialogTitle className="text-[#00ff9c] font-mono text-sm tracking-widest uppercase flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4" /> [AUDIT] Vulnerabilities
+                      </DialogTitle>
+                      <DialogDescription className="text-xs text-[#00ff9c]/70 font-mono">
+                        100% Offline Analysis.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[500px] overflow-y-auto custom-scrollbar bg-black">
+                      {!securityChecks || securityChecks.length === 0 ? (
+                        <div className="p-6 text-center text-[#00ff9c]/40 font-mono text-xs">
+                          No vulnerabilities found or unable to parse.
+                        </div>
+                      ) : (
+                        <div className="flex flex-col">
+                          {securityChecks.map((check, idx) => (
+                            <div key={idx} className="p-4 border-b border-[#1a1a1a] flex gap-3 last:border-b-0">
+                              <div className="shrink-0 mt-0.5">
+                                {check.status === "secure" && <Check className="w-4 h-4 text-[#00ff9c]" />}
+                                {check.status === "warning" && <AlertTriangle className="w-4 h-4 text-[#ffb000]" />}
+                                {check.status === "critical" && <ShieldAlert className="w-4 h-4 text-red-500" />}
+                              </div>
+                              <div>
+                                <h4 className={`text-xs font-mono font-semibold mb-1 ${
+                                  check.status === "secure" ? "text-[#00ff9c]" : 
+                                  check.status === "warning" ? "text-[#ffb000]" : 
+                                  "text-red-400"
+                                }`}>
+                                  {check.title}
+                                </h4>
+                                <p className="text-[10px] font-mono text-zinc-500 leading-relaxed">
+                                  {check.desc}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
               {token && (
                 <Button 
                   variant="ghost"
@@ -212,34 +310,34 @@ export default function JwtDecoder() {
               )}
             </div>
           </header>
-          <div className="p-4 flex-1 flex flex-col">
+          <div className="p-4 flex-1 flex flex-col min-h-0">
             <Label htmlFor="jwt-input" className="sr-only">JWT String</Label>
             <Textarea
               id="jwt-input"
               placeholder="Paste a JWT here (ey...)"
               value={token}
               onChange={(e) => handleTokenChange(e.target.value)}
-              className={`w-full flex-1 min-h-[200px] font-mono text-sm bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] resize-none break-all ${
+              className={`w-full flex-1 min-h-[200px] font-mono text-sm bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] resize-none break-all custom-scrollbar ${
                 token && !isValidFormat ? "text-red-400 border-red-500 focus-visible:ring-red-500" : "text-zinc-300"
               }`}
               spellCheck={false}
             />
             {token && !isValidFormat && (
-              <div className="mt-2 text-red-500 font-mono text-xs">
+              <div className="mt-2 text-red-500 font-mono text-xs shrink-0">
                 [ERR] Invalid JWT format. Expected 3 base64url encoded parts separated by dots.
               </div>
             )}
           </div>
         </article>
 
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col xl:h-[calc(100vh-200px)]">
-          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col xl:h-[calc(100vh-200px)] min-w-0">
+          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a] shrink-0">
             <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>
             <span className="text-[#00ff9c] text-sm font-semibold glow flex items-center gap-2 uppercase tracking-widest">
               Decoded / Editable Data <span className="cursor-blink">_</span>
             </span>
           </header>
-          <div className="p-0 overflow-y-auto flex-1 custom-scrollbar flex flex-col">
+          <div className="p-0 overflow-y-auto flex-1 custom-scrollbar flex flex-col min-h-0">
             {!token || !isValidFormat ? (
               <div className="p-6 text-zinc-600 font-mono text-sm">
                 [WAITING] Awaiting valid token...
@@ -247,7 +345,7 @@ export default function JwtDecoder() {
             ) : (
               <div className="flex-1 flex flex-col divide-y divide-[#1a1a1a]">
                 {/* Header */}
-                <div className="flex flex-col">
+                <div className="flex flex-col shrink-0">
                   <div className="flex items-center justify-between px-4 py-2 bg-[#0a0a0a]">
                     <span className="font-mono text-xs text-red-400 uppercase tracking-widest">Header</span>
                   </div>
@@ -260,14 +358,14 @@ export default function JwtDecoder() {
                 </div>
 
                 {/* Payload */}
-                <div className="flex flex-col flex-1">
-                  <div className="flex items-center justify-between px-4 py-2 bg-[#0a0a0a]">
+                <div className="flex flex-col flex-1 min-h-[200px]">
+                  <div className="flex items-center justify-between px-4 py-2 bg-[#0a0a0a] shrink-0">
                     <span className="font-mono text-xs text-purple-400 uppercase tracking-widest">Payload</span>
                   </div>
                   <Textarea 
                     value={payloadInput}
                     onChange={(e) => handlePartChange("payload", e.target.value)}
-                    className="p-4 text-xs font-mono text-purple-300 bg-black min-h-[200px] flex-1 rounded-none border-none focus-visible:ring-1 focus-visible:ring-purple-500/50 resize-none"
+                    className="p-4 text-xs font-mono text-purple-300 bg-black flex-1 rounded-none border-none focus-visible:ring-1 focus-visible:ring-purple-500/50 resize-none"
                     spellCheck={false}
                   />
                   {(() => {
@@ -283,7 +381,7 @@ export default function JwtDecoder() {
                     if (claims.length === 0) return null;
 
                     return (
-                      <div className="flex flex-wrap items-center gap-6 px-4 py-2 bg-[#050505] border-t border-[#1a1a1a] text-[10px] font-mono text-zinc-500">
+                      <div className="flex flex-wrap items-center gap-6 px-4 py-2 bg-[#050505] border-t border-[#1a1a1a] text-[10px] font-mono text-zinc-500 shrink-0">
                         {claims.map(c => {
                           const d = new Date(c.val * 1000);
                           const isExpired = c.key === "exp" && d.getTime() < Date.now();
@@ -302,7 +400,7 @@ export default function JwtDecoder() {
                 </div>
 
                 {/* Signature */}
-                <div className="flex flex-col border-t border-[#1a1a1a]">
+                <div className="flex flex-col border-t border-[#1a1a1a] shrink-0">
                   <div className="flex items-center justify-between px-4 py-2 bg-[#0a0a0a]">
                     <span className="font-mono text-xs text-blue-400 uppercase tracking-widest">Signature</span>
                     <div className="flex items-center gap-4">
