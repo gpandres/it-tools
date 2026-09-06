@@ -85,9 +85,20 @@ function PasswordGeneratorContent() {
     setCustomInput(true);
   };
 
-  const analysis = useMemo(() => {
-    if (!password) return null;
-    return zxcvbn(password);
+  const [analysis, setAnalysis] = useState<any>(null);
+
+  useEffect(() => {
+    if (!password) {
+      setAnalysis(null);
+      return;
+    }
+    
+    // Debounce zxcvbn calculation to prevent main thread blocking (lag)
+    const timer = setTimeout(() => {
+      setAnalysis(zxcvbn(password));
+    }, 300); // 300ms delay
+    
+    return () => clearTimeout(timer);
   }, [password]);
 
   const getScoreColor = (score: number) => {
@@ -132,13 +143,13 @@ function PasswordGeneratorContent() {
                 <span className="text-[#00ff9c] font-mono text-sm">[{length}]</span>
               </div>
               <div className="flex items-center gap-4">
-                <Input
+                <input
                   type="range"
                   min="4"
                   max="128"
                   value={length}
                   onChange={(e) => setState({ len: e.target.value })}
-                  className="flex-1 accent-[#00ff9c]"
+                  className="flex-1 h-2 bg-[#1a1a1a] rounded-lg appearance-none cursor-pointer accent-[#00ff9c]"
                 />
               </div>
             </div>
