@@ -62,6 +62,17 @@ export function CommandMenu() {
             <CommandItem onSelect={() => runCommand(() => router.push("/tools/security/pcap"))}>
               PCAP Analyzer
             </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => router.push("/tools/security/defanger"))}>
+              URL Defanger
+            </CommandItem>
+          </CommandGroup>
+          <CommandGroup heading="DEVOPS">
+            <CommandItem onSelect={() => runCommand(() => router.push("/tools/devops/chmod"))}>
+              Chmod Calculator
+            </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => router.push("/tools/devops/docker"))}>
+              Docker Converter
+            </CommandItem>
           </CommandGroup>
           <CommandGroup heading="NETWORKING">
             <CommandItem onSelect={() => runCommand(() => router.push("/tools/network/subnet"))}>

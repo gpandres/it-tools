@@ -41,6 +41,14 @@ const categories = [
       { name: "Headers & TLS Scorecard", path: "/tools/security/scorecard" },
       { name: "Local Log Parser", path: "/tools/security/log-parser" },
       { name: "PCAP Analyzer", path: "/tools/security/pcap" },
+      { name: "URL Defanger", path: "/tools/security/defanger" },
+    ],
+  },
+  {
+    name: "DEVOPS",
+    tools: [
+      { name: "Chmod Calculator", path: "/tools/devops/chmod" },
+      { name: "Docker Converter", path: "/tools/devops/docker" },
     ],
   },
   {
