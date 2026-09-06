@@ -242,7 +242,7 @@ function PasswordGeneratorContent() {
                         <span><strong>Warning:</strong> {analysis.feedback.warning}</span>
                       </div>
                     )}
-                    {analysis.feedback.suggestions.map((suggestion, idx) => (
+                    {analysis.feedback.suggestions.map((suggestion: string, idx: number) => (
                       <div key={idx} className="flex items-start gap-2 text-orange-400/70 font-mono text-xs pl-6">
                         <span>• {suggestion}</span>
                       </div>
@@ -279,7 +279,7 @@ function PasswordGeneratorContent() {
                   <div className="text-xs font-mono text-zinc-600">
                     <span className="uppercase tracking-widest mb-2 block text-zinc-500">Pattern Matches Detected:</span>
                     <div className="flex flex-wrap gap-2">
-                      {analysis.sequence.map((match, idx) => (
+                      {analysis.sequence.map((match: any, idx: number) => (
                         <span key={idx} className="bg-[#1a1a1a] px-2 py-1 border border-[#2a2a2a]">
                           {match.pattern} ({match.token})
                         </span>
