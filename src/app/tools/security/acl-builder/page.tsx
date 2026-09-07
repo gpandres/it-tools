@@ -4,22 +4,12 @@ import { Suspense, useState, useRef } from "react";
 import { ToolLayout } from "@/components/tool-layout";
 import { Plus, Trash2, Download, Upload, Copy, Check, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-export type AclRule = {
-  id: string;
-  action: "permit" | "deny";
-  protocol: "ip" | "tcp" | "udp" | "icmp";
-  srcIp: string; // "any" or IP/CIDR
-  dstIp: string;
-  srcPort: string; // "any" or number
-  dstPort: string;
-  log: boolean;
-};
+import { AclRule, parseAclRules } from "@/lib/acl";
 
 // Helper: Convert CIDR to wildcard mask (for Cisco)
-function cidrToWildcard(cidr: number): string {
+export function cidrToWildcard(cidr: number): string {
   if (cidr < 0 || cidr > 32) return "0.0.0.0";
-  const mask = ~((1 << (32 - cidr)) - 1);
+  const mask = cidr === 0 ? 0 : ~((2 ** (32 - cidr)) - 1);
   return [
     (~(mask >>> 24)) & 255,
     (~(mask >>> 16)) & 255,
@@ -38,6 +28,16 @@ function formatCiscoIp(ipString: string): string {
     return `${ip} ${cidrToWildcard(cidr)}`;
   }
   return `host ${ipString}`;
+}
+
+function cidrToMask(cidr: number): string {
+  const mask = cidr === 0 ? 0 : (0xffffffff << (32 - cidr)) >>> 0;
+  return [24, 16, 8, 0].map((shift) => (mask >>> shift) & 255).join(".");
+}
+
+function fortiAddress(ipString: string, name: string): string {
+  if (ipString.toLowerCase() === "any") return "all";
+  return name;
 }
 
 function AclBuilderContent() {
@@ -61,7 +61,7 @@ function AclBuilderContent() {
     }]);
   };
 
-  const updateRule = (id: string, field: keyof AclRule, value: any) => {
+  const updateRule = (id: string, field: keyof AclRule, value: AclRule[keyof AclRule]) => {
     setRules(rules.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
 
@@ -94,10 +94,10 @@ function AclBuilderContent() {
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
-        if (Array.isArray(parsed)) {
-          setRules(parsed);
-        }
-      } catch (err) {
+        const rules = parseAclRules(parsed);
+        if (!rules) throw new Error("Invalid ACL schema");
+        setRules(rules);
+      } catch {
         alert("Invalid JSON file");
       }
     };
@@ -138,24 +138,44 @@ function AclBuilderContent() {
   };
 
   const generateFortigate = () => {
-    let out = `config firewall policy\n`;
+    let out = `# Review interfaces, address objects and service scope before applying.\n`;
+    out += `config firewall address\n`;
+    rules.forEach((r, idx) => {
+      if (r.srcIp.toLowerCase() !== "any") {
+        const [ip, prefix] = r.srcIp.split("/");
+        out += `    edit "ACL_SRC_${idx + 1}"\n        set subnet ${ip} ${prefix ? cidrToMask(Number(prefix)) : "255.255.255.255"}\n    next\n`;
+      }
+      if (r.dstIp.toLowerCase() !== "any") {
+        const [ip, prefix] = r.dstIp.split("/");
+        out += `    edit "ACL_DST_${idx + 1}"\n        set subnet ${ip} ${prefix ? cidrToMask(Number(prefix)) : "255.255.255.255"}\n    next\n`;
+      }
+    });
+    out += `end\n`;
+    rules.forEach((r, idx) => {
+      if ((r.protocol === "tcp" || r.protocol === "udp") && r.dstPort.toLowerCase() !== "any") {
+        out += `config firewall service custom\n    edit "ACL_SVC_${idx + 1}"\n        set ${r.protocol}-portrange "${r.dstPort}"\n    next\nend\n`;
+      }
+    });
+    out += `config firewall policy\n`;
     rules.forEach((r, idx) => {
       out += `    edit ${idx + 1}\n`;
       out += `        set name "Rule_${idx + 1}"\n`;
       out += `        set srcintf "any"\n`;
       out += `        set dstintf "any"\n`;
-      out += `        set srcaddr "${r.srcIp === "any" ? "all" : r.srcIp}"\n`;
-      out += `        set dstaddr "${r.dstIp === "any" ? "all" : r.dstIp}"\n`;
+      out += `        set srcaddr "${fortiAddress(r.srcIp, `ACL_SRC_${idx + 1}`)}"\n`;
+      out += `        set dstaddr "${fortiAddress(r.dstIp, `ACL_DST_${idx + 1}`)}"\n`;
       out += `        set action ${r.action === "permit" ? "accept" : "deny"}\n`;
       
       let service = "ALL";
-      if (r.protocol === "tcp" && r.dstPort !== "any") service = `TCP_${r.dstPort}`;
-      else if (r.protocol === "udp" && r.dstPort !== "any") service = `UDP_${r.dstPort}`;
+      if ((r.protocol === "tcp" || r.protocol === "udp") && r.dstPort !== "any") service = `ACL_SVC_${idx + 1}`;
       else if (r.protocol === "icmp") service = "ALL_ICMP";
       
       out += `        set service "${service}"\n`;
       out += `        set schedule "always"\n`;
       if (r.log) out += `        set logtraffic all\n`;
+      if ((r.protocol === "tcp" || r.protocol === "udp") && r.srcPort.toLowerCase() !== "any") {
+        out += `        # Source port ${r.srcPort} requires a separate FortiGate service design\n`;
+      }
       out += `    next\n`;
     });
     out += `end`;

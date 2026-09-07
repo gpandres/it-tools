@@ -10,6 +10,8 @@ import Runner from '@/app/tools/sysadmin/runbook/components/Runner';
 import DiagramBuilder from '@/app/tools/sysadmin/runbook/components/DiagramBuilder';
 import { Runbook } from '@/app/tools/sysadmin/runbook/components/types';
 import LZString from 'lz-string';
+import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
+import { parseRunbook } from '@/lib/runbook-validation';
 
 const PLAYBOOK_TEMPLATES: Record<string, Runbook> = {
   "Empty Playbook": {
@@ -122,23 +124,19 @@ export default function PlaybookPage() {
       try {
         const decompressed = LZString.decompressFromBase64(sharedData);
         if (decompressed) {
-          const parsed = JSON.parse(decompressed);
-          if (parsed.id && parsed.steps) {
-            setRunbook(parsed);
-          }
+          const parsed = parseRunbook(JSON.parse(decompressed));
+          if (parsed) setRunbook(parsed);
         }
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch (e) {
         console.error("Failed to parse shared playbook");
       }
     } else {
-      const saved = localStorage.getItem('playbook_draft');
+      const saved = readLocalStorage('playbook_draft');
       if (saved) {
         try {
-          const parsed = JSON.parse(saved);
-          if (parsed.id) {
-            setRunbook(parsed);
-          }
+          const parsed = parseRunbook(JSON.parse(saved));
+          if (parsed) setRunbook(parsed);
         } catch (e) {
           console.error("Failed to parse saved playbook", e);
         }
@@ -148,7 +146,7 @@ export default function PlaybookPage() {
 
   useEffect(() => {
     const saveTimer = setTimeout(() => {
-      localStorage.setItem('playbook_draft', JSON.stringify(runbook));
+      writeLocalStorage('playbook_draft', JSON.stringify(runbook));
     }, 1000);
     return () => clearTimeout(saveTimer);
   }, [runbook]);
@@ -166,8 +164,9 @@ export default function PlaybookPage() {
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        const parsed = JSON.parse(content);
-        if (parsed.id && parsed.steps) {
+        if (content.length > 2_000_000) throw new Error("Playbook file is too large");
+        const parsed = parseRunbook(JSON.parse(content));
+        if (parsed) {
           setRunbook(parsed);
         } else {
           alert("Invalid playbook JSON format.");

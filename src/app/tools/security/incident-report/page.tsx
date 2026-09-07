@@ -406,7 +406,7 @@ export default function IncidentReportTool() {
         alert("PDF engine is still loading, please wait a moment.");
         return;
       }
-      
+
       const pdfMake = win.pdfMake;
       const docDef = generateDocDef();
       pdfMake.createPdf(docDef).download(`incident-${report.id || report.date}.pdf`);

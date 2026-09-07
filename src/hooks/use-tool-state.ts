@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { hasStorageConsent } from "@/lib/storage";
 
 // A generic hook to manage tool state and sync with URL query parameters
 export function useToolUrlState<T extends Record<string, string>>(
@@ -67,6 +68,7 @@ export function useToolHistory<T>(toolId: string, maxItems = 10) {
 
   useEffect(() => {
     try {
+      if (!hasStorageConsent()) return;
       const stored = localStorage.getItem(`it_tools_${toolId}_history`);
       if (stored) {
         setHistory(JSON.parse(stored));
@@ -80,6 +82,7 @@ export function useToolHistory<T>(toolId: string, maxItems = 10) {
     setHistory((prev) => {
       const newHistory = [item, ...prev].slice(0, maxItems);
       try {
+        if (!hasStorageConsent()) return newHistory;
         localStorage.setItem(`it_tools_${toolId}_history`, JSON.stringify(newHistory));
       } catch (e) {
          console.error("Failed to save history", e);
@@ -90,7 +93,7 @@ export function useToolHistory<T>(toolId: string, maxItems = 10) {
 
   const clearHistory = useCallback(() => {
     setHistory([]);
-    localStorage.removeItem(`it_tools_${toolId}_history`);
+    if (hasStorageConsent()) localStorage.removeItem(`it_tools_${toolId}_history`);
   }, [toolId]);
 
   return { history, addHistory, clearHistory };

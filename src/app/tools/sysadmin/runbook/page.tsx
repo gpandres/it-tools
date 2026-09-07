@@ -11,6 +11,8 @@ import DiagramBuilder from './components/DiagramBuilder';
 import { TEMPLATES } from './components/Templates';
 import { Runbook } from './components/types';
 import LZString from 'lz-string';
+import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
+import { parseRunbook } from '@/lib/runbook-validation';
 
 export default function RunbookPage() {
   const [mode, setMode] = useState<'build' | 'run'>('build');
@@ -28,23 +30,19 @@ export default function RunbookPage() {
       try {
         const decompressed = LZString.decompressFromBase64(sharedData);
         if (decompressed) {
-          const parsed = JSON.parse(decompressed);
-          if (parsed.id && parsed.steps) {
-            setRunbook(parsed);
-          }
+          const parsed = parseRunbook(JSON.parse(decompressed));
+          if (parsed) setRunbook(parsed);
         }
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch (e) {
         console.error("Failed to parse shared runbook");
       }
     } else {
-      const saved = localStorage.getItem('runbook_draft');
+      const saved = readLocalStorage('runbook_draft');
       if (saved) {
         try {
-          const parsed = JSON.parse(saved);
-          if (parsed.id) {
-            setRunbook(parsed);
-          }
+          const parsed = parseRunbook(JSON.parse(saved));
+          if (parsed) setRunbook(parsed);
         } catch (e) {
           console.error("Failed to parse saved runbook", e);
         }
@@ -55,7 +53,7 @@ export default function RunbookPage() {
   // Save to local storage on change
   useEffect(() => {
     const saveTimer = setTimeout(() => {
-      localStorage.setItem('runbook_draft', JSON.stringify(runbook));
+      writeLocalStorage('runbook_draft', JSON.stringify(runbook));
     }, 1000);
     return () => clearTimeout(saveTimer);
   }, [runbook]);
@@ -73,8 +71,9 @@ export default function RunbookPage() {
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        const parsed = JSON.parse(content);
-        if (parsed.id && parsed.steps) {
+        if (content.length > 2_000_000) throw new Error("Runbook file is too large");
+        const parsed = parseRunbook(JSON.parse(content));
+        if (parsed) {
           setRunbook(parsed);
         } else {
           alert("Invalid runbook JSON format.");

@@ -10,6 +10,7 @@ import NetworkNode from './nodes/NetworkNode';
 import NetworkEdge from './edges/NetworkEdge';
 import Sidebar from './components/Sidebar';
 import { TEMPLATES } from './components/Templates';
+import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
 
 const nodeTypes = { networkNode: NetworkNode };
 const edgeTypes = { networkEdge: NetworkEdge };
@@ -25,7 +26,7 @@ function DiagramFlow() {
 
   // Load from local storage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('network_diagram');
+    const saved = readLocalStorage('network_diagram');
     if (saved) {
       try {
         const { nodes: savedNodes, edges: savedEdges } = JSON.parse(saved);
@@ -43,7 +44,7 @@ function DiagramFlow() {
   // Save to local storage on change
   useEffect(() => {
     const saveTimer = setTimeout(() => {
-      localStorage.setItem('network_diagram', JSON.stringify({ nodes, edges }));
+      writeLocalStorage('network_diagram', JSON.stringify({ nodes, edges }));
     }, 1000);
     return () => clearTimeout(saveTimer);
   }, [nodes, edges]);

@@ -43,16 +43,16 @@ const VECTORS = [
     desc: "A client-side compromise starting with a phishing email and ending in massive data encryption.",
     windows_phases: [
       [
-        { desc: "Attacker sends an email with a malicious macro-enabled Word document.", mitre: "T1566", event: "none" },
-        { desc: "Victim receives a spearphishing link pointing to a fake login portal.", mitre: "T1566", event: "Sysmon 22" },
+        { desc: "Attacker sends an email with a malicious macro-enabled Word document.", mitre: "T1566.001", event: "none" },
+        { desc: "Victim receives a spearphishing link pointing to a fake login portal.", mitre: "T1566.002", event: "Sysmon 22" },
       ],
       [
         { desc: "The macro executes an obfuscated PowerShell script in the background.", mitre: "T1059.001", event: "Sysmon 1" },
-        { desc: "The user downloads a disguised executable and double-clicks it.", mitre: "T1204", event: "Sysmon 1" },
+        { desc: "The user downloads a disguised executable and double-clicks it.", mitre: "T1204.002", event: "Sysmon 1" },
       ],
       [
         { desc: "Malware dumps LSASS memory using a custom procdump technique.", mitre: "T1003.001", event: "Sysmon 10" },
-        { desc: "Malware searches local browser databases for saved passwords.", mitre: "T1555", event: "Sysmon 1" },
+        { desc: "Malware searches local browser databases for saved passwords.", mitre: "T1555.003", event: "Sysmon 1" },
       ],
       [
         { desc: "The malware encrypts all user documents and drops a ransom note.", mitre: "T1486", event: "Sysmon 11" },
@@ -61,15 +61,15 @@ const VECTORS = [
     ],
     linux_phases: [
       [
-        { desc: "Employee receives an email with a malicious PDF attachment that exploits a local viewer.", mitre: "T1566", event: "none" },
-        { desc: "Victim is tricked into running a curl command copied from a fake IT portal.", mitre: "T1204", event: "auditd EXECVE" },
+        { desc: "Employee receives an email with a malicious PDF attachment that exploits a local viewer.", mitre: "T1566.001", event: "none" },
+        { desc: "Victim is tricked into running a curl command copied from a fake IT portal.", mitre: "T1204.004", event: "auditd EXECVE" },
       ],
       [
         { desc: "A malicious bash script is executed to download a secondary payload.", mitre: "T1059.004", event: "auditd EXECVE" },
         { desc: "The attacker drops a python script to run silently in the background.", mitre: "T1059.004", event: "auditd SYSCALL" },
       ],
       [
-        { desc: "Malware searches local browser databases for saved passwords.", mitre: "T1555", event: "auditd SYSCALL" },
+        { desc: "Malware searches local browser databases for saved passwords.", mitre: "T1555.003", event: "auditd SYSCALL" },
         { desc: "Attacker attempts to read /etc/shadow directly.", mitre: "T1003.008", event: "auditd SYSCALL" },
       ],
       [
@@ -89,10 +89,10 @@ const VECTORS = [
         { desc: "An ASPX web shell is written to the webroot directory.", mitre: "T1505.003", event: "Sysmon 11" },
       ],
       [
-        { desc: "The attacker dumps the SAM registry hive.", mitre: "T1003.001", event: "Sysmon 1" },
+        { desc: "The attacker dumps the SAM registry hive.", mitre: "T1003.002", event: "Sysmon 1" },
       ],
       [
-        { desc: "The stolen data is exfiltrated to an external MEGA cloud account.", mitre: "T1567", event: "Sysmon 3" },
+        { desc: "The stolen data is exfiltrated to an external MEGA cloud account.", mitre: "T1567.002", event: "Sysmon 3" },
       ]
     ],
     linux_phases: [
@@ -106,7 +106,7 @@ const VECTORS = [
         { desc: "The attacker dumps local /etc/shadow.", mitre: "T1003.008", event: "auditd EXECVE" },
       ],
       [
-        { desc: "The stolen data is exfiltrated to an external MEGA cloud account.", mitre: "T1567", event: "auditd EXECVE" },
+        { desc: "The stolen data is exfiltrated to an external MEGA cloud account.", mitre: "T1567.002", event: "auditd EXECVE" },
       ]
     ]
   },
@@ -118,7 +118,7 @@ const VECTORS = [
         { desc: "Employee logs into an internal file server via RDP.", mitre: "T1021.001", event: "4624" },
       ],
       [
-        { desc: "Employee accesses the sensitive 'HR_Confidential' network share.", mitre: "T1069.002", event: "5140" },
+        { desc: "Employee accesses the sensitive 'HR_Confidential' network share.", mitre: "T1135", event: "5140" },
       ],
       [
         { desc: "Employee uses wevtutil to completely clear the Windows Security Event logs.", mitre: "T1070.001", event: "1102" },
@@ -150,7 +150,7 @@ const VECTORS = [
         { desc: "Victim installs a digitally signed but backdoored update of a popular tool.", mitre: "T1195", event: "none" },
       ],
       [
-        { desc: "The backdoor establishes a beacon encapsulated in DNS queries.", mitre: "T1071", event: "Sysmon 22" },
+        { desc: "The backdoor establishes a beacon encapsulated in DNS queries.", mitre: "T1071.004", event: "Sysmon 22" },
       ],
       [
         { desc: "The payload creates a new Windows Service to ensure it runs on every boot.", mitre: "T1543.003", event: "7045" },

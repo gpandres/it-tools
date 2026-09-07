@@ -1,74 +1,24 @@
 "use client";
-
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-
-type FavoritesContextType = {
-  favorites: string[];
-  addFavorite: (id: string) => void;
-  removeFavorite: (id: string) => void;
-  isFavorite: (id: string) => boolean;
-  isLoaded: boolean;
-};
-
-const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
-
-export function FavoritesProvider({ children }: { children: ReactNode }) {
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    try {
-      const consent = localStorage.getItem("cookie_consent");
-      if (consent === "all" || consent === "essential") {
-        const stored = localStorage.getItem("it_tools_favorites");
-        if (stored) {
-          setFavorites(JSON.parse(stored));
-        }
-      } else {
-        // Clear if no consent
-        localStorage.removeItem("it_tools_favorites");
-      }
-    } catch (e) {
-      // Ignore local storage access issues
-    }
-    setIsLoaded(true);
-  }, []);
-
-  const saveFavorites = (newFavs: string[]) => {
-    setFavorites(newFavs);
-    try {
-      const consent = localStorage.getItem("cookie_consent");
-      if (consent === "all" || consent === "essential") {
-        localStorage.setItem("it_tools_favorites", JSON.stringify(newFavs));
-      }
-    } catch (e) {
-      // Ignore
-    }
-  };
-
-  const addFavorite = (id: string) => {
-    if (!favorites.includes(id)) {
-      saveFavorites([...favorites, id]);
-    }
-  };
-
-  const removeFavorite = (id: string) => {
-    saveFavorites(favorites.filter(fav => fav !== id));
-  };
-
-  const isFavorite = (id: string) => favorites.includes(id);
-
-  return (
-    <FavoritesContext.Provider value={{ favorites, addFavorite, removeFavorite, isFavorite, isLoaded }}>
-      {children}
-    </FavoritesContext.Provider>
-  );
+import { createContext, useContext, useEffect, useSyncExternalStore, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { toolsRegistry } from "@/lib/tools";
+import { addFavorite, removeFavorite, visitTool, clearRecent, changeConsent, subscribePreferences, getPreferencesSnapshot, getServerPreferencesSnapshot } from "@/lib/preferences-store";
+function usePreferencesStore() {
+  const state = useSyncExternalStore(subscribePreferences, getPreferencesSnapshot, getServerPreferencesSnapshot);
+  return { ...state, isLoaded: state.loaded, addFavorite, removeFavorite, clearRecent, changeConsent, isFavorite: (id: string) => state.favorites.includes(id) };
 }
-
+const FavoritesContext = createContext<ReturnType<typeof usePreferencesStore> | undefined>(undefined);
+export function FavoritesProvider({ children }: { children: ReactNode }) {
+  const preferences = usePreferencesStore();
+  const pathname = usePathname();
+  useEffect(() => {
+    const tool = toolsRegistry.find(item => item.path === pathname);
+    if (preferences.isLoaded && tool) visitTool(tool.id);
+  }, [pathname, preferences.isLoaded]);
+  return <FavoritesContext.Provider value={preferences}>{children}</FavoritesContext.Provider>;
+}
 export function useFavorites() {
   const context = useContext(FavoritesContext);
-  if (context === undefined) {
-    throw new Error("useFavorites must be used within a FavoritesProvider");
-  }
+  if (!context) throw new Error("useFavorites must be used within a FavoritesProvider");
   return context;
 }

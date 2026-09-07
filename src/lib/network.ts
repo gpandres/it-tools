@@ -1,5 +1,9 @@
 export function ipToInt(ip: string): number {
-  return ip.split(".").reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+  const octets = ip.split(".");
+  if (octets.length !== 4 || octets.some((octet) => !/^\d{1,3}$/.test(octet) || Number(octet) > 255)) {
+    throw new Error("Invalid IPv4 address");
+  }
+  return octets.reduce((acc, octet) => (acc * 256) + Number(octet), 0) >>> 0;
 }
 
 export function intToIp(int: number): string {
@@ -17,6 +21,9 @@ export function cidrToMaskInt(cidr: number): number {
 
 export function calculateSubnet(ipStr: string, cidr: number) {
   try {
+    if (!Number.isInteger(cidr) || cidr < 0 || cidr > 32 || !validateIp(ipStr)) {
+      throw new Error("Invalid IP address or CIDR");
+    }
     const ipInt = ipToInt(ipStr);
     const maskInt = cidrToMaskInt(cidr);
     const networkInt = (ipInt & maskInt) >>> 0;
@@ -53,7 +60,7 @@ export function calculateSubnet(ipStr: string, cidr: number) {
       cidr,
       error: undefined
     };
-  } catch (e) {
+  } catch {
     return { 
       ip: "", mask: "", network: "", broadcast: "", wildcard: "", firstHost: "", lastHost: "", totalHosts: 0, cidr: 0,
       error: "Invalid IP address or CIDR" 
@@ -68,20 +75,22 @@ export function validateIp(ip: string): boolean {
 // Force Turbopack refresh
 
 export function isIpInNetwork(testIp: string, networkCidr: string): boolean {
-  if (networkCidr.toLowerCase() === "any") return true;
+  if (networkCidr.trim().toLowerCase() === "any") return true;
+  if (!validateIp(testIp)) return false;
   if (!networkCidr.includes("/")) {
-    return testIp === networkCidr;
+    return validateIp(networkCidr) && testIp === networkCidr;
   }
   const [netIp, cidrStr] = networkCidr.split("/");
   const cidr = parseInt(cidrStr, 10);
   if (isNaN(cidr) || cidr < 0 || cidr > 32) return false;
   
   try {
+    if (!validateIp(netIp)) return false;
     const testInt = ipToInt(testIp);
     const netInt = ipToInt(netIp);
     const mask = cidrToMaskInt(cidr);
     return (testInt & mask) === (netInt & mask);
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -177,7 +186,7 @@ export function calculateVlsm(majorNetworkIp: string, majorCidr: number, subnets
     }
 
     return results;
-  } catch (e) {
+  } catch {
     return [];
   }
 }

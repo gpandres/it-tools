@@ -6,7 +6,7 @@ export function expandIPv6(ip: string): string | null {
     // Basic validation
     if (!/^[a-fA-F0-9:]+$/.test(baseIp) || baseIp.split('::').length > 2) return null;
     
-    let parts = baseIp.split(':');
+    const parts = baseIp.split(':');
     
     // Handle :: at start or end
     if (parts[0] === '') parts.shift();
@@ -19,7 +19,7 @@ export function expandIPv6(ip: string): string | null {
       parts.splice(doubleColonIndex, 1, ...Array(missing).fill('0000'));
     }
     
-    if (parts.length !== 8) return null;
+    if (parts.length !== 8 || parts.some((part) => !/^[a-fA-F0-9]{1,4}$/.test(part))) return null;
     
     return parts.map(p => p.padStart(4, '0').toLowerCase()).join(':');
   } catch {

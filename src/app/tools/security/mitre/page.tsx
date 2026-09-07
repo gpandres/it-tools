@@ -23,6 +23,13 @@ const TACTICS: Tactic[] = [
   "Impact"
 ];
 
+function mitreHref(id: string): string {
+  const [technique, subTechnique] = id.split(".");
+  return subTechnique
+    ? `https://attack.mitre.org/techniques/${technique}/${subTechnique}/`
+    : `https://attack.mitre.org/techniques/${technique}/`;
+}
+
 export default function MitreLookup() {
   const [search, setSearch] = useState("");
   const [filterTactic, setFilterTactic] = useState<Tactic>("All");
@@ -109,7 +116,7 @@ export default function MitreLookup() {
                 <p className="text-zinc-500 font-mono text-sm mb-4">No techniques found matching your filters.</p>
                 {search.trim().toLowerCase().match(/^t\d{4}(\.\d{3})?$/) && (
                   <a
-                    href={`https://attack.mitre.org/techniques/${search.trim().toUpperCase().split('.')[0]}`}
+                    href={mitreHref(search.trim().toUpperCase())}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-4 py-3 bg-[#00ff9c]/10 text-[#00ff9c] border border-[#00ff9c]/30 hover:bg-[#00ff9c]/20 hover:border-[#00ff9c] transition-all font-mono text-xs uppercase tracking-widest"
@@ -153,7 +160,7 @@ export default function MitreLookup() {
                       </div>
                       
                       <a 
-                        href={`https://attack.mitre.org/techniques/${def.id.split('.')[0]}`} 
+                        href={mitreHref(def.id)}
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="p-2 text-zinc-600 hover:text-[#00ff9c] transition-colors shrink-0"

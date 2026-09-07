@@ -6,6 +6,7 @@ import { useFavorites } from "@/components/favorites-provider";
 import { Star } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { toolsRegistry } from "@/lib/tools";
+import { relatedToolsFor, toolDataFlow } from "@/lib/tool-discovery";
 import Link from "next/link";
 
 interface ToolLayoutProps {
@@ -17,15 +18,13 @@ interface ToolLayoutProps {
 
 export function ToolLayout({ title, description, children, fullWidth = false }: ToolLayoutProps) {
   const pathname = usePathname();
-  const { favorites, addFavorite, removeFavorite, isFavorite, isLoaded } = useFavorites();
+  const { addFavorite, removeFavorite, isFavorite, isLoaded } = useFavorites();
 
   const currentTool = toolsRegistry.find(t => t.path === pathname);
   
   const relatedTools = React.useMemo(() => {
     if (!currentTool) return [];
-    return toolsRegistry
-      .filter(t => t.id !== currentTool.id && t.category === currentTool.category)
-      .slice(0, 3);
+    return relatedToolsFor(currentTool.id);
   }, [currentTool]);
 
   const toggleFavorite = () => {
@@ -39,7 +38,7 @@ export function ToolLayout({ title, description, children, fullWidth = false }: 
 
   return (
     <div className="flex flex-col min-h-screen bg-black">
-      <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-4 border-b border-[#1a1a1a] bg-[#050505]">
+      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4 px-4 sm:px-6 py-4 border-b border-[#1a1a1a] bg-[#050505]">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-sm font-bold text-[#ffb000] glow-amber flex items-center gap-2 uppercase tracking-widest">
@@ -51,19 +50,25 @@ export function ToolLayout({ title, description, children, fullWidth = false }: 
                 onClick={toggleFavorite} 
                 className="text-zinc-500 hover:text-[#ffb000] transition-colors"
                 title="Toggle Favorite"
+                aria-label={isFavorite(currentTool.id) ? "Remove from favorites" : "Add to favorites"}
+                aria-pressed={isFavorite(currentTool.id)}
               >
                 <Star className={`w-4 h-4 ${isFavorite(currentTool.id) ? 'fill-[#ffb000] text-[#ffb000]' : ''}`} />
               </button>
             )}
           </div>
           <p className="text-xs text-zinc-500 mt-1 font-mono">{description}</p>
+          {currentTool && <details className="text-[11px] text-zinc-400 mt-2 max-w-xl">
+            <summary className="cursor-pointer">{toolDataFlow(currentTool).label}</summary>
+            <p className="mt-2">{toolDataFlow(currentTool).description}</p>
+          </details>}
         </div>
-        <div className="hidden md:block w-64">
+        <div className="w-full md:w-64 shrink-0">
           <CommandMenu />
         </div>
       </header>
       
-      <main className="flex-1 p-6 overflow-x-hidden flex flex-col">
+      <main className="flex-1 p-4 sm:p-6 overflow-x-hidden flex flex-col">
         <div className={`${fullWidth ? "w-full max-w-[95vw]" : "max-w-7xl w-full"} mx-auto flex-1`}>
           {children}
         </div>

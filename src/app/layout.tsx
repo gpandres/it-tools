@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     default: "IT Tools | andresgp.dev",
     template: "%s | IT Tools",
   },
-  description: "A comprehensive, privacy-first online toolbox for developers, sysadmins, and security researchers. 100% client-side execution.",
+  description: "Local-first tools for developers, sysadmins and blue teams. Network calculators, incident workflows and utilities with clear data-flow labels.",
   keywords: ["developer tools", "sysadmin tools", "cybersecurity", "blue team", "pcap analyzer", "log parser", "subnet calculator", "jwt decoder", "hash generator", "regex tester", "offline tools"],
   authors: [{ name: "Andres", url: "https://andresgp.dev" }],
   creator: "Andres",
@@ -22,13 +22,13 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://tools.andresgp.dev",
     title: "IT Tools | Privacy-First Developer Toolbox",
-    description: "Zero-dependency, offline-capable tools for developers and sysadmins. Network calculators, cryptography, encoders, and security parsers.",
+    description: "Local-first network calculators, cryptography, encoders and security tools for developers and sysadmins.",
     siteName: "IT Tools by andresgp.dev",
   },
   twitter: {
     card: "summary_large_image",
     title: "IT Tools | Privacy-First Developer Toolbox",
-    description: "Zero-dependency, offline-capable tools for developers and sysadmins.",
+    description: "Local-first tools for developers, sysadmins and blue teams.",
     creator: "@gpandres02", // Replace with real handle if applicable
   },
   robots: {
@@ -56,13 +56,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${jetbrainsMono.variable} h-full dark`}>
-      <body className="min-h-full flex bg-background text-foreground antialiased selection:bg-[var(--phosphor)] selection:text-black">
+      <body className="min-h-full flex flex-col md:flex-row bg-background text-foreground antialiased selection:bg-[var(--phosphor)] selection:text-black">
         <FavoritesProvider>
+          <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-black focus:p-4 focus:text-[#00ff9c]">Skip to content</a>
           <Sidebar />
-          <div className="flex-1 flex flex-col min-w-0">
+          <div id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-w-0">
             {children}
+            <CookieBanner />
           </div>
-          <CookieBanner />
         </FavoritesProvider>
       </body>
     </html>

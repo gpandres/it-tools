@@ -5,7 +5,7 @@ import { ToolLayout } from "@/components/tool-layout";
 import { isIpInNetwork } from "@/lib/network"; // Force Turbopack reload
 import { Plus, Trash2, Upload, Play, ShieldAlert, ShieldCheck, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AclRule } from "../acl-builder/page";
+import { AclRule, parseAclRules } from "@/lib/acl";
 
 function AclSimulatorContent() {
   const [rules, setRules] = useState<AclRule[]>([]);
@@ -35,10 +35,10 @@ function AclSimulatorContent() {
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
-        if (Array.isArray(parsed)) {
-          setRules(parsed);
-          setSimulationResult(null);
-        }
+        const rules = parseAclRules(parsed);
+        if (!rules) throw new Error("Invalid ACL schema");
+        setRules(rules);
+        setSimulationResult(null);
       } catch (err) {
         alert("Invalid JSON file");
       }

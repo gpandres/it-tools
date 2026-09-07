@@ -2,10 +2,9 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
-import Fuse from "fuse.js";
+import { searchTools } from "@/lib/tool-discovery";
 
-import { toolsRegistry, CATEGORIES, ToolDefinition } from "@/lib/tools";
+import { CATEGORIES, ToolDefinition } from "@/lib/tools";
 import {
   CommandDialog,
   CommandEmpty,
@@ -37,32 +36,7 @@ export function CommandMenu() {
     setSearchQuery("");
   }, []);
 
-  // Configure Fuse.js
-  const fuse = React.useMemo(
-    () =>
-      new Fuse(toolsRegistry, {
-        keys: [
-          { name: "name", weight: 3 },
-          { name: "aliases", weight: 2 },
-          { name: "keywords", weight: 1.5 },
-          { name: "category", weight: 1 },
-          { name: "vendors", weight: 1 },
-          { name: "technologies", weight: 1 },
-        ],
-        threshold: 0.3, // Tolerance to typos
-        ignoreLocation: true,
-      }),
-    []
-  );
-
-  // Derive tools to render
-  const filteredTools = React.useMemo(() => {
-    if (!searchQuery.trim()) {
-      return toolsRegistry;
-    }
-    const results = fuse.search(searchQuery);
-    return results.map((result) => result.item);
-  }, [searchQuery, fuse]);
+  const filteredTools = React.useMemo(() => searchTools(searchQuery), [searchQuery]);
 
   // Group tools for display if not searching
   const groupedTools = React.useMemo(() => {
@@ -104,6 +78,7 @@ export function CommandMenu() {
         commandProps={{ shouldFilter: false }}
       >
         <CommandInput
+          aria-label="Search tools"
           placeholder="Type a command or search (e.g. 'wildcard', 'firewall', 'chmod')..."
           value={searchQuery}
           onValueChange={setSearchQuery}
