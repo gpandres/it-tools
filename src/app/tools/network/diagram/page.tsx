@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { ReactFlow, Controls, Background, applyNodeChanges, applyEdgeChanges, addEdge, BackgroundVariant, ReactFlowProvider, useReactFlow } from '@xyflow/react';
+import { ReactFlow, Controls, Background, applyNodeChanges, applyEdgeChanges, addEdge, BackgroundVariant, ReactFlowProvider, useReactFlow, getNodesBounds, getViewportForBounds } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { toPng } from 'html-to-image';
 
 import { ToolLayout } from "@/components/tool-layout";
 import NetworkNode from './nodes/NetworkNode';
@@ -155,6 +156,37 @@ function DiagramFlow() {
     reader.readAsText(file);
   };
 
+  const exportImage = (bgColor: 'black' | 'white' | 'transparent') => {
+    const nodesBounds = getNodesBounds(nodes);
+    
+    // Default image width/height (will scale based on bounds)
+    const imageWidth = 1920;
+    const imageHeight = 1080;
+    
+    const viewport = getViewportForBounds(nodesBounds, imageWidth, imageHeight, 0.5, 2, 0.1);
+    
+    const element = document.querySelector('.react-flow__viewport') as HTMLElement;
+    if (!element) return;
+    
+    let backgroundColor = bgColor === 'black' ? '#0a0a0a' : (bgColor === 'white' ? '#ffffff' : 'transparent');
+
+    toPng(element, {
+      backgroundColor,
+      width: imageWidth,
+      height: imageHeight,
+      style: {
+        width: `${imageWidth}px`,
+        height: `${imageHeight}px`,
+        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+      },
+    }).then((dataUrl) => {
+      const a = document.createElement('a');
+      a.setAttribute('download', `network-diagram-${bgColor}.png`);
+      a.setAttribute('href', dataUrl);
+      a.click();
+    });
+  };
+
   return (
     <div className="flex w-full h-[800px] border border-[#1a1a1a] rounded-lg overflow-hidden bg-[#0a0a0a]">
       <Sidebar 
@@ -165,6 +197,7 @@ function DiagramFlow() {
         exportDiagram={exportDiagram}
         importDiagram={importDiagram}
         loadTemplate={loadTemplate}
+        exportImage={exportImage}
       />
       <div className="flex-1 h-full" ref={reactFlowWrapper}>
         <ReactFlow

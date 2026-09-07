@@ -13,11 +13,11 @@ export const TEMPLATES = {
       { id: "pc2", type: "networkNode", position: { x: 600, y: 500 }, data: { label: "Office PC 2", type: "pc", ip: "192.168.1.11" } }
     ],
     edges: [
-      { id: "e-isp-router", source: "isp", target: "router", type: "networkEdge", data: { connectionType: "fiber" } },
-      { id: "e-router-switch", source: "router", target: "switch", type: "networkEdge", data: { connectionType: "ethernet" } },
-      { id: "e-switch-ap", source: "switch", target: "ap", type: "networkEdge", data: { connectionType: "ethernet" } },
-      { id: "e-switch-pc1", source: "switch", target: "pc1", type: "networkEdge", data: { connectionType: "ethernet" } },
-      { id: "e-switch-pc2", source: "switch", target: "pc2", type: "networkEdge", data: { connectionType: "ethernet" } }
+      { id: "e-isp-router", source: "isp", sourceHandle: "bottom-source", target: "router", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "fiber" } },
+      { id: "e-router-switch", source: "router", sourceHandle: "bottom-source", target: "switch", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet" } },
+      { id: "e-switch-ap", source: "switch", sourceHandle: "bottom-source", target: "ap", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet" } },
+      { id: "e-switch-pc1", source: "switch", sourceHandle: "bottom-source", target: "pc1", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet" } },
+      { id: "e-switch-pc2", source: "switch", sourceHandle: "bottom-source", target: "pc2", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet" } }
     ]
   },
   "Enterprise Core": {
@@ -31,12 +31,12 @@ export const TEMPLATES = {
       { id: "srv2", type: "networkNode", position: { x: 350, y: 550 }, data: { label: "DB Server", type: "server", ip: "10.0.1.11", vlan: "20" } }
     ],
     edges: [
-      { id: "e-fw1-core", source: "fw1", target: "core1", type: "networkEdge", data: { connectionType: "fiber" } },
-      { id: "e-fw2-core", source: "fw2", target: "core1", type: "networkEdge", data: { connectionType: "fiber" }, animated: true },
-      { id: "e-core-dist1", source: "core1", target: "dist1", type: "networkEdge", data: { connectionType: "fiber" } },
-      { id: "e-core-dist2", source: "core1", target: "dist2", type: "networkEdge", data: { connectionType: "fiber" } },
-      { id: "e-dist1-srv1", source: "dist1", target: "srv1", type: "networkEdge", data: { connectionType: "ethernet" } },
-      { id: "e-dist1-srv2", source: "dist1", target: "srv2", type: "networkEdge", data: { connectionType: "ethernet" } }
+      { id: "e-fw1-core", source: "fw1", sourceHandle: "bottom-source", target: "core1", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "fiber" } },
+      { id: "e-fw2-core", source: "fw2", sourceHandle: "bottom-source", target: "core1", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "fiber" }, animated: true },
+      { id: "e-core-dist1", source: "core1", sourceHandle: "bottom-source", target: "dist1", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "fiber" } },
+      { id: "e-core-dist2", source: "core1", sourceHandle: "bottom-source", target: "dist2", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "fiber" } },
+      { id: "e-dist1-srv1", source: "dist1", sourceHandle: "bottom-source", target: "srv1", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet" } },
+      { id: "e-dist1-srv2", source: "dist1", sourceHandle: "bottom-source", target: "srv2", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet" } }
     ]
   }
 };

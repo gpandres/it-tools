@@ -128,6 +128,7 @@
     font-family: var(--font-mono), "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
     -webkit-font-smoothing: antialiased;
     font-feature-settings: "liga" 0, "calt" 0;
+  }
 }
 
 /* React Flow Dark Mode Overrides */

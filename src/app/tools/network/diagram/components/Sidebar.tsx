@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Server, Router, HardDrive, Wifi, Globe, Monitor, Shield, Box, Database, HardDriveDownload, Download, Upload, Network } from 'lucide-react';
+import { Server, Router, HardDrive, Wifi, Globe, Monitor, Shield, Box, Database, HardDriveDownload, Download, Upload, Network, FileJson } from 'lucide-react';
 
 const NODE_TYPES = [
   { type: 'router', label: 'Router', icon: Router },
@@ -23,7 +23,8 @@ export default function Sidebar({
   updateEdgeData, 
   exportDiagram, 
   importDiagram,
-  loadTemplate 
+  loadTemplate,
+  exportImage
 }: any) {
 
   const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
@@ -65,13 +66,29 @@ export default function Sidebar({
             <Button onClick={() => loadTemplate("Empty Canvas")} variant="outline" size="sm" className="w-full justify-start bg-black border-[#1a1a1a] hover:border-red-500 hover:text-red-500">Clear Canvas</Button>
           </div>
 
-          <h3 className="text-xs font-bold text-zinc-500 tracking-widest uppercase mt-8 mb-4">Data</h3>
-          <div className="flex gap-2">
-            <Button onClick={exportDiagram} variant="outline" size="sm" className="flex-1 bg-black border-[#1a1a1a]">
-              <Download className="w-4 h-4 mr-2" /> Export
-            </Button>
-            <Button variant="outline" size="sm" className="flex-1 bg-black border-[#1a1a1a] relative overflow-hidden">
-              <Upload className="w-4 h-4 mr-2" /> Import
+          <h3 className="text-xs font-bold text-zinc-500 tracking-widest uppercase mt-8 mb-4">Export & Import</h3>
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <Button onClick={() => exportImage('black')} variant="outline" size="sm" className="flex-1 bg-black border-[#1a1a1a] text-[10px]">
+                <Download className="w-3 h-3 mr-1" /> PNG (Dark)
+              </Button>
+              <Button onClick={() => exportImage('white')} variant="outline" size="sm" className="flex-1 bg-black border-[#1a1a1a] text-[10px]">
+                <Download className="w-3 h-3 mr-1" /> PNG (Light)
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => exportImage('transparent')} variant="outline" size="sm" className="flex-1 bg-black border-[#1a1a1a] text-[10px]">
+                <Download className="w-3 h-3 mr-1" /> PNG (Alpha)
+              </Button>
+              <Button onClick={exportDiagram} variant="outline" size="sm" className="flex-1 bg-black border-[#1a1a1a] text-[10px] text-purple-400 border-purple-500/30">
+                <FileJson className="w-3 h-3 mr-1" /> JSON
+              </Button>
+            </div>
+            
+            <div className="h-px w-full bg-[#1a1a1a] my-2"></div>
+            
+            <Button variant="outline" size="sm" className="w-full bg-black border-[#1a1a1a] relative overflow-hidden">
+              <Upload className="w-4 h-4 mr-2" /> Load JSON
               <input 
                 type="file" 
                 accept=".json"
