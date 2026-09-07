@@ -69,13 +69,13 @@ export function ToolLayout({ title, description, children, fullWidth = false }: 
       </header>
       
       <main className="flex-1 p-4 sm:p-6 overflow-x-hidden flex flex-col">
-        <div className={`${fullWidth ? "w-full max-w-[95vw]" : "max-w-7xl w-full"} mx-auto flex-1`}>
+        <div className={`${fullWidth ? "max-w-none" : "max-w-7xl flex-1"} w-full min-w-0 mx-auto`}>
           {children}
         </div>
         
         {/* RELATED TOOLS */}
         {relatedTools.length > 0 && (
-          <div className={`${fullWidth ? "w-full max-w-[95vw]" : "max-w-7xl w-full"} mx-auto mt-16 pt-8 border-t border-[#1a1a1a]`}>
+          <div className={`${fullWidth ? "max-w-none" : "max-w-7xl"} w-full min-w-0 mx-auto mt-16 pt-8 border-t border-[#1a1a1a]`}>
             <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Related Tools</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {relatedTools.map(tool => (

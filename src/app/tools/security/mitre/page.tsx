@@ -1,27 +1,48 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { 
-  Search, ExternalLink, LogIn, Terminal, Anchor, ArrowUpCircle, 
-  ShieldOff, Key, Search as SearchIcon, MoveHorizontal, 
-  Archive, Radio, UploadCloud, AlertTriangle 
-} from "lucide-react";
+import { Search, ExternalLink, Grid3X3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MITRE_DB, Tactic } from "@/lib/mitre-db";
 
 const TACTICS: Tactic[] = [
   "All",
+  "Reconnaissance",
+  "Resource Development",
   "Initial Access",
   "Execution",
   "Persistence",
   "Privilege Escalation",
+  "Stealth",
+  "Defense Impairment",
   "Defense Evasion",
   "Credential Access",
+  "Discovery",
   "Lateral Movement",
+  "Collection",
   "Command and Control",
+  "Exfiltration",
   "Impact"
 ];
+
+const TACTIC_COLORS: Record<string, string> = {
+  "Reconnaissance": "text-sky-400 border-sky-400/40 bg-sky-400/10",
+  "Resource Development": "text-violet-400 border-violet-400/40 bg-violet-400/10",
+  "Initial Access": "text-blue-400 border-blue-400/40 bg-blue-400/10",
+  "Execution": "text-emerald-400 border-emerald-400/40 bg-emerald-400/10",
+  "Persistence": "text-purple-400 border-purple-400/40 bg-purple-400/10",
+  "Privilege Escalation": "text-amber-400 border-amber-400/40 bg-amber-400/10",
+  "Stealth": "text-red-300 border-red-300/40 bg-red-300/10",
+  "Defense Impairment": "text-red-500 border-red-500/40 bg-red-500/10",
+  "Credential Access": "text-pink-400 border-pink-400/40 bg-pink-400/10",
+  "Discovery": "text-teal-400 border-teal-400/40 bg-teal-400/10",
+  "Lateral Movement": "text-indigo-400 border-indigo-400/40 bg-indigo-400/10",
+  "Collection": "text-yellow-400 border-yellow-400/40 bg-yellow-400/10",
+  "Command and Control": "text-orange-400 border-orange-400/40 bg-orange-400/10",
+  "Exfiltration": "text-cyan-400 border-cyan-400/40 bg-cyan-400/10",
+  "Impact": "text-rose-500 border-rose-500/40 bg-rose-500/10",
+};
 
 function mitreHref(id: string): string {
   const [technique, subTechnique] = id.split(".");
@@ -33,6 +54,15 @@ function mitreHref(id: string): string {
 export default function MitreLookup() {
   const [search, setSearch] = useState("");
   const [filterTactic, setFilterTactic] = useState<Tactic>("All");
+  const [view, setView] = useState<"reference" | "matrix">("reference");
+  const tacticRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  const focusTactic = (tactic: Tactic) => {
+    setFilterTactic(tactic);
+    if (tactic !== "All") {
+      window.requestAnimationFrame(() => tacticRefs.current[tactic]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }));
+    }
+  };
 
   const filteredMitre = useMemo(() => {
     return MITRE_DB.filter(def => {
@@ -47,15 +77,23 @@ export default function MitreLookup() {
     });
   }, [search, filterTactic]);
 
+  const matrixColumns = useMemo(() => TACTICS.filter((tactic): tactic is Exclude<Tactic, "All"> => tactic !== "All").map((tactic) => ({
+    tactic,
+    techniques: MITRE_DB.filter((def) => def.tactic === tactic && (
+      !search.trim() || `${def.id} ${def.name} ${def.description}`.toLowerCase().includes(search.toLowerCase())
+    )),
+  })), [search]);
+
   return (
     <ToolLayout
       title="MITRE ATT&CK Reference"
       description="Quickly search and reference common MITRE ATT&CK tactics, techniques, and procedures (TTPs)."
+      fullWidth={view === "matrix"}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-6xl mx-auto">
+      <div className={`grid grid-cols-1 gap-6 ${view === "matrix" ? "w-full max-w-none mitre-matrix" : "lg:grid-cols-12 max-w-6xl"} mx-auto`}>
         
         {/* Filters Panel */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className={`${view === "matrix" ? "hidden" : "lg:col-span-3"} space-y-6`}>
           <div className="border border-[#1a1a1a] bg-[#050505] p-6 space-y-4">
             <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2">
               Filters
@@ -90,26 +128,66 @@ export default function MitreLookup() {
               </div>
             </div>
             
-            <a 
-              href="https://attack.mitre.org/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="mt-6 flex items-center justify-center gap-2 w-full px-4 py-3 bg-[#1a1a1a] text-zinc-300 hover:bg-[#2a2a2a] hover:text-white transition-colors border border-zinc-800 text-xs font-bold uppercase tracking-widest"
-            >
-              View Full Matrix <ExternalLink className="w-3 h-3" />
+            <button onClick={() => setView("matrix")} className="mt-6 flex items-center justify-center gap-2 w-full px-4 py-3 bg-[#1a1a1a] text-zinc-300 hover:bg-[#2a2a2a] hover:text-white transition-colors border border-zinc-800 text-xs font-bold uppercase tracking-widest">
+              Open Local Matrix <Grid3X3 className="w-3 h-3" />
+            </button>
+            <a href="https://attack.mitre.org/matrices/enterprise/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 text-[10px] text-zinc-600 hover:text-[#00ff9c]">
+              Official MITRE matrix <ExternalLink className="w-3 h-3" />
             </a>
           </div>
         </div>
 
         {/* Results Panel */}
-        <div className="lg:col-span-9 space-y-4">
-          <div className="flex justify-between items-end mb-4">
+        <div className={`${view === "matrix" ? "order-1 min-w-0" : "lg:col-span-9"} space-y-4`}>
+          <div className="flex justify-between items-end mb-4 gap-4">
             <h2 className="text-[#00ff9c] font-mono text-sm">
-              Found {filteredMitre.length} technique{filteredMitre.length !== 1 ? 's' : ''}
+              {view === "matrix" ? "Enterprise technique matrix" : <>Found {filteredMitre.length} technique{filteredMitre.length !== 1 ? 's' : ''}</>}
             </h2>
+            <div className="flex border border-[#1a1a1a] bg-[#050505]">
+              <button onClick={() => setView("reference")} className={`px-3 py-2 text-[10px] uppercase tracking-wider ${view === "reference" ? "text-[#00ff9c] bg-[#00ff9c]/10" : "text-zinc-500"}`}>Reference</button>
+              <button onClick={() => setView("matrix")} className={`px-3 py-2 text-[10px] uppercase tracking-wider ${view === "matrix" ? "text-[#00ff9c] bg-[#00ff9c]/10" : "text-zinc-500"}`}>Matrix</button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
+          {view === "matrix" ? (
+            <>
+              <div className="border border-[#1a1a1a] bg-[#050505] p-3 space-y-3">
+                <div className="flex items-center gap-3">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest shrink-0">Filters</label>
+                  <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search technique or T-code..." className="h-8 bg-black border-[#1a1a1a] text-xs font-mono focus:border-[#00ff9c]" />
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                  {TACTICS.map((tactic) => (
+                    <button key={tactic} aria-pressed={filterTactic === tactic} onClick={() => focusTactic(tactic)} className={`shrink-0 px-3 py-2 border text-[10px] uppercase tracking-wider font-bold transition-colors ${filterTactic === tactic ? `${TACTIC_COLORS[tactic] ?? "text-[#00ff9c] border-[#00ff9c]/40 bg-[#00ff9c]/10"} shadow-[0_0_12px_rgba(0,255,156,0.15)]` : "border-[#1a1a1a] text-zinc-600 hover:text-zinc-300 hover:border-zinc-700"}`}>
+                      {tactic === "All" ? "All" : tactic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div role="region" aria-label="MITRE technique matrix" tabIndex={0} className="min-w-0 border border-[#1a1a1a] bg-[#050505] p-3 overflow-x-auto">
+              <div className="grid w-full items-start gap-2" style={{ gridTemplateColumns: `repeat(${matrixColumns.length}, minmax(8rem, 1fr))` }}>
+                {matrixColumns.map(({ tactic, techniques }) => {
+                  const isFocused = filterTactic === "All" || filterTactic === tactic;
+                  return <section key={tactic} ref={(node) => { tacticRefs.current[tactic] = node; }} className={`min-w-0 border bg-black transition-all duration-200 ${isFocused ? "border-[#00ff9c]/50 opacity-100" : "border-[#1a1a1a] opacity-30 grayscale"}`}>
+                    <button onClick={() => { focusTactic(tactic); setView("reference"); }} className={`flex h-24 w-full flex-col justify-center p-3 text-left border-b border-[#1a1a1a] hover:bg-[#00ff9c]/5 ${TACTIC_COLORS[tactic] ?? "text-[#00ff9c]"}`}>
+                      <h3 className="text-[10px] font-bold uppercase tracking-widest break-words">{tactic}</h3>
+                      <span className="mt-2 text-[10px] leading-snug text-zinc-500 font-mono">{techniques.length} local techniques</span>
+                    </button>
+                    <div className="p-2 space-y-2">
+                      {techniques.map((def) => (
+                        <a key={def.id} href={mitreHref(def.id)} target="_blank" rel="noopener noreferrer" className="block min-w-0 overflow-hidden break-words border border-zinc-800 p-2 hover:border-[#00ff9c]/60 hover:bg-[#00ff9c]/5">
+                          <span className="block text-[10px] font-mono text-[#00ff9c] whitespace-normal [overflow-wrap:anywhere]">{def.id}</span>
+                          <span className="block text-[11px] text-zinc-300 leading-tight whitespace-normal [overflow-wrap:anywhere]">{def.name}</span>
+                        </a>
+                      ))}
+                      {techniques.length === 0 && <p className="p-2 text-[10px] text-zinc-700 italic">Not curated locally yet.</p>}
+                    </div>
+                  </section>;
+                })}
+              </div>
+              </div>
+            </>
+          ) : <div className="grid grid-cols-1 gap-4">
             {filteredMitre.length === 0 ? (
               <div className="p-8 border border-[#1a1a1a] bg-[#050505] text-center flex flex-col items-center">
                 <Search className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
@@ -173,7 +251,7 @@ export default function MitreLookup() {
                 );
               })
             )}
-          </div>
+          </div>}
         </div>
       </div>
     </ToolLayout>

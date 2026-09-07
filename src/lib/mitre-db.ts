@@ -7,10 +7,14 @@ import {
 
 export type Tactic = 
   | "All"
+  | "Reconnaissance"
+  | "Resource Development"
   | "Initial Access" 
   | "Execution" 
   | "Persistence" 
   | "Privilege Escalation" 
+  | "Stealth"
+  | "Defense Impairment"
   | "Defense Evasion" 
   | "Credential Access" 
   | "Discovery" 
@@ -61,7 +65,7 @@ export const MITRE_DB: MitreDef[] = [
 
   // Defense Evasion
   { id: "T1036", tactic: "Defense Evasion", name: "Masquerading", description: "Adversaries may attempt to manipulate features of their artifacts to make them appear legitimate or benign to users and/or security tools.", example: "Naming a malicious executable svchost.exe and running it from AppData.", icon: ShieldOff, color: "text-red-400", platform: "Cross-Platform" },
-  { id: "T1562.001", tactic: "Defense Evasion", name: "Disable or Modify Tools", description: "Adversaries may maliciously modify components of a victim environment to hinder or disable defensive mechanisms.", example: "Disabling Windows Defender or stopping the Sysmon service.", icon: ShieldOff, color: "text-red-400", platform: "Windows" },
+  { id: "T1562.001", tactic: "Defense Impairment", name: "Disable or Modify Tools", description: "Adversaries may impair defensive mechanisms by disabling or modifying security tools.", example: "Disabling Windows Defender or stopping the Sysmon service.", icon: ShieldOff, color: "text-red-400", platform: "Windows" },
   { id: "T1070.001", tactic: "Defense Evasion", name: "Clear Windows Event Logs", description: "Adversaries may clear Windows Event Logs to hide the activity of an intrusion.", example: "Clearing the Windows Security Event Logs using wevtutil cl Security.", icon: ShieldOff, color: "text-red-400", platform: "Windows" },
   { id: "T1070.002", tactic: "Defense Evasion", name: "Clear Linux or Mac System Logs", description: "Adversaries may clear system logs to hide the activity of an intrusion.", example: "Clearing or echoing an empty string into /var/log/auth.log.", icon: ShieldOff, color: "text-red-400", platform: "Linux" },
   { id: "T1070.003", tactic: "Defense Evasion", name: "Clear Command History", description: "Adversaries may clear the command history of a compromised account to hide the actions performed.", example: "Deleting the ~/.bash_history file or running history -c.", icon: ShieldOff, color: "text-red-400", platform: "Linux" },
@@ -110,5 +114,10 @@ export const MITRE_DB: MitreDef[] = [
   { id: "T1566.002", tactic: "Initial Access", name: "Spearphishing Link", description: "Adversaries may send spearphishing messages containing malicious links.", example: "Sending a link to a credential-harvesting page.", icon: LogIn, color: "text-blue-400", platform: "Cross-Platform" },
   { id: "T1003.002", tactic: "Credential Access", name: "Security Account Manager", description: "Adversaries may obtain credentials from the Security Account Manager database.", example: "Accessing the SAM database to obtain local account hashes.", icon: Key, color: "text-pink-500", platform: "Windows" },
   { id: "T1567.002", tactic: "Exfiltration", name: "Exfiltration to Cloud Storage", description: "Adversaries may exfiltrate data to a cloud storage service.", example: "Uploading collected archives to an external cloud-storage account.", icon: UploadCloud, color: "text-cyan-400", platform: "Cross-Platform" },
-  { id: "T1204.004", tactic: "Execution", name: "Malicious Copy and Paste", description: "Adversaries may rely on a user copying and pasting malicious commands or content.", example: "Tricking a user into pasting a command into a shell.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" }
+  { id: "T1204.004", tactic: "Execution", name: "Malicious Copy and Paste", description: "Adversaries may rely on a user copying and pasting malicious commands or content.", example: "Tricking a user into pasting a command into a shell.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" },
+  { id: "T1595", tactic: "Reconnaissance", name: "Active Scanning", description: "Adversaries may scan victim-owned infrastructure to gather information for targeting.", example: "Scanning public IP ranges for exposed services before an intrusion.", icon: SearchIcon, color: "text-sky-400", platform: "Cross-Platform" },
+  { id: "T1592", tactic: "Reconnaissance", name: "Gather Victim Host Information", description: "Adversaries may gather information about victim hosts that can be used to plan targeting.", example: "Profiling public DNS, software and exposed service information.", icon: SearchIcon, color: "text-sky-400", platform: "Cross-Platform" },
+  { id: "T1583.001", tactic: "Resource Development", name: "Acquire Infrastructure: Domains", description: "Adversaries may buy or register domains to support operations.", example: "Registering a lookalike domain for phishing or command and control.", icon: Anchor, color: "text-violet-400", platform: "Cross-Platform" },
+  { id: "T1588", tactic: "Resource Development", name: "Obtain Capabilities", description: "Adversaries may obtain capabilities such as malware, exploits or credentials for use in operations.", example: "Acquiring an exploit or access broker service before an engagement.", icon: Key, color: "text-violet-400", platform: "Cross-Platform" },
+  { id: "T1497", tactic: "Stealth", name: "Virtualization/Sandbox Evasion", description: "Adversaries may detect analysis environments and change or suppress malicious behavior.", example: "Checking for virtual-machine artifacts before executing the payload.", icon: ShieldOff, color: "text-red-300", platform: "Cross-Platform" }
 ];
