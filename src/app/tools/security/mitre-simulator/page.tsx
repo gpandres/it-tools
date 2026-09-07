@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { Play, Shield, Terminal, RefreshCw, CheckCircle2, XCircle, Skull, Shuffle, Plus, Share2, Copy, Info, Monitor, TerminalSquare } from "lucide-react";
+import { Play, Shield, ShieldAlert, Terminal, RefreshCw, CheckCircle2, XCircle, Skull, Shuffle, Plus, Share2, Copy, Info, Monitor, TerminalSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
