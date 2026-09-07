@@ -517,8 +517,8 @@ export default function IncidentReportTool() {
 
   return (
     <>
-      <Script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js" strategy="lazyOnload" />
-      <Script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.min.js" strategy="lazyOnload" />
+      <Script src="/js/pdfmake/pdfmake.min.js" strategy="lazyOnload" />
+      <Script src="/js/pdfmake/vfs_fonts.min.js" strategy="lazyOnload" />
       <ToolLayout
         title="Incident Report Generator"
       description="Create structured IT and cybersecurity incident reports from raw notes, logs, and timelines."
