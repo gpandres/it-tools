@@ -636,7 +636,7 @@ export const toolsRegistry: ToolDefinition[] = [
   // ==========================================
   {
     id: "base64-encoder",
-    name: "Base64 Encoder",
+    name: "Base64 Encode/Decoder",
     description: "Encode and decode text to/from Base64 format.",
     category: "ENCODING / DECODING",
     path: "/tools/encoding/base64",
