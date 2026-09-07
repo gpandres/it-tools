@@ -159,6 +159,28 @@ export const toolsRegistry: ToolDefinition[] = [
   // CYBERSECURITY / BLUE TEAM
   // ==========================================
   {
+    id: "mitre-reference",
+    name: "MITRE ATT&CK Reference",
+    description: "Search and reference common MITRE ATT&CK tactics, techniques, and procedures (TTPs).",
+    category: "CYBERSECURITY / BLUE TEAM",
+    path: "/tools/security/mitre",
+    keywords: ["mitre", "att&ck", "tactics", "techniques", "ttp", "threat", "actor", "apt"],
+    aliases: ["MITRE Framework", "TTP Lookup"],
+    technologies: ["MITRE"],
+    offline: true,
+  },
+  {
+    id: "mitre-simulator",
+    name: "MITRE ATT&CK Simulator",
+    description: "Interactive incident response simulator. Map real attack scenarios to MITRE techniques and Windows Event IDs.",
+    category: "CYBERSECURITY / BLUE TEAM",
+    path: "/tools/security/mitre-simulator",
+    keywords: ["mitre", "att&ck", "simulator", "game", "incident", "response", "ctf", "practice", "mapping", "event id", "sysmon"],
+    aliases: ["Incident Response Game", "TTP Mapper"],
+    technologies: ["MITRE", "Sysmon"],
+    offline: true,
+  },
+  {
     id: "acl-builder",
     name: "Universal ACL Builder",
     description: "Create firewall rules and compile to Cisco, MikroTik, or FortiGate",
