@@ -3,9 +3,8 @@
 import { ToolLayout } from "@/components/tool-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Check, UploadCloud, File as FileIcon, Loader2, ShieldCheck, AlertCircle } from "lucide-react";
-import { Suspense, useState, useRef, useMemo } from "react";
-import CryptoJS from "crypto-js";
+import { Copy, Check, UploadCloud, File as FileIcon, Loader2, ShieldCheck, AlertCircle, XCircle } from "lucide-react";
+import { Suspense, useState, useRef, useMemo, useEffect } from "react";
 
 type HashResults = {
   md5: string;
@@ -23,19 +22,46 @@ function FileHashContent() {
   const [isDragging, setIsDragging] = useState(false);
   const [targetHash, setTargetHash] = useState("");
   
+  const [stats, setStats] = useState({ bytesProcessed: 0, speed: 0, elapsed: 0, eta: 0 });
+  const workerRef = useRef<Worker | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Cleanup worker on unmount
+  useEffect(() => {
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate();
+      }
+    };
+  }, []);
+
   const reset = () => {
+    if (isHashing) cancelHashing();
     setFile(null);
     setProgress(0);
     setResults(null);
+    setStats({ bytesProcessed: 0, speed: 0, elapsed: 0, eta: 0 });
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const cancelHashing = () => {
+    if (workerRef.current) {
+      workerRef.current.terminate();
+      workerRef.current = null;
+    }
+    setIsHashing(false);
+    setProgress(0);
+    setStats({ bytesProcessed: 0, speed: 0, elapsed: 0, eta: 0 });
+  };
+
   const handleFile = (selected: File) => {
+    if (isHashing) cancelHashing();
     setFile(selected);
     setResults(null);
     setTargetHash(""); // Reset target hash when new file is selected
+    setStats({ bytesProcessed: 0, speed: 0, elapsed: 0, eta: 0 });
+    setProgress(0);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,96 +83,64 @@ function FileHashContent() {
     }
   };
 
-  const bufferToHex = (buffer: ArrayBuffer) => {
-    const view = new Uint8Array(buffer);
-    let hex = "";
-    for (let i = 0; i < view.length; i++) {
-      hex += view[i].toString(16).padStart(2, "0");
-    }
-    return hex;
-  };
-
-  const CHUNK_SIZE = 1024 * 1024 * 10; // 10MB chunks
-
-  const arrayBufferToWordArray = (ab: ArrayBuffer) => {
-    const i8a = new Uint8Array(ab);
-    const words = [];
-    for (let i = 0; i < i8a.length; i += 4) {
-      words.push((i8a[i] << 24) | (i8a[i + 1] << 16) | (i8a[i + 2] << 8) | (i8a[i + 3]));
-    }
-    return CryptoJS.lib.WordArray.create(words, i8a.length);
-  };
+  const CHUNK_SIZE = 16 * 1024 * 1024; // 16 MiB
 
   const startHashing = async () => {
     if (!file) return;
     setIsHashing(true);
+    setProgress(0);
+    setStats({ bytesProcessed: 0, speed: 0, elapsed: 0, eta: 0 });
+    setResults(null);
     
-    try {
-      if (file.size <= 100 * 1024 * 1024) {
-        // FAST PATH: For files <= 100MB, use Native Web Crypto (Loads whole file in RAM but is instant)
-        const buffer = await file.arrayBuffer();
-        const [sha1Buf, sha256Buf, sha512Buf] = await Promise.all([
-          crypto.subtle.digest("SHA-1", buffer),
-          crypto.subtle.digest("SHA-256", buffer),
-          crypto.subtle.digest("SHA-512", buffer)
-        ]);
+    const startTime = performance.now();
+    let lastUpdate = startTime;
 
-        const md5Hex = CryptoJS.MD5(arrayBufferToWordArray(buffer)).toString(CryptoJS.enc.Hex);
+    workerRef.current = new Worker(new URL('./hash.worker.ts', import.meta.url));
 
-        setResults({
-          md5: md5Hex,
-          sha1: bufferToHex(sha1Buf),
-          sha256: bufferToHex(sha256Buf),
-          sha512: bufferToHex(sha512Buf),
-        });
-      } else {
-        // STREAMING PATH: For files > 100MB, process in chunks using CryptoJS to prevent RAM crashes
-        const md5 = CryptoJS.algo.MD5.create();
-        const sha1 = CryptoJS.algo.SHA1.create();
-        const sha256 = CryptoJS.algo.SHA256.create();
-        const sha512 = CryptoJS.algo.SHA512.create();
-
-        let offset = 0;
-
-        const readChunk = (start: number): Promise<ArrayBuffer> => {
-          return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target?.result as ArrayBuffer);
-            reader.onerror = reject;
-            reader.readAsArrayBuffer(file.slice(start, start + CHUNK_SIZE));
-          });
-        };
-
-        while (offset < file.size) {
-          const chunk = await readChunk(offset);
-          const wordArr = arrayBufferToWordArray(chunk);
-          
-          md5.update(wordArr);
-          sha1.update(wordArr);
-          sha256.update(wordArr);
-          sha512.update(wordArr);
-          
-          offset += chunk.byteLength;
-          setProgress(Math.round((offset / file.size) * 100));
-          
-          // Yield to main thread so UI updates
-          await new Promise(r => setTimeout(r, 0));
+    workerRef.current.onmessage = (e) => {
+      const { type } = e.data;
+      if (type === "progress") {
+        const { bytesProcessed } = e.data;
+        const now = performance.now();
+        const elapsedMs = now - startTime;
+        
+        // Update stats roughly every 200ms
+        if (now - lastUpdate > 200 || bytesProcessed === file.size) {
+           const speed = bytesProcessed / (elapsedMs / 1000); // Bytes per sec
+           const remaining = file.size - bytesProcessed;
+           const eta = speed > 0 ? remaining / speed : 0;
+           
+           setStats({
+             bytesProcessed,
+             speed,
+             elapsed: elapsedMs / 1000,
+             eta
+           });
+           
+           setProgress(Math.round((bytesProcessed / file.size) * 100));
+           lastUpdate = now;
         }
-
-        setResults({
-          md5: md5.finalize().toString(CryptoJS.enc.Hex),
-          sha1: sha1.finalize().toString(CryptoJS.enc.Hex),
-          sha256: sha256.finalize().toString(CryptoJS.enc.Hex),
-          sha512: sha512.finalize().toString(CryptoJS.enc.Hex),
-        });
+      } else if (type === "complete") {
+        setResults(e.data.hashes);
+        setIsHashing(false);
+        if (workerRef.current) {
+          workerRef.current.terminate();
+          workerRef.current = null;
+        }
+      } else if (type === "error") {
+        console.error(e.data.error);
+        alert("Error hashing file: " + e.data.error);
+        setIsHashing(false);
       }
-    } catch (err) {
-      console.error("Hashing failed", err);
-      alert("Error processing file.");
-    } finally {
+    };
+
+    workerRef.current.onerror = (err) => {
+      console.error("Worker error", err);
+      alert("Web Worker failed. See console for details.");
       setIsHashing(false);
-      setProgress(0);
-    }
+    };
+
+    workerRef.current.postMessage({ file, chunkSize: CHUNK_SIZE });
   };
 
   const copyToClipboard = async (text: string, key: string) => {
@@ -167,6 +161,14 @@ function FileHashContent() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const formatTime = (seconds: number) => {
+    if (!isFinite(seconds) || seconds < 0) return "-";
+    if (seconds < 60) return `${seconds.toFixed(1)} s`;
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}m ${s}s`;
+  };
+
   const matchStatus = useMemo(() => {
     if (!targetHash || !results) return null;
     const th = targetHash.trim().toLowerCase();
@@ -180,7 +182,7 @@ function FileHashContent() {
   return (
     <ToolLayout 
       title="File Hash Analyzer & Comparator" 
-      description="Verify file integrity instantly using native Web Crypto API. Compare ISOs or executables against a known hash. 100% offline."
+      description="Verify file integrity for massive files. Uses WebAssembly and Web Workers for real incremental hashing. 100% offline, zero memory leaks."
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
@@ -210,7 +212,7 @@ function FileHashContent() {
                 <UploadCloud className={`w-12 h-12 ${isDragging ? 'text-[#00ff9c]' : 'text-zinc-600'}`} />
                 <div className="text-center pointer-events-none">
                   <p className="text-sm font-mono text-zinc-300">Click to browse or drag a file here</p>
-                  <p className="text-xs font-mono text-zinc-600 mt-1">Accelerated via Native Web Crypto</p>
+                  <p className="text-xs font-mono text-zinc-600 mt-1">Unlimited size. Streaming & WASM accelerated.</p>
                 </div>
               </div>
             ) : (
@@ -231,9 +233,35 @@ function FileHashContent() {
                 )}
                 
                 {isHashing && (
-                  <div className="mt-4 flex items-center gap-2 text-[#00ff9c] font-mono text-xs">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Computing Native Hashes...</span>
+                  <div className="mt-4 w-full max-w-sm space-y-4">
+                    <div className="flex items-center justify-between font-mono text-xs text-[#00ff9c]">
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Hashing in progress...
+                      </span>
+                      <span>{progress}%</span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden">
+                      <div className="bg-[#00ff9c] h-full transition-all duration-200" style={{ width: `${progress}%` }}></div>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-zinc-400">
+                      <div>Processed: <span className="text-zinc-200">{formatSize(stats.bytesProcessed)} / {formatSize(file.size)}</span></div>
+                      <div>Speed: <span className="text-[#00ff9c]">{formatSize(stats.speed)}/s</span></div>
+                      <div>Elapsed: <span className="text-zinc-200">{formatTime(stats.elapsed)}</span></div>
+                      <div>ETA: <span className="text-amber-400">{formatTime(stats.eta)}</span></div>
+                    </div>
+
+                    <Button 
+                      onClick={cancelHashing}
+                      variant="ghost"
+                      className="w-full text-red-500 hover:text-red-400 hover:bg-red-500/10 font-mono text-xs border border-red-500/30 h-8"
+                    >
+                      <XCircle className="w-4 h-4 mr-2" /> Cancel Analysis
+                    </Button>
                   </div>
                 )}
               </div>
@@ -258,7 +286,7 @@ function FileHashContent() {
 
             <div className="mt-6 flex items-center justify-center gap-2 text-xs font-mono text-zinc-500 mb-6">
               <ShieldCheck className="w-4 h-4 text-[#00ff9c]/70" />
-              <span>100% Offline. Your files never leave your device.</span>
+              <span>Processed locally in your browser. The file is not uploaded.</span>
             </div>
           </div>
         </article>
@@ -283,8 +311,8 @@ function FileHashContent() {
                       <>
                         <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" />
                         <div>
-                          <strong className="block text-sm uppercase tracking-wider mb-1">Hash Verified!</strong>
-                          The file matches the provided <span className="uppercase">{matchStatus}</span> hash. It is authentic and untampered.
+                          <strong className="block text-sm uppercase tracking-wider mb-1">Hash Verified! (MATCH)</strong>
+                          The file matches the provided <span className="uppercase font-bold glow-green">{matchStatus}</span> hash. It is authentic and untampered.
                         </div>
                       </>
                     ) : (
