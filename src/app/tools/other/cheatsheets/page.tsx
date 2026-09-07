@@ -120,7 +120,7 @@ export default function CheatsheetsPage() {
     });
 
     return grouped;
-  }, [query, showOnlyFavorites, favorites]);
+  }, [query, showOnlyFavorites, favorites, selectedPlatform]);
 
   return (
     <ToolLayout
