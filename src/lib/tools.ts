@@ -30,6 +30,18 @@ export const toolsRegistry: ToolDefinition[] = [
   // NETWORKING
   // ==========================================
   {
+    id: "network-diagram",
+    name: "Network Diagram Generator",
+    description: "Create, edit and export network topology diagrams interactively.",
+    category: "NETWORKING",
+    path: "/tools/network/diagram",
+    keywords: ["diagram", "topology", "network", "map", "react flow", "canvas", "architecture", "nodes"],
+    aliases: ["Topology Map", "Network Architect"],
+    technologies: ["React Flow", "Topology"],
+    vendors: [],
+    offline: true,
+  },
+  {
     id: "subnet-calculator",
     name: "Subnetting Calculator",
     description: "Calculate network addresses, broadcast, ranges, and wildcard masks.",
