@@ -15,21 +15,21 @@ export const metadata: Metadata = {
   },
   description: "A comprehensive, privacy-first online toolbox for developers, sysadmins, and security researchers. 100% client-side execution.",
   keywords: ["developer tools", "sysadmin tools", "cybersecurity", "blue team", "pcap analyzer", "log parser", "subnet calculator", "jwt decoder", "hash generator", "regex tester", "offline tools"],
-  authors: [{ name: "AndresGP", url: "https://andresgp.dev" }],
-  creator: "AndresGP",
+  authors: [{ name: "Andres", url: "https://andresgp.dev" }],
+  creator: "Andres",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "https://tools.andresgp.dev",
     title: "IT Tools | Privacy-First Developer Toolbox",
     description: "Zero-dependency, offline-capable tools for developers and sysadmins. Network calculators, cryptography, encoders, and security parsers.",
-    siteName: "IT Tools by AndresGP",
+    siteName: "IT Tools by andresgp.dev",
   },
   twitter: {
     card: "summary_large_image",
     title: "IT Tools | Privacy-First Developer Toolbox",
     description: "Zero-dependency, offline-capable tools for developers and sysadmins.",
-    creator: "@andresgp", // Replace with real handle if applicable
+    creator: "@gpandres02", // Replace with real handle if applicable
   },
   robots: {
     index: true,
