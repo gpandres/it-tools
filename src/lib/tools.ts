@@ -14,6 +14,7 @@ export type ToolDefinition = {
 export const CATEGORIES = [
   "NETWORKING",
   "CYBERSECURITY / BLUE TEAM",
+  "SYSADMIN / INFRASTRUCTURE",
   "DEVOPS",
   "CRYPTOGRAPHY",
   "ENCODING / DECODING",
@@ -222,6 +223,54 @@ export const toolsRegistry: ToolDefinition[] = [
     aliases: ["Safelink Decoder", "IOC Defanger"],
     technologies: ["Phishing", "Email Security"],
     vendors: ["Microsoft", "Proofpoint"],
+    offline: true,
+  },
+
+  // ==========================================
+  // SYSADMIN / INFRASTRUCTURE
+  // ==========================================
+  {
+    id: "raid-calculator",
+    name: "RAID Calculator",
+    description: "Calculate usable capacity, fault tolerance, and theoretical performance for RAID arrays.",
+    category: "SYSADMIN / INFRASTRUCTURE",
+    path: "/tools/sysadmin/raid",
+    keywords: ["raid", "storage", "capacity", "fault", "tolerance", "disk", "array", "0", "1", "5", "6", "10"],
+    aliases: ["Disk Array Calculator"],
+    technologies: ["Storage", "Hardware"],
+    offline: true,
+  },
+  {
+    id: "ups-calculator",
+    name: "UPS Runtime Calculator",
+    description: "Calculate estimated battery backup time for your server rack or network equipment.",
+    category: "SYSADMIN / INFRASTRUCTURE",
+    path: "/tools/sysadmin/ups",
+    keywords: ["ups", "battery", "runtime", "power", "watt", "va", "backup", "apc", "cyberpower"],
+    aliases: ["Battery Runtime", "Power Calculator"],
+    technologies: ["Hardware", "Power"],
+    offline: true,
+  },
+  {
+    id: "backup-calculator",
+    name: "Backup Window Calculator",
+    description: "Calculate backup transfer times and estimate total storage capacity needed based on retention.",
+    category: "SYSADMIN / INFRASTRUCTURE",
+    path: "/tools/sysadmin/backup",
+    keywords: ["backup", "time", "window", "storage", "retention", "transfer", "speed", "incremental", "full"],
+    aliases: ["Backup Speed", "Storage Estimator"],
+    technologies: ["Storage", "Backup"],
+    offline: true,
+  },
+  {
+    id: "systemd-generator",
+    name: "Systemd Service Generator",
+    description: "Visually construct a Linux systemd .service file to easily daemonize your scripts and apps.",
+    category: "SYSADMIN / INFRASTRUCTURE",
+    path: "/tools/sysadmin/systemd",
+    keywords: ["systemd", "service", "daemon", "linux", "unit", "start", "stop", "restart", "systemctl"],
+    aliases: ["Service File Builder", "Daemon Generator"],
+    technologies: ["Linux", "Unix"],
     offline: true,
   },
 
