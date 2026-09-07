@@ -141,6 +141,18 @@ export const toolsRegistry: ToolDefinition[] = [
     technologies: ["Ethernet", "Networking"],
     offline: true,
   },
+  {
+    id: "command-reference",
+    name: "Cross-Vendor Command Reference",
+    description: "Translate operational intents into the exact CLI commands for Cisco, MikroTik, FortiGate, and Linux.",
+    category: "NETWORKING",
+    path: "/tools/network/command-reference",
+    keywords: ["command", "cli", "reference", "cisco", "mikrotik", "fortigate", "linux", "routing", "firewall", "cheat sheet"],
+    aliases: ["CLI Translator", "Command Cheat Sheet"],
+    technologies: ["CLI", "Networking"],
+    vendors: ["Cisco", "MikroTik", "Fortinet", "Linux"],
+    offline: true,
+  },
 
   // ==========================================
   // CYBERSECURITY / BLUE TEAM
@@ -273,6 +285,28 @@ export const toolsRegistry: ToolDefinition[] = [
     technologies: ["Linux", "Unix"],
     offline: true,
   },
+  {
+    id: "storage-calculator",
+    name: "Storage Calculator",
+    description: "Convert between Decimal (GB, TB) and Binary (GiB, TiB) storage units to understand true disk capacity.",
+    category: "SYSADMIN / INFRASTRUCTURE",
+    path: "/tools/sysadmin/storage",
+    keywords: ["storage", "disk", "capacity", "tb", "tib", "gb", "gib", "convert", "binary", "decimal", "size"],
+    aliases: ["Terabyte to Tebibyte", "Disk Size Calculator"],
+    technologies: ["Storage"],
+    offline: true,
+  },
+  {
+    id: "rpo-rto-calculator",
+    name: "RPO / RTO Calculator",
+    description: "Visualize the business impact of your Disaster Recovery plan by calculating Recovery Point Objective and Recovery Time Objective.",
+    category: "SYSADMIN / INFRASTRUCTURE",
+    path: "/tools/sysadmin/rpo-rto",
+    keywords: ["rpo", "rto", "disaster", "recovery", "downtime", "loss", "backup", "business continuity", "bcdr"],
+    aliases: ["Disaster Recovery Calculator", "Downtime Estimator"],
+    technologies: ["Storage", "Backup", "Security"],
+    offline: true,
+  },
 
   // ==========================================
   // DEVOPS
@@ -402,6 +436,17 @@ export const toolsRegistry: ToolDefinition[] = [
     keywords: ["jwt", "token", "decode", "inspect", "json web token", "auth", "claims", "header", "payload"],
     aliases: ["JWT Decoder"],
     technologies: ["JWT", "Auth"],
+    offline: true,
+  },
+  {
+    id: "timestamp-converter",
+    name: "Timestamp Converter",
+    description: "Convert Unix epoch timestamps to human-readable dates, ISO 8601, and local time zones instantly.",
+    category: "ENCODING / DECODING",
+    path: "/tools/encoding/timestamp",
+    keywords: ["timestamp", "unix", "epoch", "time", "date", "iso", "iso8601", "utc", "gmt", "timezone", "convert"],
+    aliases: ["Unix Time Converter", "Epoch Converter"],
+    technologies: ["Development"],
     offline: true,
   },
 
