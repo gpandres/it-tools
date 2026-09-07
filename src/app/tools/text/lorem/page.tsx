@@ -84,6 +84,7 @@ export default function LoremIpsumGenerator() {
   }, [type, count]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     generate();
   }, [generate]);
 

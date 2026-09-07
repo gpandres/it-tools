@@ -151,7 +151,7 @@ function UpsCalculatorContent() {
         <div className="border border-[#1a1a1a] bg-[#0a0a0a] p-4 flex gap-3 text-zinc-400 mt-auto">
           <Info className="w-5 h-5 shrink-0 text-zinc-500" />
           <p className="text-sm font-mono leading-relaxed opacity-80">
-            <strong>Peukert's Law:</strong> This calculation uses a linear discharge model. In reality, lead-acid batteries lose capacity faster under heavy loads (Peukert Effect). If your runtime is under 15 minutes, actual runtime may be lower than estimated here.
+            <strong>Peukert&apos;s Law:</strong> This calculation uses a linear discharge model. In reality, lead-acid batteries lose capacity faster under heavy loads (Peukert Effect). If your runtime is under 15 minutes, actual runtime may be lower than estimated here.
           </p>
         </div>
 

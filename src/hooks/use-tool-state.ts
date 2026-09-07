@@ -71,6 +71,7 @@ export function useToolHistory<T>(toolId: string, maxItems = 10) {
       if (!hasStorageConsent()) return;
       const stored = localStorage.getItem(`it_tools_${toolId}_history`);
       if (stored) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setHistory(JSON.parse(stored));
       }
     } catch (e) {

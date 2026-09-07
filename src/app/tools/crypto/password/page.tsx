@@ -54,6 +54,7 @@ function PasswordGeneratorContent() {
   }, [length, useUpper, useLower, useNums, useSyms]);
 
   // Initial generation only (don't re-generate when sliding if user has custom input)
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!customInput && !password) {
       generate();
@@ -61,6 +62,7 @@ function PasswordGeneratorContent() {
   }, [generate, customInput, password]);
 
   // Regenerate if they slide while not in custom input mode
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!customInput && password) {
       setPassword(generateSecurePassword(length, useUpper, useLower, useNums, useSyms));
@@ -87,6 +89,7 @@ function PasswordGeneratorContent() {
 
   const [analysis, setAnalysis] = useState<any>(null);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!password) {
       setAnalysis(null);

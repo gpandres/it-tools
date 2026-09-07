@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 
 function TimestampConverterContent() {
   const [input, setInput] = useState("");
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [currentTime, setCurrentTime] = useState<number | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   useEffect(() => {
+    setCurrentTime(Date.now());
     const timer = setInterval(() => {
       setCurrentTime(Date.now());
     }, 1000);
@@ -93,10 +94,9 @@ function TimestampConverterContent() {
           </p>
         </div>
 
-        {/* Live Clock */}
         <div className="border border-[#1a1a1a] bg-black p-4 flex justify-between items-center text-xs font-mono text-zinc-500">
           <span>Live Epoch:</span>
-          <span className="text-zinc-300">{Math.floor(currentTime / 1000)}</span>
+          <span className="text-zinc-300">{currentTime !== null ? Math.floor(currentTime / 1000) : "..."}</span>
         </div>
       </div>
 

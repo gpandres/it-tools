@@ -102,7 +102,7 @@ function StorageCalculatorContent() {
             <br/><br/>
             Hard drive manufacturers use <strong>Base 10 (Decimal)</strong> where 1 TB = 1,000,000,000,000 bytes.
             <br/><br/>
-            Operating Systems (like Windows) use <strong>Base 2 (Binary)</strong> where 1 TiB = 1,099,511,627,776 bytes, but historically label it as "TB". 
+            Operating Systems (like Windows) use <strong>Base 2 (Binary)</strong> where 1 TiB = 1,099,511,627,776 bytes, but historically label it as &quot;TB&quot;. 
             <br/><br/>
             1 TB (Manufacturer) = 0.909 TiB (OS).
           </p>

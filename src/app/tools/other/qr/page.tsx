@@ -263,6 +263,7 @@ export default function QrGenerator() {
               >
                 {logoUrl ? (
                   <div className="flex flex-col items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={logoUrl} alt="Logo preview" className="w-8 h-8 object-contain" />
                     <span className="text-[10px] font-mono text-[#00ff9c]">Click to change image</span>
                   </div>

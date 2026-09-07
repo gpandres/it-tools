@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { ToolLayout } from "@/components/tool-layout";
 import { expandIPv6, compressIPv6, getIPv6NetworkInfo } from "@/lib/ipv6";
 
@@ -8,31 +8,24 @@ function IPv6ToolContent() {
   const [ipInput, setIpInput] = useState("2001:db8::1");
   const [cidrInput, setCidrInput] = useState("64");
 
-  const [expanded, setExpanded] = useState<string>("");
-  const [compressed, setCompressed] = useState<string>("");
-  const [networkInfo, setNetworkInfo] = useState<ReturnType<typeof getIPv6NetworkInfo>>(null);
-  const [error, setError] = useState<string>("");
-
-  useEffect(() => {
+  const { expanded, compressed, networkInfo, error } = useMemo(() => {
     try {
       const parsedCidr = parseInt(cidrInput, 10);
       if (isNaN(parsedCidr) || parsedCidr < 0 || parsedCidr > 128) {
-        setError("CIDR must be between 0 and 128");
-        return;
+        return { expanded: "", compressed: "", networkInfo: null, error: "CIDR must be between 0 and 128" };
       }
 
       const exp = expandIPv6(ipInput);
       if (!exp) {
-        setError("Invalid IPv6 Address");
-        return;
+        return { expanded: "", compressed: "", networkInfo: null, error: "Invalid IPv6 Address" };
       }
 
-      setError("");
-      setExpanded(exp);
-      setCompressed(compressIPv6(exp) || exp);
-      setNetworkInfo(getIPv6NetworkInfo(ipInput, parsedCidr));
-    } catch (e) {
-      setError("Failed to parse IPv6 data");
+      const comp = compressIPv6(exp);
+      const net = getIPv6NetworkInfo(exp, parsedCidr);
+
+      return { expanded: exp, compressed: comp, networkInfo: net, error: "" };
+    } catch {
+      return { expanded: "", compressed: "", networkInfo: null, error: "Calculation error" };
     }
   }, [ipInput, cidrInput]);
 

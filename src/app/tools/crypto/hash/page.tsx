@@ -3,7 +3,7 @@
 import { ToolLayout } from "@/components/tool-layout";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CryptoJS from "crypto-js";
@@ -11,8 +11,6 @@ import CryptoJS from "crypto-js";
 export default function HashGenerator() {
   const [input, setInput] = useState("");
   const [encoding, setEncoding] = useState<"hex" | "base64">("hex");
-  
-  const [hashes, setHashes] = useState<Record<string, string>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const copy = (text: string, key: string) => {
@@ -22,16 +20,15 @@ export default function HashGenerator() {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  useEffect(() => {
+  const hashes = useMemo(() => {
     if (!input) {
-      setHashes({
+      return {
         MD5: "",
         "SHA-1": "",
         "SHA-256": "",
         "SHA-512": "",
         "SHA-3": "",
-      });
-      return;
+      };
     }
 
     const encode = (words: CryptoJS.lib.WordArray) => {
@@ -41,13 +38,13 @@ export default function HashGenerator() {
       return CryptoJS.enc.Hex.stringify(words);
     };
 
-    setHashes({
+    return {
       MD5: encode(CryptoJS.MD5(input)),
       "SHA-1": encode(CryptoJS.SHA1(input)),
       "SHA-256": encode(CryptoJS.SHA256(input)),
       "SHA-512": encode(CryptoJS.SHA512(input)),
       "SHA-3": encode(CryptoJS.SHA3(input)),
-    });
+    };
   }, [input, encoding]);
 
   return (

@@ -4,7 +4,7 @@ import { ToolLayout } from "@/components/tool-layout";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { Copy, Check, X, ShieldAlert, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -44,6 +44,12 @@ export default function JwtDecoder() {
   const [payloadInput, setPayloadInput] = useState("");
   const [secret, setSecret] = useState("");
   const [sigMode, setSigMode] = useState<"verify" | "sign">("verify");
+  
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+  }, []);
+
   const [isVerified, setIsVerified] = useState<boolean | null>(null);
   
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -206,13 +212,28 @@ export default function JwtDecoder() {
         checks.push({ status: "warning", title: "Missing 'iat' claim", desc: "Cannot determine when the token was issued." });
       }
       if (!payloadObj.nbf) {
-        checks.push({ status: "warning", title: "Missing 'nbf' claim", desc: "Cannot verify if the token is being used prematurely." });
+        checks.push({ status: "info", title: "Missing 'nbf' claim", desc: "Cannot verify if the token is being used prematurely." });
+      }
+      
+      // 5. Identity & Audience Claims
+      if (!payloadObj.aud) {
+        checks.push({ status: "info", title: "Missing 'aud' (Audience) claim", desc: "Without an audience, the token could be reused across different services if intercepted." });
+      } else {
+        checks.push({ status: "secure", title: "Audience defined", desc: `Intended for: ${payloadObj.aud}` });
+      }
+      if (!payloadObj.iss) {
+        checks.push({ status: "info", title: "Missing 'iss' (Issuer) claim", desc: "Cannot strictly verify the originating authorization server." });
+      }
+      if (!payloadObj.sub) {
+        checks.push({ status: "info", title: "Missing 'sub' (Subject) claim", desc: "No explicit user/subject identified." });
+      }
+      if (headerObj.kid) {
+        checks.push({ status: "secure", title: "Key ID (kid) present", desc: `Using key ID: ${headerObj.kid}` });
       }
 
-      // 5. Expiration Validation
-      if (payloadObj.exp) {
+      // 6. Expiration Validation
+      if (payloadObj.exp && now) {
         const expTime = payloadObj.exp * 1000;
-        const now = Date.now();
         if (now > expTime) {
           checks.push({ status: "critical", title: "Token Expired", desc: `The token expired on ${new Date(expTime).toLocaleString()}` });
         } else {
@@ -264,16 +285,18 @@ export default function JwtDecoder() {
                           {securityChecks.map((check, idx) => (
                             <div key={idx} className="p-4 border-b border-[#1a1a1a] flex gap-3 last:border-b-0">
                               <div className="shrink-0 mt-0.5">
-                                {check.status === "secure" && <Check className="w-4 h-4 text-[#00ff9c]" />}
-                                {check.status === "warning" && <AlertTriangle className="w-4 h-4 text-[#ffb000]" />}
-                                {check.status === "critical" && <ShieldAlert className="w-4 h-4 text-red-500" />}
-                              </div>
-                              <div>
-                                <h4 className={`text-xs font-mono font-semibold mb-1 ${
-                                  check.status === "secure" ? "text-[#00ff9c]" : 
-                                  check.status === "warning" ? "text-[#ffb000]" : 
-                                  "text-red-400"
-                                }`}>
+                                  {check.status === "secure" && <Check className="w-4 h-4 text-[#00ff9c]" />}
+                                  {check.status === "info" && <Check className="w-4 h-4 text-blue-400" />}
+                                  {check.status === "warning" && <AlertTriangle className="w-4 h-4 text-[#ffb000]" />}
+                                  {check.status === "critical" && <ShieldAlert className="w-4 h-4 text-red-500" />}
+                                </div>
+                                <div>
+                                  <h4 className={`text-xs font-mono font-semibold mb-1 ${
+                                    check.status === "secure" ? "text-[#00ff9c]" : 
+                                    check.status === "info" ? "text-blue-400" :
+                                    check.status === "warning" ? "text-[#ffb000]" : 
+                                    "text-red-400"
+                                  }`}>
                                   {check.title}
                                 </h4>
                                 <p className="text-[10px] font-mono text-zinc-500 leading-relaxed">

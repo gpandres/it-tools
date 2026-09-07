@@ -25,6 +25,7 @@ function DiagramFlow() {
   const { screenToFlowPosition, fitView } = useReactFlow();
 
   // Load from local storage on mount
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     const saved = readLocalStorage('network_diagram');
     if (saved) {
@@ -213,7 +214,7 @@ function DiagramFlow() {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
-          proOptions={{ hideAttribution: true }}
+          colorMode="dark"
           className="bg-[#050505]"
         >
           <Background color="#1a1a1a" variant={BackgroundVariant.Dots} gap={20} size={2} />

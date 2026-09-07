@@ -50,6 +50,7 @@ export default function CheatsheetsPage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Load favorites from local storage
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     const saved = localStorage.getItem("it_cheatsheets_favorites");
     if (saved) {
@@ -156,7 +157,7 @@ export default function CheatsheetsPage() {
       title="IT Cheatsheets"
       description="Fast, cross-platform command reference. Press '/' to search."
     >
-      <div className="flex flex-col md:flex-row gap-6 w-full max-w-7xl mx-auto items-start">
+      <div className="flex flex-col md:flex-row gap-6 w-full max-w-7xl mx-auto items-start min-h-[calc(100vh-12rem)]">
         
         {/* Sidebar */}
         <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-2 sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto custom-scrollbar">

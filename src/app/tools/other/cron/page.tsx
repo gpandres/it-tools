@@ -3,29 +3,23 @@
 import { ToolLayout } from "@/components/tool-layout";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import cronstrue from "cronstrue/i18n";
 
 export default function CronParser() {
   const [cronExp, setCronExp] = useState("* * * * *");
-  const [description, setDescription] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const { description, error } = useMemo(() => {
     try {
       const parts = cronExp.trim().split(/\s+/);
       if (parts.length < 5) {
-        setError("Cron expression must have at least 5 parts");
-        setDescription("");
-        return;
+        return { error: "Cron expression must have at least 5 parts", description: "" };
       }
       
       const desc = cronstrue.toString(cronExp, { throwExceptionOnParseError: true });
-      setDescription(desc);
-      setError(null);
+      return { error: null, description: desc };
     } catch (e) {
-      setDescription("");
-      setError((e as Error).message || "Invalid cron expression");
+      return { error: (e as Error).message || "Invalid cron expression", description: "" };
     }
   }, [cronExp]);
 

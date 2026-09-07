@@ -22,27 +22,18 @@ function ChmodCalculatorContent() {
   const [state, setState] = useState({ octal: "755" });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  const [perms, setPerms] = useState<ChmodState>({
-    owner: { read: true, write: true, execute: true }, // 7
-    group: { read: true, write: false, execute: true }, // 5
-    public: { read: true, write: false, execute: true }, // 5
-  });
+  const oct = state.octal.padStart(3, "0").slice(-3);
+  const isValid = /^[0-7]{3}$/.test(oct);
 
-  // Sync octal to permissions
-  useEffect(() => {
-    let oct = state.octal.padStart(3, "0").slice(-3);
-    if (!/^[0-7]{3}$/.test(oct)) return;
+  const o = isValid ? parseInt(oct[0], 10) : 0;
+  const g = isValid ? parseInt(oct[1], 10) : 0;
+  const p = isValid ? parseInt(oct[2], 10) : 0;
 
-    const o = parseInt(oct[0], 10);
-    const g = parseInt(oct[1], 10);
-    const p = parseInt(oct[2], 10);
-
-    setPerms({
-      owner: { read: (o & 4) > 0, write: (o & 2) > 0, execute: (o & 1) > 0 },
-      group: { read: (g & 4) > 0, write: (g & 2) > 0, execute: (g & 1) > 0 },
-      public: { read: (p & 4) > 0, write: (p & 2) > 0, execute: (p & 1) > 0 },
-    });
-  }, [state.octal]);
+  const perms: ChmodState = {
+    owner: { read: (o & 4) > 0, write: (o & 2) > 0, execute: (o & 1) > 0 },
+    group: { read: (g & 4) > 0, write: (g & 2) > 0, execute: (g & 1) > 0 },
+    public: { read: (p & 4) > 0, write: (p & 2) > 0, execute: (p & 1) > 0 },
+  };
 
   const copyToClipboard = async (text: string, key: string) => {
     try {
