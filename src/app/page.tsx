@@ -91,6 +91,17 @@ export default function Home() {
               <div className="pt-6 max-w-2xl space-y-1 text-zinc-300 text-sm leading-relaxed">
                 <p><span className="text-zinc-600 mr-2">&gt;</span>A privacy-first, client-side toolkit for developers and sysadmins.</p>
                 <p><span className="text-zinc-600 mr-2">&gt;</span>No tracking, no backend, absolute privacy.</p>
+                
+                <div className="pt-4">
+                  <a 
+                    href="https://github.com/gpandres/it-tools" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-black border border-[#1a1a1a] text-zinc-400 hover:text-white hover:border-[#333] transition-colors rounded-md text-sm font-mono"
+                  >
+                    <span>View Source on GitHub</span>
+                  </a>
+                </div>
               </div>
             </div>
           </section>
