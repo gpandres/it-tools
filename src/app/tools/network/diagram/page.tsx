@@ -179,10 +179,11 @@ function DiagramFlow() {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
+          proOptions={{ hideAttribution: true }}
           className="bg-[#050505]"
         >
           <Background color="#1a1a1a" variant={BackgroundVariant.Dots} gap={20} size={2} />
-          <Controls className="bg-black border border-[#1a1a1a] fill-zinc-400" />
+          <Controls style={{ backgroundColor: '#050505', border: '1px solid #1a1a1a' }} />
         </ReactFlow>
       </div>
     </div>

@@ -128,7 +128,31 @@
     font-family: var(--font-mono), "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
     -webkit-font-smoothing: antialiased;
     font-feature-settings: "liga" 0, "calt" 0;
-  }
+}
+
+/* React Flow Dark Mode Overrides */
+.react-flow__controls {
+  background-color: #050505 !important;
+  border: 1px solid #1a1a1a !important;
+  box-shadow: none !important;
+  border-radius: 4px;
+}
+
+.react-flow__controls-button {
+  background-color: transparent !important;
+  border-bottom: 1px solid #1a1a1a !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: #1a1a1a !important;
+}
+
+.react-flow__controls-button svg {
+  fill: #a1a1aa !important;
 }
 
 :root {
