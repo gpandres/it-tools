@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolState } from "@/hooks/use-tool-state";
 
 // Helper to convert CIDR (0-32) to subnet mask string
 function cidrToMask(cidr: number): string {
@@ -16,11 +15,11 @@ function cidrToMask(cidr: number): string {
   ].join(".");
 }
 
-export default function InterfaceConfigGenerator() {
-  const [ip, setIp] = useToolState("ip", "192.168.1.1");
-  const [cidr, setCidr] = useToolState("cidr", "24");
-  const [iface, setIface] = useToolState("iface", "GigabitEthernet0/1");
-  const [description, setDescription] = useToolState("desc", "LAN Connection");
+function InterfaceConfigGeneratorContent() {
+  const [ip, setIp] = useState("192.168.1.1");
+  const [cidr, setCidr] = useState("24");
+  const [iface, setIface] = useState("GigabitEthernet0/1");
+  const [description, setDescription] = useState("LAN Connection");
   
   const [activeTab, setActiveTab] = useState<"cisco" | "mikrotik" | "fortigate">("cisco");
 
@@ -152,5 +151,13 @@ end`;
         </div>
       </div>
     </ToolLayout>
+  );
+}
+
+export default function InterfaceConfigGenerator() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
+      <InterfaceConfigGeneratorContent />
+    </Suspense>
   );
 }

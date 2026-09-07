@@ -2,16 +2,15 @@
 
 import { Suspense, useState, useMemo } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolState } from "@/hooks/use-tool-state";
 import { HardDrive, AlertTriangle, Info, Zap } from "lucide-react";
 
 type RaidLevel = "0" | "1" | "5" | "6" | "10";
 
 function RaidCalculatorContent() {
-  const [driveCount, setDriveCount] = useToolState("drives", "4");
-  const [driveSize, setDriveSize] = useToolState("size", "4");
-  const [sizeUnit, setSizeUnit] = useToolState("unit", "TB");
-  const [raidLevel, setRaidLevel] = useToolState("raid", "5");
+  const [driveCount, setDriveCount] = useState("4");
+  const [driveSize, setDriveSize] = useState("4");
+  const [sizeUnit, setSizeUnit] = useState("TB");
+  const [raidLevel, setRaidLevel] = useState("5");
 
   const count = Math.max(1, parseInt(driveCount) || 1);
   const size = parseFloat(driveSize) || 0;

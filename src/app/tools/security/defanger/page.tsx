@@ -1,11 +1,10 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolUrlState } from "@/hooks/use-tool-state";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Copy, Check, ShieldAlert, ShieldCheck, Link2Off, Link2 } from "lucide-react";
-import { Suspense, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 
 function decodeCorporateLinks(url: string): string {
   try {
@@ -45,7 +44,7 @@ function refang(url: string): string {
 }
 
 function DefangerContent() {
-  const [state, setState] = useToolUrlState({ input: "https://nam01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fevil-phishing-site.com%2Flogin&data=05..." });
+  const [state, setState] = useState({ input: "https://nam01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fevil-phishing-site.com%2Flogin&data=05..." });
   const [copied, setCopied] = useState(false);
   const [mode, setMode] = useState<"defang" | "refang" | "decode">("defang");
 
@@ -178,8 +177,6 @@ function DefangerContent() {
 
 export default function DefangerTool() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Initializing...</div>}>
-      <DefangerContent />
-    </Suspense>
+    <DefangerContent />
   );
 }

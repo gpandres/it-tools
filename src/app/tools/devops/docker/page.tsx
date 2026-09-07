@@ -1,11 +1,10 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolUrlState } from "@/hooks/use-tool-state";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
-import { Suspense, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 
 function parseDockerRun(cmd: string): string {
   if (!cmd || !cmd.trim().startsWith("docker run")) return "";
@@ -126,7 +125,7 @@ function parseDockerRun(cmd: string): string {
 }
 
 function DockerConverterContent() {
-  const [state, setState] = useToolUrlState({ runCmd: "docker run -d --name nginx_server -p 8080:80 -v /my/custom/nginx.conf:/etc/nginx/nginx.conf -e TZ=Europe/Madrid --restart always nginx:latest" });
+  const [state, setState] = useState({ runCmd: "docker run -d --name nginx_server -p 8080:80 -v /my/custom/nginx.conf:/etc/nginx/nginx.conf -e TZ=Europe/Madrid --restart always nginx:latest" });
   const [copied, setCopied] = useState(false);
 
   const composeYaml = useMemo(() => parseDockerRun(state.runCmd), [state.runCmd]);
@@ -199,8 +198,6 @@ function DockerConverterContent() {
 
 export default function DockerConverter() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Initializing...</div>}>
-      <DockerConverterContent />
-    </Suspense>
+    <DockerConverterContent />
   );
 }

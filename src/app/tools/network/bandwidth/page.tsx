@@ -1,17 +1,18 @@
 "use client";
 
+import { useState, Suspense } from "react";
+
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolState } from "@/hooks/use-tool-state";
 
-export default function BandwidthTool() {
-  const [fileSizeStr, setFileSizeStr] = useToolState("size", "1");
-  const [fileUnit, setFileUnit] = useToolState("funit", "GB");
+function BandwidthToolContent() {
+  const [fileSizeStr, setFileSizeStr] = useState("1");
+  const [fileUnit, setFileUnit] = useState("GB");
 
-  const [linkSpeedStr, setLinkSpeedStr] = useToolState("speed", "1");
-  const [speedUnit, setSpeedUnit] = useToolState("sunit", "Gbps");
+  const [linkSpeedStr, setLinkSpeedStr] = useState("1");
+  const [speedUnit, setSpeedUnit] = useState("Gbps");
 
-  const [rttStr, setRttStr] = useToolState("rtt", "50"); // ms
-  const [windowSizeStr, setWindowSizeStr] = useToolState("window", "64"); // KB
+  const [rttStr, setRttStr] = useState("50"); // ms
+  const [windowSizeStr, setWindowSizeStr] = useState("64"); // KB
 
   const fileSize = parseFloat(fileSizeStr);
   const linkSpeed = parseFloat(linkSpeedStr);
@@ -201,5 +202,13 @@ export default function BandwidthTool() {
 
       </div>
     </ToolLayout>
+  );
+}
+
+export default function BandwidthTool() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
+      <BandwidthToolContent />
+    </Suspense>
   );
 }

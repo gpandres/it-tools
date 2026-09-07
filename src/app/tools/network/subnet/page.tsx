@@ -1,17 +1,17 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolUrlState } from "@/hooks/use-tool-state";
 import { calculateSubnet, validateIp } from "@/lib/network";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
-import { Suspense, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 
 function SubnetCalculatorContent() {
-  const [state, setState] = useToolUrlState({ ip: "192.168.1.0", cidr: "24" });
+  const [state, _setState] = useState({ ip: "192.168.1.0", cidr: "24" });
+  const setState = (u: Partial<typeof state>) => _setState(s => ({ ...s, ...u }));
   
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -118,9 +118,7 @@ function SubnetCalculatorContent() {
 
 export default function SubnetCalculator() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Initializing...</div>}>
-      <SubnetCalculatorContent />
-    </Suspense>
+    <SubnetCalculatorContent />
   );
 }
 

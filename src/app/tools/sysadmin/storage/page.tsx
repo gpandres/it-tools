@@ -1,14 +1,13 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolState } from "@/hooks/use-tool-state";
 import { HardDrive, Scale, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function StorageCalculatorContent() {
-  const [value, setValue] = useToolState("val", "1");
-  const [unit, setUnit] = useToolState("unit", "TB");
+  const [value, setValue] = useState("1");
+  const [unit, setUnit] = useState("TB");
 
   // Base 10 vs Base 2 Multipliers (relative to Bytes)
   const multipliers: Record<string, number> = {
@@ -61,12 +60,12 @@ function StorageCalculatorContent() {
                   type="number" min="0" step="any"
                   value={value} 
                   onChange={(e) => setValue(e.target.value)} 
-                  className="flex-1 bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-xl focus:border-[#00ff9c] focus:outline-none transition-colors"
+                  className="flex-1 min-w-0 bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-xl focus:border-[#00ff9c] focus:outline-none transition-colors"
                 />
                 <select 
                   value={unit} 
                   onChange={(e) => setUnit(e.target.value)} 
-                  className="w-28 bg-black border border-[#1a1a1a] p-3 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none"
+                  className="w-28 shrink-0 bg-black border border-[#1a1a1a] p-3 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none"
                 >
                   <optgroup label="Decimal (Base 10)">
                     <option value="KB">KB</option>

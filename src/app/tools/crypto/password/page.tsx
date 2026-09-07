@@ -1,12 +1,11 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolUrlState } from "@/hooks/use-tool-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Copy, Check, RefreshCw, AlertTriangle, ShieldCheck, ShieldAlert, Info } from "lucide-react";
-import { Suspense, useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import zxcvbn from "zxcvbn";
 
 function generateSecurePassword(length: number, useUpper: boolean, useLower: boolean, useNums: boolean, useSyms: boolean): string {
@@ -29,13 +28,14 @@ function generateSecurePassword(length: number, useUpper: boolean, useLower: boo
 }
 
 function PasswordGeneratorContent() {
-  const [state, setState] = useToolUrlState({ 
+  const [state, _setState] = useState({ 
     len: "16", 
     u: "1", 
     l: "1",
     n: "1",
     s: "1"
   });
+  const setState = (u: Partial<typeof state>) => _setState(s => ({ ...s, ...u }));
 
   const [password, setPassword] = useState("");
   const [copied, setCopied] = useState(false);
@@ -337,8 +337,6 @@ function ToggleOption({ label, active, onClick }: { label: string, active: boole
 
 export default function PasswordGenerator() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Initializing...</div>}>
-      <PasswordGeneratorContent />
-    </Suspense>
+    <PasswordGeneratorContent />
   );
 }

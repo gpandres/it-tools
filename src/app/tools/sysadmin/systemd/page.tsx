@@ -2,18 +2,17 @@
 
 import { Suspense, useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolState } from "@/hooks/use-tool-state";
 import { Terminal, Settings, Copy, Check, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function SystemdGeneratorContent() {
-  const [serviceName, setServiceName] = useToolState("name", "my-app");
-  const [description, setDescription] = useToolState("desc", "My Custom Node.js App");
-  const [execStart, setExecStart] = useToolState("exec", "/usr/bin/node /opt/myapp/server.js");
-  const [workingDir, setWorkingDir] = useToolState("dir", "/opt/myapp");
-  const [user, setUser] = useToolState("user", "nobody");
-  const [restart, setRestart] = useToolState("restart", "on-failure");
-  const [restartSec, setRestartSec] = useToolState("sec", "5");
+  const [serviceName, setServiceName] = useState("my-app");
+  const [description, setDescription] = useState("My Custom Node.js App");
+  const [execStart, setExecStart] = useState("/usr/bin/node /opt/myapp/server.js");
+  const [workingDir, setWorkingDir] = useState("/opt/myapp");
+  const [user, setUser] = useState("nobody");
+  const [restart, setRestart] = useState("on-failure");
+  const [restartSec, setRestartSec] = useState("5");
 
   const [envVars, setEnvVars] = useState<{ id: string; key: string; val: string }[]>([]);
   const [copied, setCopied] = useState(false);

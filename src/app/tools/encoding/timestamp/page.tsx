@@ -2,12 +2,11 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolState } from "@/hooks/use-tool-state";
 import { Clock, Copy, Check, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function TimestampConverterContent() {
-  const [input, setInput] = useToolState("t", "");
+  const [input, setInput] = useState("");
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 

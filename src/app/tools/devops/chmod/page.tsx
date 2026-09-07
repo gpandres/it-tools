@@ -1,11 +1,10 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolUrlState } from "@/hooks/use-tool-state";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
-import { Suspense, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 type Perms = {
   read: boolean;
@@ -20,7 +19,7 @@ type ChmodState = {
 };
 
 function ChmodCalculatorContent() {
-  const [state, setState] = useToolUrlState({ octal: "755" });
+  const [state, setState] = useState({ octal: "755" });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const [perms, setPerms] = useState<ChmodState>({
@@ -192,8 +191,6 @@ function ChmodCalculatorContent() {
 
 export default function ChmodCalculator() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Initializing...</div>}>
-      <ChmodCalculatorContent />
-    </Suspense>
+    <ChmodCalculatorContent />
   );
 }

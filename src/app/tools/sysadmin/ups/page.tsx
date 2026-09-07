@@ -1,16 +1,16 @@
 "use client";
 
-import { Suspense } from "react";
+import { useState, Suspense } from "react";
+
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolState } from "@/hooks/use-tool-state";
 import { Battery, Zap, Clock, Info } from "lucide-react";
 
 function UpsCalculatorContent() {
-  const [voltage, setVoltage] = useToolState("v", "12");
-  const [capacityAh, setCapacityAh] = useToolState("ah", "9");
-  const [batteries, setBatteries] = useToolState("qty", "2");
-  const [loadWatts, setLoadWatts] = useToolState("load", "300");
-  const [efficiency, setEfficiency] = useToolState("eff", "85");
+  const [voltage, setVoltage] = useState("12");
+  const [capacityAh, setCapacityAh] = useState("9");
+  const [batteries, setBatteries] = useState("2");
+  const [loadWatts, setLoadWatts] = useState("300");
+  const [efficiency, setEfficiency] = useState("85");
 
   const v = parseFloat(voltage) || 0;
   const ah = parseFloat(capacityAh) || 0;

@@ -1,17 +1,18 @@
 "use client";
 
-import { ToolLayout } from "@/components/tool-layout";
-import { useToolState } from "@/hooks/use-tool-state";
+import { useState, Suspense } from "react";
 
-export default function MtuTool() {
-  const [baseMtuStr, setBaseMtuStr] = useToolState("mtu", "1500");
-  const [ipVer, setIpVer] = useToolState("ip", "ipv4");
+import { ToolLayout } from "@/components/tool-layout";
+
+function MtuToolContent() {
+  const [baseMtuStr, setBaseMtuStr] = useState("1500");
+  const [ipVer, setIpVer] = useState("ipv4");
   
   // Encap checkboxes
-  const [hasVlan, setHasVlan] = useToolState("vlan", "false");
-  const [hasPppoe, setHasPppoe] = useToolState("pppoe", "false");
-  const [hasGre, setHasGre] = useToolState("gre", "false");
-  const [hasIpsec, setHasIpsec] = useToolState("ipsec", "false"); // Approx 50-70 bytes, we'll use 56 bytes avg for ESP/Tunnel
+  const [hasVlan, setHasVlan] = useState("false");
+  const [hasPppoe, setHasPppoe] = useState("false");
+  const [hasGre, setHasGre] = useState("false");
+  const [hasIpsec, setHasIpsec] = useState("false"); // Approx 50-70 bytes, we'll use 56 bytes avg for ESP/Tunnel
 
   const baseMtu = parseInt(baseMtuStr, 10);
   const isValidMtu = !isNaN(baseMtu) && baseMtu > 0;
@@ -168,9 +169,18 @@ export default function MtuTool() {
   );
 }
 
+export default function MtuTool() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
+      <MtuToolContent />
+    </Suspense>
+  );
+}
+
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (val: boolean) => void }) {
   return (
     <label className="flex items-center gap-3 cursor-pointer group">
+      <input type="checkbox" className="hidden" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       <div className={`w-5 h-5 flex items-center justify-center border transition-colors ${checked ? 'bg-[#00ff9c] border-[#00ff9c]' : 'border-zinc-600 group-hover:border-[#00ff9c]'}`}>
         {checked && <div className="w-2.5 h-2.5 bg-black" />}
       </div>

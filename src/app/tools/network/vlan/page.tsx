@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolState } from "@/hooks/use-tool-state";
 
-export default function VlanTool() {
-  const [vlanIdStr, setVlanIdStr] = useToolState("vlan", "10");
-  const [iface, setIface] = useToolState("iface", "GigabitEthernet0/1");
-  const [nativeVlan, setNativeVlan] = useToolState("native", "1");
+function VlanToolContent() {
+  const [vlanIdStr, setVlanIdStr] = useState("10");
+  const [iface, setIface] = useState("GigabitEthernet0/1");
+  const [nativeVlan, setNativeVlan] = useState("1");
   
   const [activeTab, setActiveTab] = useState<"cisco" | "mikrotik" | "fortigate">("cisco");
   const [portMode, setPortMode] = useState<"access" | "trunk">("access");
@@ -210,5 +209,13 @@ end`;
         </div>
       </div>
     </ToolLayout>
+  );
+}
+
+export default function VlanTool() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
+      <VlanToolContent />
+    </Suspense>
   );
 }

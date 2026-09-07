@@ -3,7 +3,6 @@
 import { Suspense, useState, useMemo } from "react";
 import { ToolLayout } from "@/components/tool-layout";
 import { Search, Server, Shield, Activity, Share2, FileText, ChevronRight } from "lucide-react";
-import { useToolUrlState } from "@/hooks/use-tool-url-state";
 
 type CommandEntry = {
   id: string;
@@ -187,7 +186,7 @@ const COMMAND_DB: CommandEntry[] = [
 ];
 
 function CommandReferenceContent() {
-  const [query, setQuery] = useToolUrlState("q", "");
+  const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
   const categories = ["All", ...Array.from(new Set(COMMAND_DB.map(c => c.category)))];
@@ -213,7 +212,7 @@ function CommandReferenceContent() {
   }, [query, activeCategory]);
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
+    <div className="flex flex-col gap-6">
       
       {/* Search Header */}
       <div className="border border-[#1a1a1a] bg-[#050505] p-6 space-y-4">
@@ -272,10 +271,10 @@ function CommandReferenceContent() {
                 </div>
               </header>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[#1a1a1a]">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-[#1a1a1a]">
                 
                 {/* Cisco */}
-                <div className="p-4 flex flex-col hover:bg-[#00ff9c]/5 transition-colors group">
+                <div className="p-4 flex flex-col hover:bg-[#00ff9c]/5 transition-colors group bg-[#050505]">
                   <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-1">
                     <ChevronRight className="w-3 h-3 text-[#00ff9c] opacity-0 group-hover:opacity-100 transition-opacity" />
                     Cisco IOS
@@ -284,7 +283,7 @@ function CommandReferenceContent() {
                 </div>
 
                 {/* MikroTik */}
-                <div className="p-4 flex flex-col hover:bg-[#00ff9c]/5 transition-colors group">
+                <div className="p-4 flex flex-col hover:bg-[#00ff9c]/5 transition-colors group bg-[#050505]">
                   <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-1">
                     <ChevronRight className="w-3 h-3 text-[#00ff9c] opacity-0 group-hover:opacity-100 transition-opacity" />
                     MikroTik RouterOS
@@ -293,7 +292,7 @@ function CommandReferenceContent() {
                 </div>
 
                 {/* FortiGate */}
-                <div className="p-4 flex flex-col hover:bg-[#00ff9c]/5 transition-colors group">
+                <div className="p-4 flex flex-col hover:bg-[#00ff9c]/5 transition-colors group bg-[#050505]">
                   <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-1">
                     <ChevronRight className="w-3 h-3 text-[#00ff9c] opacity-0 group-hover:opacity-100 transition-opacity" />
                     FortiGate
@@ -302,7 +301,7 @@ function CommandReferenceContent() {
                 </div>
 
                 {/* Linux */}
-                <div className="p-4 flex flex-col hover:bg-[#00ff9c]/5 transition-colors group">
+                <div className="p-4 flex flex-col hover:bg-[#00ff9c]/5 transition-colors group bg-[#050505]">
                   <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-3 flex items-center gap-1">
                     <ChevronRight className="w-3 h-3 text-[#00ff9c] opacity-0 group-hover:opacity-100 transition-opacity" />
                     Linux (iproute2/etc)

@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolState } from "@/hooks/use-tool-state";
 import { expandIPv6, compressIPv6, getIPv6NetworkInfo } from "@/lib/ipv6";
 
-export default function IPv6Tool() {
-  const [ipInput, setIpInput] = useToolState("ip", "2001:db8::1");
-  const [cidrInput, setCidrInput] = useToolState("cidr", "64");
+function IPv6ToolContent() {
+  const [ipInput, setIpInput] = useState("2001:db8::1");
+  const [cidrInput, setCidrInput] = useState("64");
 
   const [expanded, setExpanded] = useState<string>("");
   const [compressed, setCompressed] = useState<string>("");
@@ -113,6 +112,14 @@ function ResultCard({ title, value }: { title: string; value: string }) {
       <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">{title}</div>
       <div className="font-mono text-[#00ff9c] break-all">{value}</div>
     </div>
+  );
+}
+
+export default function IPv6Tool() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
+      <IPv6ToolContent />
+    </Suspense>
   );
 }
 

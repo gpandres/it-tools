@@ -3,23 +3,22 @@
 import { Suspense, useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
 import { Check, Copy } from "lucide-react";
-import { useToolState } from "@/hooks/use-tool-state";
 
 function NatGeneratorContent() {
-  const [natType, setNatType] = useToolState("type", "dnat");
+  const [natType, setNatType] = useState("dnat");
   
   // DNAT fields
-  const [publicIp, setPublicIp] = useToolState("pub_ip", "1.1.1.1");
-  const [publicPort, setPublicPort] = useToolState("pub_port", "443");
-  const [privateIp, setPrivateIp] = useToolState("priv_ip", "192.168.1.50");
-  const [privatePort, setPrivatePort] = useToolState("priv_port", "443");
-  const [protocol, setProtocol] = useToolState("proto", "tcp");
+  const [publicIp, setPublicIp] = useState("1.1.1.1");
+  const [publicPort, setPublicPort] = useState("443");
+  const [privateIp, setPrivateIp] = useState("192.168.1.50");
+  const [privatePort, setPrivatePort] = useState("443");
+  const [protocol, setProtocol] = useState("tcp");
 
   // SNAT fields
-  const [srcNetwork, setSrcNetwork] = useToolState("src_net", "192.168.1.0/24");
-  const [outIface, setOutIface] = useToolState("out_iface", "wan1");
-  const [snatType, setSnatType] = useToolState("snat_type", "masquerade");
-  const [snatIp, setSnatIp] = useToolState("snat_ip", "1.1.1.2");
+  const [srcNetwork, setSrcNetwork] = useState("192.168.1.0/24");
+  const [outIface, setOutIface] = useState("wan1");
+  const [snatType, setSnatType] = useState("masquerade");
+  const [snatIp, setSnatIp] = useState("1.1.1.2");
 
   const [copied, setCopied] = useState("");
 

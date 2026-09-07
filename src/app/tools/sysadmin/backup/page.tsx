@@ -1,17 +1,16 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { useState, Suspense, useMemo } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { useToolState } from "@/hooks/use-tool-state";
 import { Database, Clock, HardDrive, Info } from "lucide-react";
 
 function BackupCalculatorContent() {
-  const [dataSize, setDataSize] = useToolState("size", "5");
-  const [sizeUnit, setSizeUnit] = useToolState("unit", "TB");
-  const [changeRate, setChangeRate] = useToolState("change", "5");
-  const [transferSpeed, setTransferSpeed] = useToolState("speed", "1");
-  const [speedUnit, setSpeedUnit] = useToolState("s_unit", "Gbps");
-  const [retention, setRetention] = useToolState("ret", "30");
+  const [dataSize, setDataSize] = useState("5");
+  const [sizeUnit, setSizeUnit] = useState("TB");
+  const [changeRate, setChangeRate] = useState("5");
+  const [transferSpeed, setTransferSpeed] = useState("1");
+  const [speedUnit, setSpeedUnit] = useState("Gbps");
+  const [retention, setRetention] = useState("30");
 
   const size = parseFloat(dataSize) || 0;
   const rate = (parseFloat(changeRate) || 0) / 100;
