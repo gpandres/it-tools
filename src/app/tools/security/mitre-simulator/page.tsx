@@ -312,6 +312,7 @@ function MitreSimulator() {
           
           decoded.pool = customPool;
           loadScenario(decoded as Scenario);
+          window.history.replaceState({}, '', window.location.pathname);
           return;
         } else {
            throw new Error("Invalid structure");

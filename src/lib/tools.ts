@@ -192,6 +192,17 @@ export const toolsRegistry: ToolDefinition[] = [
     offline: true,
   },
   {
+    id: "incident-report",
+    name: "Incident Report Generator",
+    description: "Create structured IT and cybersecurity incident reports from raw notes, logs, and timelines.",
+    category: "CYBERSECURITY / BLUE TEAM",
+    path: "/tools/security/incident-report",
+    keywords: ["incident", "report", "outage", "postmortem", "documentation", "ticket", "rca", "root cause", "timeline"],
+    aliases: ["Postmortem Builder", "RCA Generator"],
+    technologies: ["Incident Response", "Documentation"],
+    offline: true,
+  },
+  {
     id: "mitre-simulator",
     name: "MITRE ATT&CK Simulator",
     description: "Interactive incident response simulator. Map real attack scenarios to MITRE techniques and Windows Event IDs.",
