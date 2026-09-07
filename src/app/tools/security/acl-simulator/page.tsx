@@ -2,8 +2,8 @@
 
 import { Suspense, useState, useRef } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { isIpInNetwork } from "@/lib/network";
-import { Plus, Trash2, Upload, Play, ShieldAlert, ShieldCheck } from "lucide-react";
+import { isIpInNetwork } from "@/lib/network"; // Force Turbopack reload
+import { Plus, Trash2, Upload, Play, ShieldAlert, ShieldCheck, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AclRule } from "../acl-builder/page";
 
@@ -13,6 +13,8 @@ function AclSimulatorContent() {
   // Simulated Packet
   const [pktSrcIp, setPktSrcIp] = useState("192.168.1.50");
   const [pktDstIp, setPktDstIp] = useState("10.0.0.5");
+  
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [pktProtocol, setPktProtocol] = useState<"tcp"|"udp"|"icmp"|"ip">("tcp");
   const [pktSrcPort, setPktSrcPort] = useState("54321");
   const [pktDstPort, setPktDstPort] = useState("443");
@@ -65,6 +67,15 @@ function AclSimulatorContent() {
 
   const removeRule = (id: string) => {
     setRules(rules.filter(r => r.id !== id));
+    setSimulationResult(null);
+  };
+
+  const moveRuleTo = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const newRules = [...rules];
+    const [moved] = newRules.splice(fromIndex, 1);
+    newRules.splice(toIndex, 0, moved);
+    setRules(newRules);
     setSimulationResult(null);
   };
 
@@ -137,7 +148,18 @@ function AclSimulatorContent() {
             rules.map((rule, idx) => {
               const isMatched = simulationResult?.ruleIndex === idx;
               return (
-                <div key={rule.id} className={`flex items-center gap-2 p-2 border font-mono text-sm min-w-[700px] transition-colors ${isMatched ? (rule.action === "permit" ? "bg-[#00ff9c]/20 border-[#00ff9c]" : "bg-red-500/20 border-red-500") : "bg-black border-[#1a1a1a]"}`}>
+                <div 
+                  key={rule.id} 
+                  draggable
+                  onDragStart={() => setDragIndex(idx)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => {
+                    if (dragIndex !== null) moveRuleTo(dragIndex, idx);
+                    setDragIndex(null);
+                  }}
+                  className={`flex items-center gap-2 p-2 border font-mono text-sm min-w-[700px] transition-colors cursor-move opacity-${dragIndex === idx ? '50' : '100'} ${isMatched ? (rule.action === "permit" ? "bg-[#00ff9c]/20 border-[#00ff9c]" : "bg-red-500/20 border-red-500") : "bg-black border-[#1a1a1a]"}`}
+                >
+                  <GripVertical className="w-4 h-4 text-zinc-600 shrink-0" />
                   <div className="w-6 text-zinc-600 text-center text-xs">{idx + 1}</div>
                   <select value={rule.action} onChange={(e) => updateRule(rule.id, "action", e.target.value)} className={`bg-transparent p-1 focus:outline-none font-bold uppercase ${rule.action === "permit" ? "text-[#00ff9c]" : "text-red-500"}`}>
                     <option value="permit">Permit</option>

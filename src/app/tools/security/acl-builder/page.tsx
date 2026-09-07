@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useRef } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { Plus, Trash2, Download, Upload, Copy, Check } from "lucide-react";
+import { Plus, Trash2, Download, Upload, Copy, Check, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type AclRule = {
@@ -45,6 +45,7 @@ function AclBuilderContent() {
   const [activeTab, setActiveTab] = useState<"cisco" | "mikrotik" | "fortigate">("cisco");
   const [listName, setListName] = useState("MY_ACL");
   const [copied, setCopied] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addRule = () => {
@@ -68,12 +69,11 @@ function AclBuilderContent() {
     setRules(rules.filter(r => r.id !== id));
   };
 
-  const moveRule = (index: number, direction: -1 | 1) => {
+  const moveRuleTo = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
     const newRules = [...rules];
-    if (index + direction < 0 || index + direction >= rules.length) return;
-    const temp = newRules[index];
-    newRules[index] = newRules[index + direction];
-    newRules[index + direction] = temp;
+    const [moved] = newRules.splice(fromIndex, 1);
+    newRules.splice(toIndex, 0, moved);
     setRules(newRules);
   };
 
@@ -209,7 +209,20 @@ function AclBuilderContent() {
           </div>
         ) : (
           rules.map((rule, idx) => (
-            <div key={rule.id} className="border border-[#1a1a1a] bg-black p-3 flex flex-col xl:flex-row gap-3 xl:items-center relative group">
+            <div 
+              key={rule.id} 
+              draggable
+              onDragStart={() => setDragIndex(idx)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => {
+                if (dragIndex !== null) moveRuleTo(dragIndex, idx);
+                setDragIndex(null);
+              }}
+              className={`border border-[#1a1a1a] bg-black p-3 flex flex-col xl:flex-row gap-3 xl:items-center relative group opacity-${dragIndex === idx ? '50' : '100'}`}
+            >
+              <div className="hidden xl:flex items-center justify-center w-6 text-zinc-600 hover:text-zinc-400 cursor-move cursor-grab active:cursor-grabbing">
+                <GripVertical className="w-4 h-4" />
+              </div>
               <div className="hidden xl:flex items-center justify-center w-6 text-zinc-600 font-mono text-xs">{idx + 1}</div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 xl:flex flex-1 gap-2">
@@ -247,9 +260,8 @@ function AclBuilderContent() {
                   <input type="checkbox" checked={rule.log} onChange={(e) => updateRule(rule.id, "log", e.target.checked)} className="accent-[#00ff9c]" />
                   <span className="text-xs font-mono text-zinc-500">LOG</span>
                 </label>
-                <div className="flex flex-col gap-0">
-                  <button onClick={() => moveRule(idx, -1)} disabled={idx === 0} className="text-zinc-600 hover:text-zinc-300 disabled:opacity-30 leading-none px-2 h-4">▲</button>
-                  <button onClick={() => moveRule(idx, 1)} disabled={idx === rules.length - 1} className="text-zinc-600 hover:text-zinc-300 disabled:opacity-30 leading-none px-2 h-4">▼</button>
+                <div className="flex xl:hidden cursor-move text-zinc-600 hover:text-zinc-400 p-2">
+                  <GripVertical className="w-4 h-4" />
                 </div>
                 <button onClick={() => removeRule(rule.id)} className="text-zinc-600 hover:text-red-500 p-2 transition-colors">
                   <Trash2 className="w-4 h-4" />
