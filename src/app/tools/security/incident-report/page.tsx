@@ -9,14 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Copy, Download, FileJson, CheckCircle2, FileText, ClipboardList, ShieldAlert, X, FileUp, Palette, FileSearch } from "lucide-react";
 
-import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
-
-// Setup pdfmake fonts
-if (pdfMake && pdfFonts) {
-  (pdfMake as any).vfs = (pdfFonts as any).pdfMake ? (pdfFonts as any).pdfMake.vfs : (pdfFonts as any).vfs;
-}
-
 type IncidentSeverity = "Informational" | "Low" | "Medium" | "High" | "Critical";
 type IncidentStatus = "Open" | "Investigating" | "Contained" | "Resolved" | "Closed";
 
@@ -148,6 +140,7 @@ export default function IncidentReportTool() {
   const [copied, setCopied] = useState(false);
   const [theme, setTheme] = useState<PdfTheme>("Modern");
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const updateField = (field: keyof IncidentReport, value: string) => {
@@ -406,24 +399,64 @@ export default function IncidentReportTool() {
   };
 
   useEffect(() => {
-    // Generate exact PDF preview on every change safely
-    const timer = setTimeout(() => {
+    let objectUrl: string | null = null;
+    let timer: any;
+
+    const generate = async () => {
       try {
+        setPdfError(null);
+        
+        const pdfMakeModule = await import("pdfmake/build/pdfmake");
+        const pdfFontsModule = await import("pdfmake/build/vfs_fonts");
+        const pdfMake = pdfMakeModule.default || pdfMakeModule;
+        const pdfFonts = pdfFontsModule.default || pdfFontsModule;
+        
+        if (pdfMake && pdfFonts) {
+          (pdfMake as any).vfs = (pdfFonts as any).pdfMake ? (pdfFonts as any).pdfMake.vfs : (pdfFonts as any).vfs;
+        }
+
         const docDef = generateDocDef();
-        const pdfGen = pdfMake.createPdf(docDef) as any;
-        pdfGen.getBase64((data: string) => {
-          setPdfUrl(`data:application/pdf;base64,${data}`);
+        const pdfGen = (pdfMake as any).createPdf(docDef);
+        
+        pdfGen.getBlob((blob: Blob) => {
+          if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+          }
+          objectUrl = URL.createObjectURL(blob);
+          setPdfUrl(objectUrl);
         });
-      } catch (e) {
+      } catch (e: any) {
         console.error("PDF Preview generation error:", e);
+        setPdfError(e.message || "Unknown error generating PDF");
       }
-    }, 400); // 400ms debounce
-    return () => clearTimeout(timer);
+    };
+
+    timer = setTimeout(generate, 400);
+
+    return () => {
+      clearTimeout(timer);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
   }, [report, logo, theme, parsedTimeline]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleExportPDF = () => {
-    const docDef = generateDocDef();
-    pdfMake.createPdf(docDef).download(`incident-${report.id || report.date}.pdf`);
+  const handleExportPDF = async () => {
+    try {
+      const pdfMakeModule = await import("pdfmake/build/pdfmake");
+      const pdfFontsModule = await import("pdfmake/build/vfs_fonts");
+      const pdfMake = pdfMakeModule.default || pdfMakeModule;
+      const pdfFonts = pdfFontsModule.default || pdfFontsModule;
+      
+      if (pdfMake && pdfFonts) {
+        (pdfMake as any).vfs = (pdfFonts as any).pdfMake ? (pdfFonts as any).pdfMake.vfs : (pdfFonts as any).vfs;
+      }
+      
+      const docDef = generateDocDef();
+      (pdfMake as any).createPdf(docDef).download(`incident-${report.id || report.date}.pdf`);
+    } catch (e) {
+      console.error("Export error:", e);
+    }
   };
 
   // --- MD, TXT, DOCX EXPORTS ---
@@ -691,7 +724,13 @@ export default function IncidentReportTool() {
             <div className="absolute top-0 left-0 right-0 h-10 bg-[#2b2b2b] border-b border-[#1a1a1a] flex items-center px-4 justify-center">
               <span className="text-xs text-zinc-400 font-mono tracking-widest uppercase">Live PDF Render</span>
             </div>
-            {pdfUrl ? (
+            {pdfError ? (
+              <div className="w-full h-[800px] mt-10 flex flex-col items-center justify-center text-red-500 space-y-4">
+                <ShieldAlert className="w-12 h-12" />
+                <p className="font-mono text-sm tracking-widest uppercase">Error Rendering PDF</p>
+                <p className="text-xs text-red-400 font-mono text-center px-8">{pdfError}</p>
+              </div>
+            ) : pdfUrl ? (
               <iframe src={`${pdfUrl}#toolbar=0&view=FitH`} className="w-full h-[800px] mt-10 border-0" />
             ) : (
               <div className="w-full h-[800px] mt-10 flex flex-col items-center justify-center text-zinc-500 space-y-4">
