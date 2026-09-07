@@ -171,6 +171,17 @@ export const toolsRegistry: ToolDefinition[] = [
   // CYBERSECURITY / BLUE TEAM
   // ==========================================
   {
+    id: "investigation-workspace",
+    name: "Investigation Workspace",
+    description: "Analyze and organize security indicators, logs, files, and timelines in one local workspace.",
+    category: "CYBERSECURITY / BLUE TEAM",
+    path: "/tools/security/investigation",
+    keywords: ["investigation", "soc", "ioc", "timeline", "case", "forensics", "blue team"],
+    aliases: ["SOC Workspace", "Case Management"],
+    technologies: ["IndexedDB", "JSON"],
+    offline: true,
+  },
+  {
     id: "incident-playbook",
     name: "Incident Response Playbook Engine",
     description: "Design and execute structured security incident response workflows.",
