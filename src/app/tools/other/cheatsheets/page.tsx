@@ -18,8 +18,11 @@ const PLATFORM_ICONS: Record<string, any> = {
   Other: Terminal
 };
 
+const PLATFORMS = ["All Systems", "Linux", "Windows", "Cisco", "MikroTik", "FortiGate", "Docker", "Git"];
+
 export default function CheatsheetsPage() {
   const [query, setQuery] = useState("");
+  const [selectedPlatform, setSelectedPlatform] = useState("All Systems");
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -86,6 +89,10 @@ export default function CheatsheetsPage() {
       results = results.filter(c => favorites.includes(c.id));
     }
 
+    if (selectedPlatform !== "All Systems") {
+      results = results.filter(c => c.platform === selectedPlatform);
+    }
+
     if (query.trim()) {
       const q = query.toLowerCase();
       results = results.filter(c => {
@@ -120,10 +127,32 @@ export default function CheatsheetsPage() {
       title="IT Cheatsheets"
       description="Fast, cross-platform command reference. Press '/' to search."
     >
-      <div className="w-full max-w-5xl mx-auto space-y-6">
+      <div className="flex flex-col md:flex-row gap-6 w-full max-w-7xl mx-auto items-start">
         
-        {/* Search Bar */}
-        <div className="flex gap-2">
+        {/* Sidebar */}
+        <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-2 sticky top-4">
+          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 px-3 pt-2">Platforms</h3>
+          {PLATFORMS.map(p => {
+            const Icon = PLATFORM_ICONS[p] || Layers;
+            const isActive = selectedPlatform === p;
+            return (
+              <button
+                key={p}
+                onClick={() => setSelectedPlatform(p)}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-left ${isActive ? 'bg-[#1a1a1a] text-[#00ff9c] font-medium' : 'text-zinc-400 hover:text-white hover:bg-[#111]'}`}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? 'text-[#00ff9c]' : 'text-zinc-500'}`} />
+                {p}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 space-y-6 w-full">
+          
+          {/* Search Bar */}
+          <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <Input 
@@ -207,6 +236,7 @@ export default function CheatsheetsPage() {
           )}
         </div>
         
+        </div>
       </div>
     </ToolLayout>
   );

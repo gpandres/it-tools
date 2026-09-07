@@ -221,6 +221,95 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
     tags: ["permissions", "chown", "owner", "recursive"],
     aliases: ["change owner", "take ownership"]
   },
+  {
+    id: "linux-find-1",
+    platform: "Linux",
+    category: "System Administration",
+    command: "find /var/log -type f -name \"*.log\" -mtime +30 -exec rm {} \\;",
+    description: "Find and delete log files older than 30 days",
+    tags: ["find", "delete", "logs", "cleanup"],
+    aliases: ["delete old files", "clear old logs"]
+  },
+  {
+    id: "linux-sys-1",
+    platform: "Linux",
+    category: "System Administration",
+    command: "htop",
+    description: "Interactive process viewer and system monitor",
+    tags: ["monitor", "cpu", "ram", "processes"],
+    aliases: ["task manager", "top"]
+  },
+  {
+    id: "linux-sys-2",
+    platform: "Linux",
+    category: "System Administration",
+    command: "df -h",
+    description: "Report file system disk space usage in human-readable format",
+    tags: ["disk", "space", "storage", "df"],
+    aliases: ["check space", "hard drive"]
+  },
+  {
+    id: "linux-sys-3",
+    platform: "Linux",
+    category: "System Administration",
+    command: "du -sh *",
+    description: "Estimate file space usage for all files in current directory",
+    tags: ["disk", "size", "folder", "du"],
+    aliases: ["folder size", "directory size"]
+  },
+
+  // -------------------------
+  // Windows Administration
+  // -------------------------
+  {
+    id: "win-sys-1",
+    platform: "Windows",
+    category: "System Administration",
+    command: "Get-Process | Sort-Object CPU -Descending | Select-Object -First 10",
+    description: "Show top 10 processes consuming the most CPU (PowerShell)",
+    tags: ["powershell", "cpu", "processes", "monitor"],
+    aliases: ["task manager", "top cpu"]
+  },
+  {
+    id: "win-sys-2",
+    platform: "Windows",
+    category: "System Administration",
+    command: "Get-EventLog -LogName Security -Newest 50",
+    description: "Get the 50 most recent security events (PowerShell)",
+    tags: ["powershell", "event viewer", "logs", "security"],
+    aliases: ["read logs", "eventlog"]
+  },
+  {
+    id: "win-sys-3",
+    platform: "Windows",
+    category: "System Administration",
+    command: "sfc /scannow",
+    description: "Scan the integrity of all protected system files and replace incorrect versions",
+    tags: ["cmd", "repair", "system files", "sfc"],
+    aliases: ["fix windows", "repair OS"]
+  },
+
+  // -------------------------
+  // Kubernetes (kubectl)
+  // -------------------------
+  {
+    id: "k8s-1",
+    platform: "Other", // Since Kubernetes isn't in our strict type enum, use Other or update it. Wait, the type is limited. I'll use Other and label it Kubernetes. Actually, I can use Other.
+    category: "Kubernetes",
+    command: "kubectl get pods --all-namespaces",
+    description: "List all pods in all namespaces",
+    tags: ["kubernetes", "kubectl", "pods", "namespaces"],
+    aliases: ["show all pods", "k8s pods"]
+  },
+  {
+    id: "k8s-2",
+    platform: "Other",
+    category: "Kubernetes",
+    command: "kubectl logs -f <pod-name>",
+    description: "Tail the logs for a specific pod",
+    tags: ["kubernetes", "kubectl", "logs", "tail"],
+    aliases: ["k8s logs", "follow logs"]
+  },
 
   // -------------------------
   // Linux Firewalls (iptables / ufw)
@@ -242,5 +331,14 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
     description: "List all iptables rules with packet counts (no DNS resolution)",
     tags: ["firewall", "iptables", "list", "rules"],
     aliases: ["show iptables", "firewall rules"]
+  },
+  {
+    id: "fw-linux-3",
+    platform: "Linux",
+    category: "Security",
+    command: "netstat -tulpn",
+    description: "List all listening ports and their associated process IDs",
+    tags: ["ports", "listening", "netstat", "security"],
+    aliases: ["open ports", "listening ports", "services"]
   }
 ];
