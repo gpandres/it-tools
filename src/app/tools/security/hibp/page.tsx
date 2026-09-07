@@ -77,7 +77,7 @@ export default function HIBPChecker() {
       title="Pwned Password Checker"
       description="Check if a password has been exposed in data breaches. This tool uses the Have I Been Pwned API via the K-Anonymity model, meaning your actual password never leaves your browser."
     >
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl mx-auto">
         
         <div className="lg:col-span-8 flex flex-col gap-6">
           <div className="border border-[#1a1a1a] bg-[#050505] p-6 lg:p-12 text-center space-y-8">
