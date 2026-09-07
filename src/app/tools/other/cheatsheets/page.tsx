@@ -42,10 +42,11 @@ const PLATFORM_CATEGORIES = [
 
 export default function CheatsheetsPage() {
   const [query, setQuery] = useState("");
-  const [selectedPlatform, setSelectedPlatform] = useState("All Systems");
+  const [selectedPlatform, setSelectedPlatform] = useState("All Categories");
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [collapsedCategories, setCollapsedCategories] = useState<string[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Load favorites from local storage
@@ -101,6 +102,14 @@ export default function CheatsheetsPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const toggleCategory = (categoryName: string) => {
+    setCollapsedCategories(prev => 
+      prev.includes(categoryName) 
+        ? prev.filter(c => c !== categoryName)
+        : [...prev, categoryName]
+    );
+  };
+
   // Filter and group logic
   const filteredAndGrouped = useMemo(() => {
     let results = CHEATSHEETS;
@@ -109,7 +118,7 @@ export default function CheatsheetsPage() {
       results = results.filter(c => favorites.includes(c.id));
     }
 
-    if (selectedPlatform !== "All Systems") {
+    if (selectedPlatform !== "All Categories") {
       results = results.filter(c => c.platform === selectedPlatform);
     }
 
@@ -150,39 +159,51 @@ export default function CheatsheetsPage() {
       <div className="flex flex-col md:flex-row gap-6 w-full max-w-7xl mx-auto items-start">
         
         {/* Sidebar */}
-        <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-2 sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto custom-scrollbar">
+        <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-2 sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto custom-scrollbar">
           
           <button
-            onClick={() => setSelectedPlatform("All Systems")}
-            className={`flex items-center gap-3 px-3 py-2 mt-1 mb-2 rounded-md text-sm transition-colors text-left ${selectedPlatform === "All Systems" ? 'bg-[#1a1a1a] text-[#00ff9c] font-medium' : 'text-zinc-400 hover:text-white hover:bg-[#111]'}`}
+            onClick={() => setSelectedPlatform("All Categories")}
+            className={`flex items-center gap-3 px-3 py-2 mt-1 mb-2 rounded-md text-sm transition-colors text-left ${selectedPlatform === "All Categories" ? 'bg-[#1a1a1a] text-[#00ff9c] font-medium' : 'text-zinc-400 hover:text-white hover:bg-[#111]'}`}
           >
-            <Layers className={`w-4 h-4 ${selectedPlatform === "All Systems" ? 'text-[#00ff9c]' : 'text-zinc-500'}`} />
-            All Systems
+            <Layers className={`w-4 h-4 ${selectedPlatform === "All Categories" ? 'text-[#00ff9c]' : 'text-zinc-500'}`} />
+            All Categories
           </button>
 
-          {PLATFORM_CATEGORIES.map(category => (
-            <div key={category.name} className="mb-2">
-              <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-wider mb-1 px-3">
-                {category.name}
-              </h3>
-              <div className="flex flex-col gap-0.5">
-                {category.platforms.map(p => {
-                  const Icon = PLATFORM_ICONS[p] || Layers;
-                  const isActive = selectedPlatform === p;
-                  return (
-                    <button
-                      key={p}
-                      onClick={() => setSelectedPlatform(p)}
-                      className={`flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-colors text-left ${isActive ? 'bg-[#1a1a1a] text-[#00ff9c] font-medium' : 'text-zinc-400 hover:text-white hover:bg-[#111]'}`}
-                    >
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-[#00ff9c]' : 'text-zinc-500'}`} />
-                      {p}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+          <div className="pl-2 border-l border-[#1a1a1a] ml-3 mb-2 flex flex-col gap-2">
+            {PLATFORM_CATEGORIES.map(category => {
+              const isCollapsed = collapsedCategories.includes(category.name);
+              return (
+                <div key={category.name} className="">
+                  <button 
+                    onClick={() => toggleCategory(category.name)}
+                    className="flex items-center w-full text-[10px] font-bold text-zinc-600 hover:text-zinc-400 uppercase tracking-wider mb-1 px-3 py-1 rounded transition-colors"
+                  >
+                    <ChevronRight className={`w-3 h-3 mr-1 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
+                    {category.name}
+                  </button>
+                  
+                  {!isCollapsed && (
+                    <div className="flex flex-col gap-0.5 ml-1">
+                      {category.platforms.map(p => {
+                        const Icon = PLATFORM_ICONS[p] || Layers;
+                        const isActive = selectedPlatform === p;
+                        return (
+                          <button
+                            key={p}
+                            onClick={() => setSelectedPlatform(p)}
+                            className={`flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-colors text-left ${isActive ? 'bg-[#1a1a1a] text-[#00ff9c] font-medium' : 'text-zinc-400 hover:text-white hover:bg-[#111]'}`}
+                          >
+                            <Icon className={`w-4 h-4 ${isActive ? 'text-[#00ff9c]' : 'text-zinc-500'}`} />
+                            {p}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Content Area */}
