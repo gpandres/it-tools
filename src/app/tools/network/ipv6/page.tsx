@@ -20,7 +20,7 @@ function IPv6ToolContent() {
         return { expanded: "", compressed: "", networkInfo: null, error: "Invalid IPv6 Address" };
       }
 
-      const comp = compressIPv6(exp);
+      const comp = compressIPv6(exp) || "";
       const net = getIPv6NetworkInfo(exp, parsedCidr);
 
       return { expanded: exp, compressed: comp, networkInfo: net, error: "" };
