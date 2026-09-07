@@ -703,6 +703,17 @@ export const toolsRegistry: ToolDefinition[] = [
   // OTHER TOOLS
   // ==========================================
   {
+    id: "cheatsheets",
+    name: "IT Cheatsheets",
+    description: "Fast, cross-platform command reference for networking, Linux, Windows, and more.",
+    category: "OTHER TOOLS",
+    path: "/tools/other/cheatsheets",
+    keywords: ["cheatsheet", "commands", "reference", "linux", "cisco", "windows", "git", "docker"],
+    aliases: ["Command Reference", "Cheat Sheet"],
+    technologies: [],
+    offline: true,
+  },
+  {
     id: "cron-parser",
     name: "Cron Parser",
     description: "Parse cron expressions and translate them to human readable text.",
