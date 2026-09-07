@@ -196,7 +196,7 @@ export default function Runner({ runbook, onExit }: RunnerProps) {
                         id={`check-${idx}`} 
                         checked={!!checklistState[`${currentStep.id}-${idx}`]}
                         onCheckedChange={(c) => setChecklistState({ ...checklistState, [`${currentStep.id}-${idx}`]: !!c })}
-                        className="mt-1 border-zinc-500 data-[state=checked]:bg-[#00ff9c] data-[state=checked]:border-[#00ff9c]"
+                        className="mt-1 shrink-0 border-zinc-500 data-[state=checked]:bg-[#00ff9c] data-[state=checked]:border-[#00ff9c]"
                       />
                       <Label htmlFor={`check-${idx}`} className="text-sm text-zinc-300 leading-normal cursor-pointer">
                         {hydrateText(item)}

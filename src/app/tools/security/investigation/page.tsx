@@ -194,13 +194,13 @@ export default function InvestigationWorkspace() {
           <div className="flex-1 flex flex-col bg-black border-x border-b border-[#1a1a1a] rounded-b-lg overflow-hidden">
             <div className="p-4 border-b border-[#1a1a1a] bg-[#050505]">
               <Input 
-                className="text-xl font-bold bg-transparent border-none text-white h-auto p-0 focus-visible:ring-0 placeholder:text-zinc-700" 
+                className="text-xl font-bold bg-transparent border-none text-white h-auto py-1 px-0 focus-visible:ring-0 placeholder:text-zinc-700" 
                 value={activeCase.title}
                 onChange={e => setActiveCase({...activeCase, title: e.target.value})}
                 placeholder="Case Title"
               />
               <Input 
-                className="text-sm bg-transparent border-none text-zinc-400 h-auto p-0 mt-1 focus-visible:ring-0 placeholder:text-zinc-700" 
+                className="text-sm bg-transparent border-none text-zinc-400 h-auto py-1 px-0 mt-1 focus-visible:ring-0 placeholder:text-zinc-700" 
                 value={activeCase.description}
                 onChange={e => setActiveCase({...activeCase, description: e.target.value})}
                 placeholder="Brief description or ticket ID..."

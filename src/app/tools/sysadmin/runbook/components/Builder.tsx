@@ -177,7 +177,7 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
                         <Input 
                           value={step.title}
                           onChange={(e) => updateStep(step.id, { title: e.target.value })}
-                          className="bg-transparent border-0 font-bold px-0 h-6 focus-visible:ring-0 text-md text-[#00ff9c]"
+                          className="bg-transparent border-0 font-bold px-1 h-auto py-1 focus-visible:ring-0 text-md text-[#00ff9c]"
                         />
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => removeStep(step.id)} className="text-zinc-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
