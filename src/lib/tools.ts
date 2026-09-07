@@ -365,6 +365,17 @@ export const toolsRegistry: ToolDefinition[] = [
   // SYSADMIN / INFRASTRUCTURE
   // ==========================================
   {
+    id: "runbook-builder",
+    name: "Interactive Runbook Builder",
+    description: "Build and execute IT operations and troubleshooting runbooks dynamically.",
+    category: "SYSADMIN / INFRASTRUCTURE",
+    path: "/tools/sysadmin/runbook",
+    keywords: ["runbook", "playbook", "troubleshooting", "sop", "procedure", "checklist"],
+    aliases: ["SOP Builder", "Playbook Engine"],
+    technologies: ["JSON", "Markdown"],
+    offline: true,
+  },
+  {
     id: "raid-calculator",
     name: "RAID Calculator",
     description: "Calculate usable capacity, fault tolerance, and theoretical performance for RAID arrays.",
