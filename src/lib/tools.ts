@@ -171,6 +171,17 @@ export const toolsRegistry: ToolDefinition[] = [
   // CYBERSECURITY / BLUE TEAM
   // ==========================================
   {
+    id: "incident-playbook",
+    name: "Incident Response Playbook Engine",
+    description: "Design and execute structured security incident response workflows.",
+    category: "CYBERSECURITY / BLUE TEAM",
+    path: "/tools/security/playbook",
+    keywords: ["playbook", "runbook", "incident", "response", "soc", "workflow"],
+    aliases: ["SOC Playbook", "IR Engine"],
+    technologies: ["JSON", "Markdown"],
+    offline: true,
+  },
+  {
     id: "mitre-reference",
     name: "MITRE ATT&CK Reference",
     description: "Search and reference common MITRE ATT&CK tactics, techniques, and procedures (TTPs).",

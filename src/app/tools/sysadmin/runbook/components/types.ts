@@ -18,6 +18,9 @@ export interface RunbookStep {
   decisionTrueNext?: string; // Step ID to jump to if true
   decisionFalseNext?: string; // Step ID to jump to if false
   decisionQuestion?: string;
+  
+  // UI Meta
+  uiPosition?: { x: number, y: number };
 }
 
 export interface RunbookVariable {

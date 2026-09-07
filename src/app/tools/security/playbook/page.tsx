@@ -4,23 +4,117 @@ import { useState, useEffect } from 'react';
 import { ToolLayout } from "@/components/tool-layout";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, PenTool, Download, Upload, FileText, DownloadCloud } from "lucide-react";
-import Builder from './components/Builder';
-import Runner from './components/Runner';
-import DiagramBuilder from './components/DiagramBuilder';
-import { TEMPLATES } from './components/Templates';
-import { Runbook } from './components/types';
+import { Play, PenTool, Download, Upload, FileText } from "lucide-react";
+import Builder from '@/app/tools/sysadmin/runbook/components/Builder';
+import Runner from '@/app/tools/sysadmin/runbook/components/Runner';
+import DiagramBuilder from '@/app/tools/sysadmin/runbook/components/DiagramBuilder';
+import { Runbook } from '@/app/tools/sysadmin/runbook/components/types';
 import LZString from 'lz-string';
 
-export default function RunbookPage() {
+const PLAYBOOK_TEMPLATES: Record<string, Runbook> = {
+  "Empty Playbook": {
+    id: "empty-01",
+    title: "New Playbook",
+    description: "Start building your incident response procedure.",
+    variables: [],
+    steps: []
+  },
+  "Ransomware Containment": {
+    id: "pb-rw-01",
+    title: "Ransomware Containment Playbook",
+    description: "Initial response steps for suspected ransomware activity.",
+    variables: [
+      { name: "HOST_IP", description: "IP of the infected machine", defaultValue: "10.0.0.50" },
+      { name: "INCIDENT_ID", description: "Ticket or case ID", defaultValue: "INC-2026-991" }
+    ],
+    steps: [
+      {
+        id: "step-1",
+        type: "information",
+        title: "Triage & Validation",
+        content: "Confirm the ransomware report. Look for signs: file extension changes, ransom notes (e.g. README.txt), high CPU/Disk I/O.",
+        uiPosition: { x: 250, y: 50 }
+      },
+      {
+        id: "step-2",
+        type: "decision",
+        title: "Is Ransomware Confirmed?",
+        decisionQuestion: "Are there clear indicators of active encryption?",
+        decisionTrueNext: "step-3",
+        decisionFalseNext: "step-4",
+        uiPosition: { x: 250, y: 250 }
+      },
+      {
+        id: "step-3",
+        type: "command",
+        title: "Isolate Host (EDR)",
+        description: "Use EDR or network switch to isolate the host immediately. DO NOT power off.",
+        command: "Invoke-EDRIsolation -Target {{HOST_IP}} -Reason {{INCIDENT_ID}}",
+        uiPosition: { x: 50, y: 450 }
+      },
+      {
+        id: "step-4",
+        type: "verification",
+        title: "Continue Monitoring",
+        content: "False alarm. Continue monitoring the endpoint for suspicious activity.",
+        uiPosition: { x: 450, y: 450 }
+      }
+    ]
+  },
+  "Phishing Investigation": {
+    id: "pb-phish-01",
+    title: "Phishing Investigation Playbook",
+    description: "Steps to analyze and remediate a reported phishing email.",
+    variables: [
+      { name: "SENDER_IP", description: "Source IP of the email", defaultValue: "1.1.1.1" },
+      { name: "TARGET_USER", description: "Email address of the victim", defaultValue: "user@company.local" }
+    ],
+    steps: [
+      {
+        id: "step-1",
+        type: "checklist",
+        title: "Email Header Analysis",
+        items: [
+          "Check SPF/DKIM/DMARC alignment",
+          "Identify the true Sender IP",
+          "Check for Reply-To mismatches"
+        ],
+        uiPosition: { x: 250, y: 50 }
+      },
+      {
+        id: "step-2",
+        type: "decision",
+        title: "Did the user click the link?",
+        decisionQuestion: "Are there proxy/DNS logs showing a connection from the user to the malicious domain?",
+        decisionTrueNext: "step-3",
+        decisionFalseNext: "step-4",
+        uiPosition: { x: 250, y: 250 }
+      },
+      {
+        id: "step-3",
+        type: "warning",
+        title: "Force Password Reset",
+        content: "User likely compromised. Force a password reset and revoke all active sessions.",
+        uiPosition: { x: 50, y: 450 }
+      },
+      {
+        id: "step-4",
+        type: "information",
+        title: "Purge Email",
+        content: "Search and purge the email from all inboxes to prevent future clicks.",
+        uiPosition: { x: 450, y: 450 }
+      }
+    ]
+  }
+};
+
+export default function PlaybookPage() {
   const [mode, setMode] = useState<'build' | 'run'>('build');
   const [buildView, setBuildView] = useState<'list' | 'diagram'>('list');
-  const [runbook, setRunbook] = useState<Runbook>(TEMPLATES["Network Outage Triage"]);
+  const [runbook, setRunbook] = useState<Runbook>(PLAYBOOK_TEMPLATES["Ransomware Containment"]);
   const [shareLink, setShareLink] = useState<string | null>(null);
 
-  // Load from local storage on mount
   useEffect(() => {
-    // Check for shared URL payload
     const params = new URLSearchParams(window.location.search);
     const sharedData = params.get("s");
     
@@ -35,10 +129,10 @@ export default function RunbookPage() {
         }
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch (e) {
-        console.error("Failed to parse shared runbook");
+        console.error("Failed to parse shared playbook");
       }
     } else {
-      const saved = localStorage.getItem('runbook_draft');
+      const saved = localStorage.getItem('playbook_draft');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -46,16 +140,15 @@ export default function RunbookPage() {
             setRunbook(parsed);
           }
         } catch (e) {
-          console.error("Failed to parse saved runbook", e);
+          console.error("Failed to parse saved playbook", e);
         }
       }
     }
   }, []);
 
-  // Save to local storage on change
   useEffect(() => {
     const saveTimer = setTimeout(() => {
-      localStorage.setItem('runbook_draft', JSON.stringify(runbook));
+      localStorage.setItem('playbook_draft', JSON.stringify(runbook));
     }, 1000);
     return () => clearTimeout(saveTimer);
   }, [runbook]);
@@ -64,7 +157,7 @@ export default function RunbookPage() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(runbook, null, 2));
     const dlAnchorElem = document.createElement('a');
     dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", `runbook-${runbook.id}.json`);
+    dlAnchorElem.setAttribute("download", `playbook-${runbook.id}.json`);
     dlAnchorElem.click();
   };
 
@@ -77,7 +170,7 @@ export default function RunbookPage() {
         if (parsed.id && parsed.steps) {
           setRunbook(parsed);
         } else {
-          alert("Invalid runbook JSON format.");
+          alert("Invalid playbook JSON format.");
         }
       } catch (err) {
         alert("Failed to parse JSON file.");
@@ -111,7 +204,7 @@ export default function RunbookPage() {
     const dataStr = "data:text/markdown;charset=utf-8," + encodeURIComponent(md);
     const dlAnchorElem = document.createElement('a');
     dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", `runbook-${runbook.id}.md`);
+    dlAnchorElem.setAttribute("download", `playbook-${runbook.id}.md`);
     dlAnchorElem.click();
   };
 
@@ -125,8 +218,8 @@ export default function RunbookPage() {
 
   return (
     <ToolLayout
-      title="Interactive Runbook Builder"
-      description="Build and execute IT operations and troubleshooting runbooks dynamically."
+      title="Incident Response Playbook Engine"
+      description="Design and execute structured security incident response workflows."
     >
       <div className="w-full max-w-6xl mx-auto space-y-6">
         
@@ -145,9 +238,9 @@ export default function RunbookPage() {
               variant={mode === 'run' ? 'default' : 'outline'}
               className={mode === 'run' ? 'bg-[#00ff9c] text-black hover:bg-[#00cc7a]' : 'bg-black border-[#1a1a1a] text-[#00ff9c] hover:bg-[#00ff9c]/10 hover:text-[#00ff9c]'}
             >
-              <Play className="w-4 h-4 mr-2" /> Execute
+              <Play className="w-4 h-4 mr-2" /> Execute Playbook
             </Button>
-            
+
             {mode === 'build' && (
               <div className="flex bg-black border border-[#1a1a1a] rounded-md overflow-hidden ml-2">
                 <button 
@@ -173,15 +266,15 @@ export default function RunbookPage() {
               </Button>
               <div className="h-4 w-px bg-[#333] mx-1"></div>
               <Select value={runbook.title} onValueChange={(v) => {
-                const tmpl = Object.values(TEMPLATES).find(t => t.title === v);
+                const tmpl = Object.values(PLAYBOOK_TEMPLATES).find(t => t.title === v);
                 if (tmpl) setRunbook(tmpl);
               }}>
                 <SelectTrigger className="w-[200px] bg-black border-[#1a1a1a] h-9 text-xs">
                   <SelectValue placeholder="Load Template" />
                 </SelectTrigger>
                 <SelectContent className="bg-black border-[#1a1a1a]">
-                  {Object.keys(TEMPLATES).map(k => (
-                    <SelectItem key={k} value={TEMPLATES[k].title}>{k}</SelectItem>
+                  {Object.keys(PLAYBOOK_TEMPLATES).map(k => (
+                    <SelectItem key={k} value={PLAYBOOK_TEMPLATES[k].title}>{k}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
