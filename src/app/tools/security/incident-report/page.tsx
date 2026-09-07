@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Copy, Download, FileJson, CheckCircle2, FileText, ClipboardList, ShieldAlert, X, FileUp, Palette, FileSearch } from "lucide-react";
+import Script from "next/script";
 
 type IncidentSeverity = "Informational" | "Low" | "Medium" | "High" | "Critical";
 type IncidentStatus = "Open" | "Investigating" | "Contained" | "Resolved" | "Closed";
@@ -402,21 +403,21 @@ export default function IncidentReportTool() {
     let objectUrl: string | null = null;
     let timer: any;
 
-    const generate = async () => {
+    const generate = () => {
       try {
         setPdfError(null);
         
-        const pdfMakeModule = await import("pdfmake/build/pdfmake");
-        const pdfFontsModule = await import("pdfmake/build/vfs_fonts");
-        const pdfMake = pdfMakeModule.default || pdfMakeModule;
-        const pdfFonts = pdfFontsModule.default || pdfFontsModule;
-        
-        if (pdfMake && pdfFonts) {
-          (pdfMake as any).vfs = (pdfFonts as any).pdfMake ? (pdfFonts as any).pdfMake.vfs : (pdfFonts as any).vfs;
+        const win = window as any;
+        if (!win.pdfMake || !win.pdfMake.vfs) {
+          // Retry in a bit if CDN hasn't loaded yet
+          setPdfError("Loading PDF engine...");
+          timer = setTimeout(generate, 500);
+          return;
         }
 
+        const pdfMake = win.pdfMake;
         const docDef = generateDocDef();
-        const pdfGen = (pdfMake as any).createPdf(docDef);
+        const pdfGen = pdfMake.createPdf(docDef);
         
         pdfGen.getBlob((blob: Blob) => {
           if (objectUrl) {
@@ -424,6 +425,7 @@ export default function IncidentReportTool() {
           }
           objectUrl = URL.createObjectURL(blob);
           setPdfUrl(objectUrl);
+          setPdfError(null);
         });
       } catch (e: any) {
         console.error("PDF Preview generation error:", e);
@@ -431,7 +433,7 @@ export default function IncidentReportTool() {
       }
     };
 
-    timer = setTimeout(generate, 400);
+    timer = setTimeout(generate, 800);
 
     return () => {
       clearTimeout(timer);
@@ -441,19 +443,17 @@ export default function IncidentReportTool() {
     };
   }, [report, logo, theme, parsedTimeline]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleExportPDF = async () => {
+  const handleExportPDF = () => {
     try {
-      const pdfMakeModule = await import("pdfmake/build/pdfmake");
-      const pdfFontsModule = await import("pdfmake/build/vfs_fonts");
-      const pdfMake = pdfMakeModule.default || pdfMakeModule;
-      const pdfFonts = pdfFontsModule.default || pdfFontsModule;
-      
-      if (pdfMake && pdfFonts) {
-        (pdfMake as any).vfs = (pdfFonts as any).pdfMake ? (pdfFonts as any).pdfMake.vfs : (pdfFonts as any).vfs;
+      const win = window as any;
+      if (!win.pdfMake) {
+        alert("PDF engine is still loading, please wait a moment.");
+        return;
       }
       
+      const pdfMake = win.pdfMake;
       const docDef = generateDocDef();
-      (pdfMake as any).createPdf(docDef).download(`incident-${report.id || report.date}.pdf`);
+      pdfMake.createPdf(docDef).download(`incident-${report.id || report.date}.pdf`);
     } catch (e) {
       console.error("Export error:", e);
     }
@@ -516,8 +516,11 @@ export default function IncidentReportTool() {
   };
 
   return (
-    <ToolLayout
-      title="Incident Report Generator"
+    <>
+      <Script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js" strategy="lazyOnload" />
+      <Script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.min.js" strategy="lazyOnload" />
+      <ToolLayout
+        title="Incident Report Generator"
       description="Create structured IT and cybersecurity incident reports from raw notes, logs, and timelines."
     >
       <div className="flex items-center gap-2 mb-8 p-3 bg-[#00ff9c]/10 border border-[#00ff9c]/30 rounded text-[#00ff9c] text-xs font-mono max-w-4xl mx-auto">
@@ -743,5 +746,6 @@ export default function IncidentReportTool() {
 
       </div>
     </ToolLayout>
+    </>
   );
 }
