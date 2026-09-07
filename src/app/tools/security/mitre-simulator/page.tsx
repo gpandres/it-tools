@@ -250,6 +250,7 @@ function MitreSimulator() {
   const [builderSteps, setBuilderSteps] = useState([{ desc: "", mitre: "", event: "" }]);
   const [shareLink, setShareLink] = useState("");
   const [builderError, setBuilderError] = useState("");
+  const [focusedField, setFocusedField] = useState<{index: number, type: "mitre" | "event"} | null>(null);
 
   // Info Modal State
   const [infoModalData, setInfoModalData] = useState<ModalData | null>(null);
@@ -567,13 +568,34 @@ function MitreSimulator() {
                   <label className="text-[10px] text-zinc-500">Narrative Step {i+1}</label>
                   <input type="text" value={step.desc} onChange={(e) => { const n = [...builderSteps]; n[i].desc = e.target.value; setBuilderSteps(n); }} className="w-full bg-transparent border-b border-[#1a1a1a] p-1 text-xs text-zinc-300 focus:border-purple-500 outline-none" placeholder="Attacker does X..." />
                 </div>
-                <div className="w-24 shrink-0">
+                <div className="w-48 shrink-0 relative">
                   <label className="text-[10px] text-zinc-500">MITRE ID</label>
-                  <input type="text" value={step.mitre} onChange={(e) => { const n = [...builderSteps]; n[i].mitre = e.target.value; setBuilderSteps(n); }} className="w-full bg-transparent border-b border-[#1a1a1a] p-1 text-xs font-mono text-[#00ff9c] focus:border-purple-500 outline-none" placeholder="T1566" />
+                  <input type="text" value={step.mitre} onFocus={() => setFocusedField({index: i, type: "mitre"})} onBlur={() => setTimeout(() => setFocusedField(null), 200)} onChange={(e) => { const n = [...builderSteps]; n[i].mitre = e.target.value; setBuilderSteps(n); }} className="w-full bg-transparent border-b border-[#1a1a1a] p-1 text-xs font-mono text-[#00ff9c] focus:border-purple-500 outline-none" placeholder="T1566" />
+                  {focusedField?.index === i && focusedField?.type === "mitre" && step.mitre && (
+                    <div className="absolute z-10 w-[300px] left-0 bg-black border border-purple-500/50 mt-1 max-h-48 overflow-y-auto shadow-2xl divide-y divide-[#1a1a1a]">
+                      {MITRE_DB.filter(m => m.id.toLowerCase().includes(step.mitre.toLowerCase()) || m.name.toLowerCase().includes(step.mitre.toLowerCase())).slice(0, 10).map(s => (
+                        <div key={s.id} className="p-2 text-[10px] hover:bg-purple-500/20 cursor-pointer" onClick={() => { const n = [...builderSteps]; n[i].mitre = s.id; setBuilderSteps(n); setFocusedField(null); }}>
+                          <span className="font-bold text-[#00ff9c]">{s.id}</span> - {s.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="w-32 shrink-0">
-                  <label className="text-[10px] text-zinc-500">Event ID</label>
-                  <input type="text" value={step.event} onChange={(e) => { const n = [...builderSteps]; n[i].event = e.target.value; setBuilderSteps(n); }} className="w-full bg-transparent border-b border-[#1a1a1a] p-1 text-xs font-mono text-blue-400 focus:border-purple-500 outline-none" placeholder="Sysmon 1 / auditd" />
+                <div className="w-48 shrink-0 relative">
+                  <label className="text-[10px] text-zinc-500">Telemetry ID</label>
+                  <input type="text" value={step.event} onFocus={() => setFocusedField({index: i, type: "event"})} onBlur={() => setTimeout(() => setFocusedField(null), 200)} onChange={(e) => { const n = [...builderSteps]; n[i].event = e.target.value; setBuilderSteps(n); }} className="w-full bg-transparent border-b border-[#1a1a1a] p-1 text-xs font-mono text-blue-400 focus:border-purple-500 outline-none" placeholder="Sysmon 1 / auditd" />
+                  {focusedField?.index === i && focusedField?.type === "event" && step.event && (
+                    <div className="absolute z-10 w-[300px] right-0 sm:left-0 bg-black border border-purple-500/50 mt-1 max-h-48 overflow-y-auto shadow-2xl divide-y divide-[#1a1a1a]">
+                      {(builderPlatform === "Windows" ? WIN_EVENTS_DB : LINUX_EVENTS_DB).filter(e => e.id.toLowerCase().includes(step.event.toLowerCase()) || e.name.toLowerCase().includes(step.event.toLowerCase())).slice(0, 10).map(s => (
+                        <div key={s.id} className="p-2 text-[10px] hover:bg-purple-500/20 cursor-pointer" onClick={() => { const n = [...builderSteps]; n[i].event = s.id; setBuilderSteps(n); setFocusedField(null); }}>
+                          <span className="font-bold text-blue-400">{s.id}</span> - {s.name}
+                        </div>
+                      ))}
+                      <div className="p-2 text-[10px] hover:bg-purple-500/20 cursor-pointer text-zinc-400" onClick={() => { const n = [...builderSteps]; n[i].event = "none"; setBuilderSteps(n); setFocusedField(null); }}>
+                        <span className="font-bold">none</span> - No Telemetry
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
