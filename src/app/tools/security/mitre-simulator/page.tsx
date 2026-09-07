@@ -249,6 +249,7 @@ function MitreSimulator() {
   const [builderPlatform, setBuilderPlatform] = useState<"Windows" | "Linux">("Windows");
   const [builderSteps, setBuilderSteps] = useState([{ desc: "", mitre: "", event: "" }]);
   const [shareLink, setShareLink] = useState("");
+  const [builderError, setBuilderError] = useState("");
 
   // Info Modal State
   const [infoModalData, setInfoModalData] = useState<ModalData | null>(null);
@@ -270,19 +271,50 @@ function MitreSimulator() {
         
         const decoded = JSON.parse(decodedStr);
         if (decoded && typeof decoded === "object" && typeof decoded.title === "string" && Array.isArray(decoded.steps)) {
+          
+          // Strict Validation
+          if (decoded.title.length > 100 || (decoded.description && decoded.description.length > 500)) {
+             throw new Error("Payload text fields too long");
+          }
+          if (decoded.platform !== "Windows" && decoded.platform !== "Linux") {
+             throw new Error("Invalid platform");
+          }
+
           const customPool: Tile[] = [];
-          decoded.steps.forEach((s: any) => {
-            if (typeof s.requiredMitreId === "string" && typeof s.requiredEventId === "string") {
-              customPool.push(T(s.requiredMitreId, s.requiredMitreId));
-              customPool.push(E(s.requiredEventId, s.requiredEventId));
+          for (const s of decoded.steps) {
+            if (typeof s.description !== "string" || s.description.length > 500) throw new Error("Invalid step description");
+            if (typeof s.requiredMitreId !== "string" || typeof s.requiredEventId !== "string") throw new Error("Invalid step IDs");
+            
+            const mitreId = s.requiredMitreId.trim().toUpperCase();
+            const eventId = s.requiredEventId.trim();
+            
+            // Validate against DBs
+            const mitreExists = MITRE_DB.some(m => m.id.toUpperCase() === mitreId);
+            if (!mitreExists) throw new Error(`MITRE ID ${mitreId} does not exist in DB.`);
+            
+            let eventExists = false;
+            if (eventId.toLowerCase() === "none" || eventId.toLowerCase() === "no event") {
+              eventExists = true;
+            } else if (decoded.platform === "Windows") {
+              eventExists = WIN_EVENTS_DB.some(e => e.id.toLowerCase() === eventId.toLowerCase());
+            } else {
+              eventExists = LINUX_EVENTS_DB.some(e => e.id.toLowerCase() === eventId.toLowerCase());
             }
-          });
+            if (!eventExists) throw new Error(`Event ID ${eventId} does not exist in ${decoded.platform} DB.`);
+
+            customPool.push(T(mitreId, mitreId));
+            customPool.push(E(eventId, eventId.toLowerCase() === "none" ? "No Event" : eventId));
+            s.requiredMitreId = mitreId;
+            s.requiredEventId = eventId;
+          }
+          
           decoded.pool = customPool;
           loadScenario(decoded as Scenario);
           return;
         }
-      } catch (e) {
-        console.error("Failed to decode shared scenario", e);
+      } catch (e: any) {
+        console.error("Failed to decode shared scenario or validation failed:", e.message);
+        alert(`Failed to load custom scenario: ${e.message}`);
       }
     }
     handleGenerateProcedural();
@@ -316,21 +348,64 @@ function MitreSimulator() {
     setBuilderSteps([...builderSteps, { desc: "", mitre: "", event: "" }]);
   };
   const handleBuilderGenerateLink = () => {
-    const sc = {
-      id: "custom-" + Date.now(),
-      title: builderTitle.trim() || "Custom Challenge",
-      description: builderDesc.trim() || "A custom incident response scenario created by a user.",
-      platform: builderPlatform,
-      steps: builderSteps.map((s, i) => ({
-        id: `step-${i+1}`,
-        description: s.desc.trim() || "Step",
-        requiredMitreId: s.mitre.trim().toUpperCase() || "T1566",
-        requiredEventId: s.event.trim() || "none"
-      }))
-    };
-    const b64 = btoa(JSON.stringify(sc));
-    const url = `${window.location.origin}${window.location.pathname}?s=${b64}`;
-    setShareLink(url);
+    setBuilderError("");
+    setShareLink("");
+    
+    if (!builderTitle.trim()) {
+      setBuilderError("Title is required.");
+      return;
+    }
+    
+    if (builderSteps.length === 0) {
+      setBuilderError("At least one step is required.");
+      return;
+    }
+
+    try {
+      const steps = builderSteps.map((s, i) => {
+        const mitreId = s.mitre.trim().toUpperCase() || "T1566";
+        const eventId = s.event.trim() || "none";
+        
+        // Validate MITRE
+        if (!MITRE_DB.some(m => m.id.toUpperCase() === mitreId)) {
+           throw new Error(`Step ${i+1}: MITRE ID '${mitreId}' not found in database.`);
+        }
+        
+        // Validate Event
+        let eventExists = false;
+        if (eventId.toLowerCase() === "none" || eventId.toLowerCase() === "no event") {
+          eventExists = true;
+        } else if (builderPlatform === "Windows") {
+          eventExists = WIN_EVENTS_DB.some(e => e.id.toLowerCase() === eventId.toLowerCase());
+        } else {
+          eventExists = LINUX_EVENTS_DB.some(e => e.id.toLowerCase() === eventId.toLowerCase());
+        }
+        
+        if (!eventExists) {
+          throw new Error(`Step ${i+1}: Event ID '${eventId}' not found in ${builderPlatform} database.`);
+        }
+
+        return {
+          id: `step-${i+1}`,
+          description: s.desc.trim() || "Step",
+          requiredMitreId: mitreId,
+          requiredEventId: eventId
+        };
+      });
+
+      const sc = {
+        id: "custom-" + Date.now(),
+        title: builderTitle.trim(),
+        description: builderDesc.trim() || "A custom incident response scenario created by a user.",
+        platform: builderPlatform,
+        steps: steps
+      };
+      const b64 = btoa(JSON.stringify(sc));
+      const url = `${window.location.origin}${window.location.pathname}?s=${b64}`;
+      setShareLink(url);
+    } catch (err: any) {
+      setBuilderError(err.message);
+    }
   };
 
   // --- Drag & Drop Handlers ---
@@ -505,12 +580,13 @@ function MitreSimulator() {
             <Button onClick={handleAddBuilderStep} variant="ghost" className="text-zinc-500 hover:text-white text-xs"><Plus className="w-3 h-3 mr-1" /> Add Step</Button>
           </div>
 
-          <div className="pt-4 border-t border-[#1a1a1a] flex flex-col sm:flex-row gap-4 items-center">
-            <Button onClick={handleBuilderGenerateLink} className="bg-purple-600 hover:bg-purple-500 text-white font-bold uppercase tracking-widest text-xs h-10">
+          <div className="pt-4 border-t border-[#1a1a1a] flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <Button onClick={handleBuilderGenerateLink} className="bg-purple-600 hover:bg-purple-500 text-white font-bold uppercase tracking-widest text-xs h-10 shrink-0">
               <Share2 className="w-4 h-4 mr-2" /> Generate Shareable Link
             </Button>
+            {builderError && <p className="text-red-500 text-xs font-bold">{builderError}</p>}
             {shareLink && (
-              <div className="flex-1 flex border border-purple-500/50 bg-black">
+              <div className="flex-1 flex w-full border border-purple-500/50 bg-black">
                 <input type="text" readOnly value={shareLink} className="flex-1 bg-transparent text-zinc-400 text-xs p-2 outline-none font-mono" />
                 <button onClick={() => navigator.clipboard.writeText(shareLink)} className="p-2 bg-purple-500/20 hover:bg-purple-500/40 text-purple-400 transition-colors"><Copy className="w-4 h-4" /></button>
               </div>
