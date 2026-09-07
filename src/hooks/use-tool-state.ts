@@ -95,3 +95,14 @@ export function useToolHistory<T>(toolId: string, maxItems = 10) {
 
   return { history, addHistory, clearHistory };
 }
+
+// Single value wrapper for useToolUrlState
+export function useToolState(key: string, defaultValue: string) {
+  const [state, setState] = useToolUrlState({ [key]: defaultValue });
+  
+  const setValue = useCallback((val: string) => {
+    setState({ [key]: val });
+  }, [key, setState]);
+
+  return [state[key], setValue] as const;
+}
