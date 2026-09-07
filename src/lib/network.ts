@@ -66,6 +66,25 @@ export function validateIp(ip: string): boolean {
   return regex.test(ip);
 }
 
+export function isIpInNetwork(testIp: string, networkCidr: string): boolean {
+  if (networkCidr.toLowerCase() === "any") return true;
+  if (!networkCidr.includes("/")) {
+    return testIp === networkCidr;
+  }
+  const [netIp, cidrStr] = networkCidr.split("/");
+  const cidr = parseInt(cidrStr, 10);
+  if (isNaN(cidr) || cidr < 0 || cidr > 32) return false;
+  
+  try {
+    const testInt = ipToInt(testIp);
+    const netInt = ipToInt(netIp);
+    const mask = cidrToMaskInt(cidr);
+    return (testInt & mask) === (netInt & mask);
+  } catch (e) {
+    return false;
+  }
+}
+
 export interface VlsmSubnetReq {
   name: string;
   hosts: number;
