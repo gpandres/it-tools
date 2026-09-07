@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Copy, Download, FileJson, CheckCircle2, FileText, ClipboardList, ShieldAlert, X, FileUp, Palette, FileSearch } from "lucide-react";
 
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType } from "docx";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 
@@ -483,109 +482,6 @@ export default function IncidentReportTool() {
     a.click();
   };
 
-  const handleExportDOCX = async () => {
-    const docxTheme = {
-      bg: theme === "Modern" ? "2563EB" : theme === "Cyber" ? "00FF9C" : theme === "Executive" ? "0A192F" : "E5E5E5",
-      color: theme === "Modern" || theme === "Executive" ? "FFFFFF" : "000000"
-    };
-
-    const headerCell = (text: string, colSpan: number = 1) => new TableCell({
-      children: [new Paragraph({ children: [new TextRun({ text, bold: true, color: docxTheme.color, size: 20 })] })],
-      shading: { fill: docxTheme.bg },
-      columnSpan: colSpan
-    });
-
-    const children: any[] = [
-      new Paragraph({ text: "INCIDENT REPORT", heading: HeadingLevel.HEADING_1 }),
-      new Paragraph({ text: report.title || "Untitled Incident", heading: HeadingLevel.HEADING_2 }),
-      new Paragraph({ text: "" })
-    ];
-
-    const table = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        new TableRow({
-          children: [
-            headerCell("Severity"),
-            new TableCell({ children: [new Paragraph({ text: report.severity.toUpperCase() })] }),
-            headerCell("Status"),
-            new TableCell({ children: [new Paragraph({ text: report.status.toUpperCase() })] }),
-          ]
-        }),
-        new TableRow({
-          children: [
-            headerCell("Date"),
-            new TableCell({ children: [new Paragraph({ text: report.date || 'N/A' })] }),
-            headerCell("Duration"),
-            new TableCell({ children: [new Paragraph({ text: `${report.startTime || '?'} - ${report.endTime || 'Ongoing'}` })] }),
-          ]
-        }),
-        new TableRow({
-          children: [
-            headerCell("Incident ID"),
-            new TableCell({ children: [new Paragraph({ text: report.id || 'N/A' })] }),
-            headerCell("Agent/Responder"),
-            new TableCell({ children: [new Paragraph({ text: report.agentName || 'N/A' })] }),
-          ]
-        }),
-        new TableRow({
-          children: [
-            headerCell("Affected Dept"),
-            new TableCell({ children: [new Paragraph({ text: report.affectedUserDept || 'N/A' })], columnSpan: 3 }),
-          ]
-        })
-      ]
-    });
-
-    children.push(table);
-    children.push(new Paragraph({ text: "" }));
-
-    if (report.summary) {
-      children.push(new Paragraph({ text: "SUMMARY", heading: HeadingLevel.HEADING_3 }));
-      children.push(new Paragraph({ text: report.summary }));
-    }
-
-    if (report.affectedSystems) {
-      children.push(new Paragraph({ text: "AFFECTED SYSTEMS", heading: HeadingLevel.HEADING_3 }));
-      report.affectedSystems.split('\n').filter(s => s.trim() !== '').forEach(s => children.push(new Paragraph({ text: s, bullet: { level: 0 } })));
-    }
-
-    if (parsedTimeline.events.length > 0 || parsedTimeline.undated.length > 0) {
-      children.push(new Paragraph({ text: "TIMELINE", heading: HeadingLevel.HEADING_3 }));
-      parsedTimeline.events.forEach(e => {
-        children.push(new Paragraph({ children: [new TextRun({ text: `${e.time}: `, bold: true }), new TextRun({ text: e.text })] }));
-      });
-      if (parsedTimeline.undated.length > 0) {
-        children.push(new Paragraph({ children: [new TextRun({ text: "Undated Events", bold: true })] }));
-        parsedTimeline.undated.forEach(e => children.push(new Paragraph({ text: e, bullet: { level: 0 } })));
-      }
-    }
-
-    children.push(new Paragraph({ text: "ROOT CAUSE", heading: HeadingLevel.HEADING_3 }));
-    children.push(new Paragraph({ text: report.rootCause || "Not provided." }));
-    if (report.resolution) {
-      children.push(new Paragraph({ text: "RESOLUTION", heading: HeadingLevel.HEADING_3 }));
-      children.push(new Paragraph({ text: report.resolution }));
-    }
-    if (report.actionsTaken) {
-      children.push(new Paragraph({ text: "ACTIONS TAKEN", heading: HeadingLevel.HEADING_3 }));
-      children.push(new Paragraph({ text: report.actionsTaken }));
-    }
-    if (report.recommendations) {
-      children.push(new Paragraph({ text: "RECOMMENDATIONS", heading: HeadingLevel.HEADING_3 }));
-      children.push(new Paragraph({ text: report.recommendations }));
-    }
-
-    const doc = new Document({ sections: [{ properties: {}, children: children }] });
-    const blob = await Packer.toBlob(doc);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `incident-${report.id || report.date}.docx`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <ToolLayout
       title="Incident Report Generator"
@@ -775,10 +671,6 @@ export default function IncidentReportTool() {
               <Button onClick={handleExportPDF} size="sm" className="bg-[#ff0055] hover:bg-[#ff0055]/90 text-white font-bold h-8">
                 <Download className="w-4 h-4 mr-2" />
                 PDF
-              </Button>
-              <Button onClick={handleExportDOCX} variant="outline" size="sm" className="bg-[#0088ff]/10 border-[#0088ff]/30 text-[#0088ff] hover:bg-[#0088ff]/20 font-bold h-8">
-                <Download className="w-4 h-4 mr-2" />
-                Word
               </Button>
 
               <div className="flex items-center gap-1 pl-4 border-l border-[#1a1a1a]">
