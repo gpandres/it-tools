@@ -251,6 +251,7 @@ function MitreSimulator() {
   const [shareLink, setShareLink] = useState("");
   const [builderError, setBuilderError] = useState("");
   const [focusedField, setFocusedField] = useState<{index: number, type: "mitre" | "event"} | null>(null);
+  const [seedError, setSeedError] = useState<string>("");
 
   // Info Modal State
   const [infoModalData, setInfoModalData] = useState<ModalData | null>(null);
@@ -312,17 +313,19 @@ function MitreSimulator() {
           decoded.pool = customPool;
           loadScenario(decoded as Scenario);
           return;
+        } else {
+           throw new Error("Invalid structure");
         }
       } catch (e: any) {
-        console.error("Failed to decode shared scenario or validation failed:", e.message);
-        alert(`Failed to load custom scenario: ${e.message}`);
+        window.history.replaceState({}, '', window.location.pathname);
+        setSeedError("The provided custom scenario data is corrupt, manipulated, or contains invalid telemetry IDs.");
       }
     }
     handleGenerateProcedural();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedScenarioBase64]);
 
-  const loadScenario = (sc: Scenario) => {
+  function loadScenario(sc: Scenario) {
     setScenario(sc);
     const shuffledPool = sc.pool ? [...sc.pool].sort(() => Math.random() - 0.5) : [];
     setPool(shuffledPool);
@@ -335,9 +338,9 @@ function MitreSimulator() {
     setValidation({ isChecked: false, results: {} });
   };
 
-  const handleGenerateProcedural = () => {
+  function handleGenerateProcedural() {
     loadScenario(generateProceduralScenario());
-  };
+  }
 
   const toggleHardMode = () => {
     setIsHardMode(!isHardMode);
@@ -622,7 +625,6 @@ function MitreSimulator() {
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setInfoModalData(null)}>
           <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-6 max-w-lg w-full relative shadow-2xl" onClick={e => e.stopPropagation()}>
             <button onClick={() => setInfoModalData(null)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><XCircle className="w-5 h-5" /></button>
-            
             <div className="flex items-center gap-3 mb-4">
               <div className={`p-2 rounded bg-black border border-[#1a1a1a] ${infoModalData.data.color}`}>
                 <infoModalData.data.icon className="w-5 h-5" />
@@ -677,7 +679,7 @@ function MitreSimulator() {
                       {(infoModalData.data as WinEventDef | LinuxEventDef).fields.join(", ")}
                     </p>
                   </div>
-                  <div className="bg-red-900/10 border border-red-900/30 p-3 mb-3 relative overflow-hidden">
+                  <div className="bg-red-900/10 border border-red-900/30 p-3 mb-2 relative overflow-hidden">
                     <p className="text-red-400 text-xs font-mono">
                       <span className="font-bold mr-2">Malicious Use:</span>
                       {(infoModalData.data as WinEventDef | LinuxEventDef).maliciousUse}
@@ -694,6 +696,26 @@ function MitreSimulator() {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Seed Error Modal */}
+      {seedError && (
+        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSeedError("")}>
+          <div className="bg-[#050505] border border-red-500/50 p-6 max-w-md w-full animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-5 h-5 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold text-red-500">Seed Invalid</h3>
+            </div>
+            <p className="text-zinc-400 text-sm mb-6">{seedError}</p>
+            <div className="flex justify-end">
+              <Button onClick={() => setSeedError("")} className="bg-red-500/20 text-red-500 hover:bg-red-500/40 border border-red-500/30">
+                Dismiss
+              </Button>
             </div>
           </div>
         </div>
