@@ -140,8 +140,6 @@ export default function IncidentReportTool() {
   const [logo, setLogo] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [theme, setTheme] = useState<PdfTheme>("Modern");
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [pdfError, setPdfError] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const updateField = (field: keyof IncidentReport, value: string) => {
@@ -399,49 +397,7 @@ export default function IncidentReportTool() {
     return docDef;
   };
 
-  useEffect(() => {
-    let objectUrl: string | null = null;
-    let timer: any;
 
-    const generate = () => {
-      try {
-        setPdfError(null);
-        
-        const win = window as any;
-        if (!win.pdfMake || !win.pdfMake.vfs) {
-          // Retry in a bit if CDN hasn't loaded yet
-          setPdfError("Loading PDF engine...");
-          timer = setTimeout(generate, 500);
-          return;
-        }
-
-        const pdfMake = win.pdfMake;
-        const docDef = generateDocDef();
-        const pdfGen = pdfMake.createPdf(docDef);
-        
-        pdfGen.getBlob((blob: Blob) => {
-          if (objectUrl) {
-            URL.revokeObjectURL(objectUrl);
-          }
-          objectUrl = URL.createObjectURL(blob);
-          setPdfUrl(objectUrl);
-          setPdfError(null);
-        });
-      } catch (e: any) {
-        console.error("PDF Preview generation error:", e);
-        setPdfError(e.message || "Unknown error generating PDF");
-      }
-    };
-
-    timer = setTimeout(generate, 800);
-
-    return () => {
-      clearTimeout(timer);
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
-    };
-  }, [report, logo, theme, parsedTimeline]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleExportPDF = () => {
     try {
@@ -517,8 +473,8 @@ export default function IncidentReportTool() {
 
   return (
     <>
-      <Script src="/js/pdfmake/pdfmake.min.js" strategy="lazyOnload" />
-      <Script src="/js/pdfmake/vfs_fonts.min.js" strategy="lazyOnload" />
+      <Script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js" strategy="lazyOnload" />
+      <Script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.min.js" strategy="lazyOnload" />
       <ToolLayout
         title="Incident Report Generator"
       description="Create structured IT and cybersecurity incident reports from raw notes, logs, and timelines."
@@ -683,12 +639,12 @@ export default function IncidentReportTool() {
           </div>
         </div>
 
-        {/* Live Preview & Export Section */}
+        {/* Export Section */}
         <div className="mt-16 pt-8 border-t border-[#1a1a1a]">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <FileSearch className="w-6 h-6 text-purple-500" />
-              <h2 className="text-xl font-bold">Document Preview</h2>
+              <h2 className="text-xl font-bold">Export Document</h2>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 bg-[#050505] p-2 rounded border border-[#1a1a1a]">
@@ -721,26 +677,6 @@ export default function IncidentReportTool() {
                 </Button>
               </div>
             </div>
-          </div>
-
-          <div className="w-full bg-[#323639] border border-zinc-800 rounded-lg shadow-2xl overflow-hidden relative">
-            <div className="absolute top-0 left-0 right-0 h-10 bg-[#2b2b2b] border-b border-[#1a1a1a] flex items-center px-4 justify-center">
-              <span className="text-xs text-zinc-400 font-mono tracking-widest uppercase">Live PDF Render</span>
-            </div>
-            {pdfError ? (
-              <div className="w-full h-[800px] mt-10 flex flex-col items-center justify-center text-red-500 space-y-4">
-                <ShieldAlert className="w-12 h-12" />
-                <p className="font-mono text-sm tracking-widest uppercase">Error Rendering PDF</p>
-                <p className="text-xs text-red-400 font-mono text-center px-8">{pdfError}</p>
-              </div>
-            ) : pdfUrl ? (
-              <iframe src={`${pdfUrl}#toolbar=0&view=FitH`} className="w-full h-[800px] mt-10 border-0" />
-            ) : (
-              <div className="w-full h-[800px] mt-10 flex flex-col items-center justify-center text-zinc-500 space-y-4">
-                <div className="w-8 h-8 border-4 border-zinc-600 border-t-purple-500 rounded-full animate-spin"></div>
-                <p className="font-mono text-sm tracking-widest uppercase">Rendering Document...</p>
-              </div>
-            )}
           </div>
         </div>
 
