@@ -1,6 +1,6 @@
 export interface CheatSheetEntry {
   id: string;
-  platform: 'Cisco' | 'MikroTik' | 'FortiGate' | 'Linux' | 'Windows' | 'Docker' | 'Git' | 'Other';
+  platform: 'Cisco' | 'MikroTik' | 'FortiGate' | 'Linux' | 'Windows' | 'Docker' | 'Kubernetes' | 'Git' | 'Nmap' | 'OpenSSL' | 'Other';
   category: string;
   command: string;
   description: string;
@@ -528,7 +528,7 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
   // ==========================================
   {
     id: "k8s-1",
-    platform: "Other",
+    platform: "Kubernetes",
     category: "Kubernetes",
     command: "kubectl get pods --all-namespaces",
     description: "List all pods in all namespaces",
@@ -537,7 +537,7 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
   },
   {
     id: "k8s-2",
-    platform: "Other",
+    platform: "Kubernetes",
     category: "Kubernetes",
     command: "kubectl logs -f <pod-name>",
     description: "Tail the logs for a specific pod",
@@ -546,7 +546,7 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
   },
   {
     id: "nmap-1",
-    platform: "Other",
+    platform: "Nmap",
     category: "Security",
     command: "nmap -A -T4 <ip>",
     description: "Aggressive, fast scan with OS detection, version detection, script scanning, and traceroute",
@@ -555,7 +555,7 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
   },
   {
     id: "nmap-2",
-    platform: "Other",
+    platform: "Nmap",
     category: "Security",
     command: "nmap -p- <ip>",
     description: "Scan all 65535 ports",
@@ -564,7 +564,7 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
   },
   {
     id: "openssl-1",
-    platform: "Other",
+    platform: "OpenSSL",
     category: "Security",
     command: "openssl x509 -in cert.pem -text -noout",
     description: "View the contents of a PEM encoded certificate",
@@ -573,7 +573,7 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
   },
   {
     id: "openssl-2",
-    platform: "Other",
+    platform: "OpenSSL",
     category: "Security",
     command: "openssl genrsa -out private.key 2048",
     description: "Generate a new 2048-bit RSA private key",

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { ToolLayout } from "@/components/tool-layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Copy, Star, Terminal, Server, Shield, Box, GitBranch, Layers, Check } from "lucide-react";
+import { Search, Copy, Star, Terminal, Server, Shield, Box, GitBranch, Layers, Check, ChevronRight } from "lucide-react";
 import { CHEATSHEETS, CheatSheetEntry } from './data';
 
 const PLATFORM_ICONS: Record<string, any> = {
@@ -14,11 +14,31 @@ const PLATFORM_ICONS: Record<string, any> = {
   MikroTik: Layers,
   FortiGate: Shield,
   Docker: Box,
+  Kubernetes: Box,
   Git: GitBranch,
+  Nmap: Shield,
+  OpenSSL: Shield,
   Other: Terminal
 };
 
-const PLATFORMS = ["All Systems", "Linux", "Windows", "Cisco", "MikroTik", "FortiGate", "Docker", "Git"];
+const PLATFORM_CATEGORIES = [
+  {
+    name: "Operating Systems",
+    platforms: ["Linux", "Windows"]
+  },
+  {
+    name: "Networking",
+    platforms: ["Cisco", "MikroTik", "FortiGate"]
+  },
+  {
+    name: "Containers & VCS",
+    platforms: ["Docker", "Kubernetes", "Git"]
+  },
+  {
+    name: "Security Tools",
+    platforms: ["Nmap", "OpenSSL"]
+  }
+];
 
 export default function CheatsheetsPage() {
   const [query, setQuery] = useState("");
@@ -130,22 +150,39 @@ export default function CheatsheetsPage() {
       <div className="flex flex-col md:flex-row gap-6 w-full max-w-7xl mx-auto items-start">
         
         {/* Sidebar */}
-        <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-2 sticky top-4">
-          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 px-3 pt-2">Platforms</h3>
-          {PLATFORMS.map(p => {
-            const Icon = PLATFORM_ICONS[p] || Layers;
-            const isActive = selectedPlatform === p;
-            return (
-              <button
-                key={p}
-                onClick={() => setSelectedPlatform(p)}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-left ${isActive ? 'bg-[#1a1a1a] text-[#00ff9c] font-medium' : 'text-zinc-400 hover:text-white hover:bg-[#111]'}`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-[#00ff9c]' : 'text-zinc-500'}`} />
-                {p}
-              </button>
-            );
-          })}
+        <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-2 sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto custom-scrollbar">
+          
+          <button
+            onClick={() => setSelectedPlatform("All Systems")}
+            className={`flex items-center gap-3 px-3 py-2 mt-1 mb-2 rounded-md text-sm transition-colors text-left ${selectedPlatform === "All Systems" ? 'bg-[#1a1a1a] text-[#00ff9c] font-medium' : 'text-zinc-400 hover:text-white hover:bg-[#111]'}`}
+          >
+            <Layers className={`w-4 h-4 ${selectedPlatform === "All Systems" ? 'text-[#00ff9c]' : 'text-zinc-500'}`} />
+            All Systems
+          </button>
+
+          {PLATFORM_CATEGORIES.map(category => (
+            <div key={category.name} className="mb-2">
+              <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-wider mb-1 px-3">
+                {category.name}
+              </h3>
+              <div className="flex flex-col gap-0.5">
+                {category.platforms.map(p => {
+                  const Icon = PLATFORM_ICONS[p] || Layers;
+                  const isActive = selectedPlatform === p;
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setSelectedPlatform(p)}
+                      className={`flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-colors text-left ${isActive ? 'bg-[#1a1a1a] text-[#00ff9c] font-medium' : 'text-zinc-400 hover:text-white hover:bg-[#111]'}`}
+                    >
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-[#00ff9c]' : 'text-zinc-500'}`} />
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Content Area */}
