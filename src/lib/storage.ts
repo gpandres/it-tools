@@ -18,6 +18,7 @@ export function setStorageConsent(consent: Exclude<StorageConsent, null>): boole
       const keys = Array.from({ length: window.localStorage.length }, (_, index) => window.localStorage.key(index))
         .filter((key): key is string => key !== null && (key.startsWith("it_tools_") || ["playbook_draft", "runbook_draft", "network_diagram"].includes(key)));
       keys.forEach(key => window.localStorage.removeItem(key));
+      window.indexedDB?.deleteDatabase("InvestigationWorkspaceDB");
     }
     window.dispatchEvent(new Event(STORAGE_CHANGED));
     return true;

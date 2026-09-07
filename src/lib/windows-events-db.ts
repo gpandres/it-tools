@@ -32,7 +32,7 @@ export const WIN_EVENTS_DB: WinEventDef[] = [
 
   // Network Connection
   { id: "Sysmon 3", type: "Network Connection", name: "Network Connection", description: "Logs TCP/UDP connections on the machine.", fields: ["Image", "DestinationIp", "DestinationPort", "Protocol"], maliciousUse: "Identifying C2 beaconing, lateral movement via RDP/SMB, or exfiltration.", mitre: ["T1071", "T1570", "T1021.001", "T1021.002"], icon: Monitor, color: "text-indigo-400" },
-  { id: "Sysmon 22", type: "Network Connection", name: "DNSEvent (DNS query)", description: "Logs DNS queries, regardless of whether they succeed or fail, and what process performed them.", fields: ["Image", "QueryName", "QueryStatus", "QueryResults"], maliciousUse: "Detecting DNS tunneling, C2 domains, and DGA (Domain Generation Algorithms).", mitre: ["T1071.004", "T1568", "T1483"], icon: Monitor, color: "text-indigo-400" },
+  { id: "Sysmon 22", type: "Network Connection", name: "DNSEvent (DNS query)", description: "Logs DNS queries, regardless of whether they succeed or fail, and what process performed them.", fields: ["Image", "QueryName", "QueryStatus", "QueryResults"], maliciousUse: "Detecting DNS tunneling, C2 domains, and DGA (Domain Generation Algorithms).", mitre: ["T1071.004", "T1568", "T1568.002"], icon: Monitor, color: "text-indigo-400" },
 
   // File System
   { id: "Sysmon 11", type: "File System", name: "FileCreate", description: "Logs when a file is created or overwritten.", fields: ["Image", "TargetFilename", "CreationUtcTime"], maliciousUse: "Tracking malware drops, web shell uploads, or ransomware activity.", mitre: ["T1105", "T1505.003", "T1486"], icon: FileWarning, color: "text-yellow-500" },

@@ -4,7 +4,8 @@ import { hasStorageConsent } from "@/lib/storage";
 
 // A generic hook to manage tool state and sync with URL query parameters
 export function useToolUrlState<T extends Record<string, string>>(
-  initialState: T
+  initialState: T,
+  options: { url?: boolean } = {}
 ) {
   const router = useRouter();
   const pathname = usePathname();
@@ -16,7 +17,7 @@ export function useToolUrlState<T extends Record<string, string>>(
     let hasUrlParams = false;
     
     Object.keys(initialState).forEach((key) => {
-      const val = searchParams.get(key);
+      const val = options.url ? searchParams.get(key) : null;
       if (val !== null) {
         // @ts-ignore
         stateFromUrl[key] = val;
@@ -30,6 +31,7 @@ export function useToolUrlState<T extends Record<string, string>>(
   // Debounced URL update
   useEffect(() => {
     const handler = setTimeout(() => {
+      if (!options.url) return;
       const params = new URLSearchParams(searchParams.toString());
       let hasChanges = false;
       
@@ -53,7 +55,7 @@ export function useToolUrlState<T extends Record<string, string>>(
     }, 500); // 500ms debounce
 
     return () => clearTimeout(handler);
-  }, [state, router, pathname, searchParams, initialState]);
+  }, [state, router, pathname, searchParams, initialState, options.url]);
 
   const updateState = useCallback((updates: Partial<T>) => {
     setState((prev) => ({ ...prev, ...updates }));

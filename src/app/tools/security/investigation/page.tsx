@@ -12,6 +12,7 @@ import * as db from './db';
 import IOCManager from './components/IOCManager';
 import TimelineView from './components/TimelineView';
 import Findings from './components/Findings';
+import { parseInvestigationCase } from '@/lib/investigation-validation';
 
 export default function InvestigationWorkspace() {
   const [cases, setCases] = useState<InvestigationCase[]>([]);
@@ -108,8 +109,9 @@ export default function InvestigationWorkspace() {
     reader.onload = async (e) => {
       try {
         const content = e.target?.result as string;
-        const parsed = JSON.parse(content) as InvestigationCase;
-        if (parsed.id && parsed.iocs && parsed.timeline) {
+        if (content.length > 2_000_000) throw new Error("Investigation file is too large");
+        const parsed = parseInvestigationCase(JSON.parse(content));
+        if (parsed) {
           // Regenerate ID to prevent collisions if imported multiple times
           parsed.id = crypto.randomUUID();
           parsed.createdAt = Date.now();

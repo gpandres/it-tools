@@ -1,4 +1,5 @@
 import { InvestigationCase } from './components/types';
+import { hasStorageConsent } from '@/lib/storage';
 
 const DB_NAME = 'InvestigationWorkspaceDB';
 const STORE_NAME = 'cases';
@@ -26,6 +27,7 @@ export const openDB = (): Promise<IDBDatabase> => {
 };
 
 export const saveCase = async (invCase: InvestigationCase): Promise<void> => {
+  if (!hasStorageConsent()) return;
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readwrite');
@@ -38,6 +40,7 @@ export const saveCase = async (invCase: InvestigationCase): Promise<void> => {
 };
 
 export const getCase = async (id: string): Promise<InvestigationCase | undefined> => {
+  if (!hasStorageConsent()) return undefined;
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readonly');
@@ -50,6 +53,7 @@ export const getCase = async (id: string): Promise<InvestigationCase | undefined
 };
 
 export const getAllCases = async (): Promise<InvestigationCase[]> => {
+  if (!hasStorageConsent()) return [];
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readonly');
@@ -65,6 +69,7 @@ export const getAllCases = async (): Promise<InvestigationCase[]> => {
 };
 
 export const deleteCase = async (id: string): Promise<void> => {
+  if (!hasStorageConsent()) return;
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readwrite');

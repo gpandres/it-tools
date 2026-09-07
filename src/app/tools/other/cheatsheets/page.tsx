@@ -4,8 +4,10 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { ToolLayout } from "@/components/tool-layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Copy, Star, Terminal, Server, Shield, Box, GitBranch, Layers, Check, ChevronRight } from "lucide-react";
+import { Search, Copy, Star, Terminal, Server, Shield, Box, GitBranch, Layers, Check, ChevronRight, AlertTriangle } from "lucide-react";
 import { CHEATSHEETS, CheatSheetEntry } from './data';
+import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
+import { assessCommandRisk } from '@/lib/command-risk';
 
 const PLATFORM_ICONS: Record<string, any> = {
   Linux: Terminal,
@@ -52,7 +54,7 @@ export default function CheatsheetsPage() {
   // Load favorites from local storage
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    const saved = localStorage.getItem("it_cheatsheets_favorites");
+    const saved = readLocalStorage("it_cheatsheets_favorites");
     if (saved) {
       try {
         setFavorites(JSON.parse(saved));
@@ -64,7 +66,7 @@ export default function CheatsheetsPage() {
 
   // Save favorites to local storage
   useEffect(() => {
-    localStorage.setItem("it_cheatsheets_favorites", JSON.stringify(favorites));
+    writeLocalStorage("it_cheatsheets_favorites", JSON.stringify(favorites));
   }, [favorites]);
 
   // Global Keyboard Shortcuts
@@ -98,6 +100,10 @@ export default function CheatsheetsPage() {
   };
 
   const copyCommand = (id: string, command: string) => {
+    const risk = assessCommandRisk(command);
+    if (risk.risk === "destructive" && !window.confirm(`${risk.message}\n\nCopy this command to the clipboard?`)) {
+      return;
+    }
     navigator.clipboard.writeText(command);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -252,6 +258,7 @@ export default function CheatsheetsPage() {
                   {entries.map(entry => {
                     const Icon = PLATFORM_ICONS[entry.platform] || Terminal;
                     const isFav = favorites.includes(entry.id);
+                    const risk = assessCommandRisk(entry.command);
                     
                     return (
                       <div key={entry.id} className="bg-black border border-[#1a1a1a] rounded-lg overflow-hidden flex flex-col group hover:border-[#333] transition-colors">
@@ -272,6 +279,16 @@ export default function CheatsheetsPage() {
                         {/* Body */}
                         <div className="p-4 flex-1 flex flex-col">
                           <p className="text-sm text-zinc-400 mb-3 line-clamp-2 min-h-[40px]">{entry.description}</p>
+
+                          {risk.risk !== "safe" && (
+                            <div
+                              className={`mb-3 flex items-start gap-2 rounded border px-3 py-2 text-xs ${risk.risk === "destructive" ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-amber-500/40 bg-amber-500/10 text-amber-300'}`}
+                              role="note"
+                            >
+                              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                              <span><strong>{risk.label}:</strong> {risk.message}</span>
+                            </div>
+                          )}
                           
                           <div className="relative mt-auto bg-[#0a0a0a] rounded border border-[#1a1a1a] group-hover:border-[#333] transition-colors">
                             <pre className="p-3 text-sm text-[#00ff9c] font-mono overflow-x-auto custom-scrollbar">
@@ -280,7 +297,7 @@ export default function CheatsheetsPage() {
                             <button
                               onClick={() => copyCommand(entry.id, entry.command)}
                               className="absolute top-2 right-2 bg-black border border-[#1a1a1a] p-1.5 rounded text-zinc-500 hover:text-white hover:bg-[#1a1a1a] transition-all opacity-0 group-hover:opacity-100"
-                              title="Copy command"
+                              title={risk.risk === "destructive" ? "Copy command (confirmation required)" : "Copy command"}
                             >
                               {copiedId === entry.id ? <Check className="w-4 h-4 text-[#00ff9c]" /> : <Copy className="w-4 h-4" />}
                             </button>

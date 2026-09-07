@@ -8,6 +8,28 @@ import type { PeerCertificate, TLSSocket } from "tls";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const requestWindows = new Map<string, { startedAt: number; count: number }>();
+const RATE_WINDOW_MS = 60_000;
+const RATE_LIMIT = 12;
+
+function allowRequest(request: Request): boolean {
+  const key = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  const now = Date.now();
+  if (requestWindows.size > 10_000) {
+    for (const [entryKey, entry] of requestWindows) {
+      if (now - entry.startedAt >= RATE_WINDOW_MS) requestWindows.delete(entryKey);
+    }
+  }
+  const current = requestWindows.get(key);
+  if (!current || now - current.startedAt >= RATE_WINDOW_MS) {
+    requestWindows.set(key, { startedAt: now, count: 1 });
+    return true;
+  }
+  if (current.count >= RATE_LIMIT) return false;
+  current.count += 1;
+  return true;
+}
+
 function isPublicAddress(address: string): boolean {
   if (net.isIPv4(address)) {
     const [a, b] = address.split(".").map(Number);
@@ -60,6 +82,9 @@ function certificateName(value: string | string[] | undefined): string {
 
 export async function GET(request: Request) {
   try {
+    if (!allowRequest(request)) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
+    }
     const { searchParams } = new URL(request.url);
     const domain = searchParams.get("domain");
 

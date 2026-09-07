@@ -11,6 +11,7 @@ import NetworkEdge from './edges/NetworkEdge';
 import Sidebar from './components/Sidebar';
 import { TEMPLATES } from './components/Templates';
 import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
+import { parseDiagram } from '@/lib/diagram-validation';
 
 const nodeTypes = { networkNode: NetworkNode };
 const edgeTypes = { networkEdge: NetworkEdge };
@@ -30,8 +31,9 @@ function DiagramFlow() {
     const saved = readLocalStorage('network_diagram');
     if (saved) {
       try {
-        const { nodes: savedNodes, edges: savedEdges } = JSON.parse(saved);
-        if (savedNodes && savedNodes.length > 0) {
+        const parsed = parseDiagram(JSON.parse(saved));
+        if (parsed && parsed.nodes.length > 0) {
+          const { nodes: savedNodes, edges: savedEdges } = parsed;
           setNodes(savedNodes);
           setEdges(savedEdges);
           setTimeout(() => fitView(), 100);
@@ -143,8 +145,9 @@ function DiagramFlow() {
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        const parsed = JSON.parse(content);
-        if (parsed.nodes && parsed.edges) {
+        if (content.length > 2_000_000) throw new Error("Diagram file is too large");
+        const parsed = parseDiagram(JSON.parse(content));
+        if (parsed) {
           setNodes(parsed.nodes);
           setEdges(parsed.edges);
           setTimeout(() => fitView({ padding: 0.2 }), 100);
