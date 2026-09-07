@@ -46,6 +46,9 @@ export const metadata: Metadata = {
 
 import { Sidebar } from "@/components/sidebar";
 
+import { CookieBanner } from "@/components/cookie-banner";
+import { FavoritesProvider } from "@/components/favorites-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -54,10 +57,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${jetbrainsMono.variable} h-full dark`}>
       <body className="min-h-full flex bg-background text-foreground antialiased selection:bg-[var(--phosphor)] selection:text-black">
-        <Sidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          {children}
-        </div>
+        <FavoritesProvider>
+          <Sidebar />
+          <div className="flex-1 flex flex-col min-w-0">
+            {children}
+          </div>
+          <CookieBanner />
+        </FavoritesProvider>
       </body>
     </html>
   );

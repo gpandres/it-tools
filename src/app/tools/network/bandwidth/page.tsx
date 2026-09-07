@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, Suspense } from "react";
-
 import { ToolLayout } from "@/components/tool-layout";
+import { Settings2 } from "lucide-react";
 
 function BandwidthToolContent() {
-  const [fileSizeStr, setFileSizeStr] = useState("1");
+  const [simpleMode, setSimpleMode] = useState(true);
+
+  const [fileSizeStr, setFileSizeStr] = useState("5");
   const [fileUnit, setFileUnit] = useState("GB");
 
   const [linkSpeedStr, setLinkSpeedStr] = useState("1");
@@ -83,15 +85,27 @@ function BandwidthToolContent() {
       title="Bandwidth & Transfer Time Calculator"
       description="Calculate file transfer times and analyze the impact of latency (RTT) on TCP throughput."
     >
+      <div className="flex justify-end mb-4">
+        <button 
+          onClick={() => setSimpleMode(!simpleMode)}
+          className={`flex items-center gap-2 px-3 py-1.5 border text-xs font-mono uppercase tracking-widest transition-colors ${
+            !simpleMode ? 'border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10' : 'border-zinc-700 text-zinc-400 hover:border-zinc-500'
+          }`}
+        >
+          <Settings2 className="w-3 h-3" />
+          {simpleMode ? "Simple Mode" : "Advanced Mode"}
+        </button>
+      </div>
+
       <div className="space-y-6">
         {/* Input Section */}
         <div className="p-4 border border-[#1a1a1a] bg-[#0a0a0a] space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={`grid grid-cols-1 ${!simpleMode ? 'md:grid-cols-2' : ''} gap-6`}>
             
             {/* Theoretical Section */}
             <div className="space-y-4">
               <h3 className="text-xs font-bold text-[#00ff9c] uppercase tracking-wider border-b border-[#1a1a1a] pb-2">
-                1. Transfer Size & Link Speed
+                {simpleMode ? "Download Details" : "1. Transfer Size & Link Speed"}
               </h3>
               <div className="flex gap-2">
                 <div className="flex-1">
@@ -121,7 +135,7 @@ function BandwidthToolContent() {
 
               <div className="flex gap-2">
                 <div className="flex-1">
-                  <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Link Speed</label>
+                  <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Internet / Link Speed</label>
                   <input
                     type="number"
                     value={linkSpeedStr}
@@ -147,59 +161,69 @@ function BandwidthToolContent() {
             </div>
 
             {/* TCP / Latency Section */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-[#00ff9c] uppercase tracking-wider border-b border-[#1a1a1a] pb-2">
-                2. Latency Impact (TCP)
-              </h3>
-              <div>
-                <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Round Trip Time (RTT in ms)</label>
-                <input
-                  type="number"
-                  value={rttStr}
-                  onChange={(e) => setRttStr(e.target.value)}
-                  min="1"
-                  className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
-                />
-              </div>
+            {!simpleMode && (
+              <div className="space-y-4">
+                <h3 className="text-xs font-bold text-[#00ff9c] uppercase tracking-wider border-b border-[#1a1a1a] pb-2">
+                  2. Latency Impact (TCP)
+                </h3>
+                <div>
+                  <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Round Trip Time (RTT in ms)</label>
+                  <input
+                    type="number"
+                    value={rttStr}
+                    onChange={(e) => setRttStr(e.target.value)}
+                    min="1"
+                    className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">TCP Window Size (KB)</label>
-                <input
-                  type="number"
-                  value={windowSizeStr}
-                  onChange={(e) => setWindowSizeStr(e.target.value)}
-                  min="1"
-                  className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
-                />
-                <p className="text-[10px] text-zinc-600 mt-1 uppercase tracking-wider">Default unscaled TCP Window is usually 64 KB</p>
+                <div>
+                  <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">TCP Window Size (KB)</label>
+                  <input
+                    type="number"
+                    value={windowSizeStr}
+                    onChange={(e) => setWindowSizeStr(e.target.value)}
+                    min="1"
+                    className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
+                  />
+                  <p className="text-[10px] text-zinc-600 mt-1 uppercase tracking-wider">Default unscaled TCP Window is usually 64 KB</p>
+                </div>
               </div>
-            </div>
-
+            )}
           </div>
         </div>
 
         {/* Results Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-6 border border-[#1a1a1a] bg-[#050505] flex flex-col items-center justify-center text-center">
-            <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Theoretical Time (Perfect Link)</div>
-            <div className="text-2xl font-mono text-white">{theoreticalTimeStr}</div>
-          </div>
-          <div className="p-6 border border-[#00ff9c]/30 bg-[#00ff9c]/5 flex flex-col items-center justify-center text-center relative overflow-hidden">
+        {simpleMode ? (
+          <div className="p-8 border border-[#00ff9c]/30 bg-[#00ff9c]/5 flex flex-col items-center justify-center text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-[#00ff9c]"></div>
-            <div className="text-xs font-bold text-[#00ff9c] uppercase tracking-wider mb-2">Estimated Real Time (TCP Limited)</div>
-            <div className="text-2xl font-mono text-[#00ff9c] glow">{realTimeStr}</div>
+            <div className="text-sm font-bold text-[#00ff9c] uppercase tracking-widest mb-4">Estimated Download Time</div>
+            <div className="text-4xl font-mono text-[#00ff9c] glow">{theoreticalTimeStr}</div>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-6 border border-[#1a1a1a] bg-[#050505] flex flex-col items-center justify-center text-center">
+                <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Theoretical Time (Perfect Link)</div>
+                <div className="text-2xl font-mono text-white">{theoreticalTimeStr}</div>
+              </div>
+              <div className="p-6 border border-[#00ff9c]/30 bg-[#00ff9c]/5 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-[#00ff9c]"></div>
+                <div className="text-xs font-bold text-[#00ff9c] uppercase tracking-wider mb-2">Estimated Real Time (TCP Limited)</div>
+                <div className="text-2xl font-mono text-[#00ff9c] glow">{realTimeStr}</div>
+              </div>
+            </div>
 
-        {/* Info Banner */}
-        <div className="p-4 border border-[#1a1a1a] bg-[#050505] flex flex-col gap-2">
-          <div className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Max TCP Throughput (Bandwidth-Delay Product)</div>
-          <div className="text-[#00ff9c] font-mono text-sm break-words">{maxTcpThroughputStr}</div>
-          <p className="text-xs text-zinc-400 mt-2">
-            TCP requires acknowledgements. High latency (RTT) limits throughput unless the TCP Window Size is scaled up. This is known as the Long Fat Network (LFN) problem.
-          </p>
-        </div>
-
+            {/* Info Banner */}
+            <div className="p-4 border border-[#1a1a1a] bg-[#050505] flex flex-col gap-2">
+              <div className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Max TCP Throughput (Bandwidth-Delay Product)</div>
+              <div className="text-[#00ff9c] font-mono text-sm break-words">{maxTcpThroughputStr}</div>
+              <p className="text-xs text-zinc-400 mt-2">
+                TCP requires acknowledgements. High latency (RTT) limits throughput unless the TCP Window Size is scaled up. This is known as the Long Fat Network (LFN) problem.
+              </p>
+            </div>
+          </>
+        )}
       </div>
     </ToolLayout>
   );

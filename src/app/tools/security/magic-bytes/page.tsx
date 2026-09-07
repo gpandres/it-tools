@@ -154,7 +154,7 @@ export default function MagicBytesDetector() {
       title="File Magic Bytes Detector"
       description="Identify the true file type of any file by inspecting its hexadecimal signature. Detect extension spoofing and disguised malware."
     >
-      <div className="grid grid-cols-1 gap-6 max-w-4xl">
+      <div className="grid grid-cols-1 gap-6 max-w-5xl mx-auto w-full">
         
         {/* Input Area */}
         {!fileInfo ? (

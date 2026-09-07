@@ -155,7 +155,7 @@ export default function ExifAnalyzer() {
       title="EXIF Analyzer & Cleaner"
       description="Extract hidden metadata (GPS, camera info, dates) from images, or permanently scrub it to protect your privacy before sharing."
     >
-      <div className="grid grid-cols-1 gap-6 max-w-5xl">
+      <div className="grid grid-cols-1 gap-6 max-w-5xl mx-auto w-full">
         
         {/* Input Area */}
         {!fileInfo ? (

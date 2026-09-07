@@ -4,10 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useMemo } from "react";
 import { toolsRegistry, CATEGORIES } from "@/lib/tools";
+import { useFavorites } from "@/components/favorites-provider";
+import { Star } from "lucide-react";
 
 export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { favorites, isLoaded } = useFavorites();
 
   // Group tools by category dynamically
   const groupedTools = useMemo(() => {
@@ -24,6 +27,10 @@ export function Sidebar() {
     
     return groups;
   }, []);
+
+  const favoriteTools = useMemo(() => {
+    return toolsRegistry.filter(t => favorites.includes(t.id));
+  }, [favorites]);
 
   return (
     <>
@@ -52,6 +59,35 @@ export function Sidebar() {
         </div>
 
         <nav className="p-4 space-y-8">
+          {/* FAVORITES SECTION */}
+          {isLoaded && favoriteTools.length > 0 && (
+            <div>
+              <h3 className="mb-3 text-[10px] font-bold text-[#ffb000] uppercase tracking-widest flex items-center gap-2">
+                <Star className="w-3 h-3 fill-[#ffb000]" /> FAVORITES
+              </h3>
+              <div className="space-y-2">
+                {favoriteTools.map((tool) => {
+                  const isActive = pathname === tool.path;
+                  return (
+                    <Link
+                      key={tool.id}
+                      href={tool.path}
+                      onClick={() => setIsOpen(false)}
+                      className={`
+                        block text-xs transition-colors
+                        hover:text-[#ffb000]
+                        ${isActive ? "text-[#ffb000] glow-amber" : "text-zinc-400"}
+                      `}
+                      title={tool.description}
+                    >
+                      {isActive ? "> " : "  "}{tool.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {CATEGORIES.map((category) => {
             const tools = groupedTools[category];
             if (!tools || tools.length === 0) return null;
