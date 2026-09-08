@@ -2,13 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Clock3, Search, Star, X } from "lucide-react";
 import { toolsRegistry, CATEGORIES } from "@/lib/tools";
+import { readLocalStorage, STORAGE_CHANGED, writeLocalStorage } from "@/lib/storage";
 import { useFavorites } from "./favorites-provider";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } from "./ui/dialog";
 
-const APP_VERSION = "0.1.0";
+const APP_VERSION = "0.1.1";
+const COLLAPSED_CATEGORIES_KEY = "it_tools_collapsed_categories";
+
+function readCollapsedCategories(): string[] {
+  if (typeof window === "undefined") return [];
+  const raw = readLocalStorage(COLLAPSED_CATEGORIES_KEY);
+  if (!raw || raw.length > 4096) return [];
+  try {
+    const saved = JSON.parse(raw);
+    if (!Array.isArray(saved)) return [];
+    return [...new Set(saved.filter((category): category is string =>
+      typeof category === "string" && CATEGORIES.includes(category as typeof CATEGORIES[number])
+    ))];
+  } catch {
+    return [];
+  }
+}
 
 function matchesTool(tool: typeof toolsRegistry[number], query: string) {
   const normalized = query.trim().toLowerCase();
@@ -21,9 +38,20 @@ export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
+  // Keep the first render identical on the server and client; restore persisted UI state after hydration.
   const [collapsedCategories, setCollapsedCategories] = useState<string[]>([]);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const { favorites, recent, isLoaded } = useFavorites();
+
+  useEffect(() => {
+    const restoreCollapsedCategories = () => setCollapsedCategories(readCollapsedCategories());
+    const restoreTimer = window.setTimeout(restoreCollapsedCategories, 0);
+    window.addEventListener(STORAGE_CHANGED, restoreCollapsedCategories);
+    return () => {
+      window.clearTimeout(restoreTimer);
+      window.removeEventListener(STORAGE_CHANGED, restoreCollapsedCategories);
+    };
+  }, []);
 
   const filteredTools = useMemo(() => toolsRegistry.filter(tool => matchesTool(tool, query)), [query]);
   const favoriteTools = useMemo(() => filteredTools.filter(tool => favorites.includes(tool.id)), [favorites, filteredTools]);
@@ -31,7 +59,11 @@ export function Sidebar() {
 
   const closeMobileMenu = () => setIsOpen(false);
   const toggleCategory = (category: string) => {
-    setCollapsedCategories(current => current.includes(category) ? current.filter(item => item !== category) : [...current, category]);
+    setCollapsedCategories(current => {
+      const next = current.includes(category) ? current.filter(item => item !== category) : [...current, category];
+      writeLocalStorage(COLLAPSED_CATEGORIES_KEY, JSON.stringify(next));
+      return next;
+    });
   };
 
   const triggerEasterEgg = () => {
