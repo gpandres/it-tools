@@ -589,6 +589,45 @@ const COMMAND_AND_CONTROL_ENTRIES = COMMAND_AND_CONTROL_CATALOG.map(([id, name, 
   commandAndControlEntry(id, name, platform, parentId),
 );
 
+const exfiltrationEntry = (id: string, name: string, platform: Platform, parentId?: string): MitreDef => ({
+  id,
+  ...(parentId ? { parentId } : {}),
+  tactic: "Exfiltration",
+  name,
+  description: `${name} can be abused to move stolen data out of a compromised environment or to an adversary-controlled destination.`,
+  example: `Investigating unusual ${name.toLowerCase()} activity with DLP, endpoint, identity, and network telemetry.`,
+  icon: UploadCloud,
+  color: "text-cyan-400",
+  platform,
+});
+
+// Enterprise Exfiltration (TA0010), ATT&CK v19.2.
+const EXFILTRATION_CATALOG: Array<[string, string, Platform, string?]> = [
+  ["T1020", "Automated Exfiltration", "Cross-Platform"],
+  ["T1020.001", "Traffic Duplication", "Network Devices", "T1020"],
+  ["T1030", "Data Transfer Size Limits", "Cross-Platform"],
+  ["T1048", "Exfiltration Over Alternative Protocol", "Cross-Platform"],
+  ["T1048.001", "Exfiltration Over Symmetric Encrypted Non-C2 Protocol", "Cross-Platform", "T1048"],
+  ["T1048.002", "Exfiltration Over Asymmetric Encrypted Non-C2 Protocol", "Cross-Platform", "T1048"],
+  ["T1048.003", "Exfiltration Over Unencrypted Non-C2 Protocol", "Cross-Platform", "T1048"],
+  ["T1041", "Exfiltration Over C2 Channel", "Cross-Platform"],
+  ["T1011", "Exfiltration Over Other Network Medium", "Cross-Platform"],
+  ["T1011.001", "Exfiltration Over Bluetooth", "Cross-Platform", "T1011"],
+  ["T1052", "Exfiltration Over Physical Medium", "Cross-Platform"],
+  ["T1052.001", "Exfiltration over USB", "Cross-Platform", "T1052"],
+  ["T1567", "Exfiltration Over Web Service", "Cross-Platform"],
+  ["T1567.001", "Exfiltration to Code Repository", "Cross-Platform", "T1567"],
+  ["T1567.002", "Exfiltration to Cloud Storage", "Cross-Platform", "T1567"],
+  ["T1567.003", "Exfiltration to Text Storage Sites", "Cross-Platform", "T1567"],
+  ["T1567.004", "Exfiltration Over Webhook", "Cross-Platform", "T1567"],
+  ["T1029", "Scheduled Transfer", "Cross-Platform"],
+  ["T1537", "Transfer Data to Cloud Account", "Cross-Platform"],
+];
+
+const EXFILTRATION_ENTRIES = EXFILTRATION_CATALOG.map(([id, name, platform, parentId]) =>
+  exfiltrationEntry(id, name, platform, parentId),
+);
+
 // The entries below are the remaining Enterprise Persistence objects in v19.2.
 // Names and hierarchy follow MITRE's TA0003 tactic page; descriptions are deliberately
 // concise but operational so the local reference remains usable without a remote feed.
@@ -764,7 +803,7 @@ export const MITRE_DB: MitreDef[] = [
   { id: "T1566.001", tactic: "Initial Access", name: "Spearphishing Attachment", description: "Adversaries may send spearphishing emails with malicious attachments.", example: "Delivering a weaponized document as an email attachment.", icon: LogIn, color: "text-blue-400", platform: "Cross-Platform" },
   { id: "T1566.002", tactic: "Initial Access", name: "Spearphishing Link", description: "Adversaries may send spearphishing messages containing malicious links.", example: "Sending a link to a credential-harvesting page.", icon: LogIn, color: "text-blue-400", platform: "Cross-Platform" },
   { id: "T1003.002", tactic: "Credential Access", name: "Security Account Manager", description: "Adversaries may obtain credentials from the Security Account Manager database.", example: "Accessing the SAM database to obtain local account hashes.", icon: Key, color: "text-pink-500", platform: "Windows" },
-  { id: "T1567.002", tactic: "Exfiltration", name: "Exfiltration to Cloud Storage", description: "Adversaries may exfiltrate data to a cloud storage service.", example: "Uploading collected archives to an external cloud-storage account.", icon: UploadCloud, color: "text-cyan-400", platform: "Cross-Platform" },
+  { id: "T1567.002", parentId: "T1567", tactic: "Exfiltration", name: "Exfiltration to Cloud Storage", description: "Adversaries may exfiltrate data to a cloud storage service.", example: "Uploading collected archives to an external cloud-storage account.", icon: UploadCloud, color: "text-cyan-400", platform: "Cross-Platform" },
   { id: "T1204.004", tactic: "Execution", name: "Malicious Copy and Paste", description: "Adversaries may rely on a user copying and pasting malicious commands or content.", example: "Tricking a user into pasting a command into a shell.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" },
   { id: "T1595", tactic: "Reconnaissance", name: "Active Scanning", description: "Adversaries may execute active reconnaissance scans to gather information that can be used during targeting.", example: "Scanning public IP ranges for exposed services before an intrusion.", icon: SearchIcon, color: "text-sky-400", platform: "PRE" },
   { id: "T1592", tactic: "Reconnaissance", name: "Gather Victim Host Information", description: "Adversaries may gather information about victim hosts that can be used during targeting.", example: "Profiling public host hardware, software, firmware and client configuration.", icon: SearchIcon, color: "text-sky-400", platform: "PRE" },
@@ -969,6 +1008,7 @@ export const MITRE_DB: MitreDef[] = [
   ,...LATERAL_MOVEMENT_ENTRIES
   ,...COLLECTION_ENTRIES
   ,...COMMAND_AND_CONTROL_ENTRIES
+  ,...EXFILTRATION_ENTRIES
 ];
 
 // A few Stealth entries already exist because they are also part of another
@@ -1062,4 +1102,11 @@ const COMMAND_AND_CONTROL_SHARED_IDS = new Set(COMMAND_AND_CONTROL_CATALOG.map((
 for (const definition of MITRE_DB) {
   if (!COMMAND_AND_CONTROL_SHARED_IDS.has(definition.id)) continue;
   definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Command and Control"]));
+}
+
+const EXFILTRATION_SHARED_IDS = new Set(EXFILTRATION_CATALOG.map(([id]) => id));
+
+for (const definition of MITRE_DB) {
+  if (!EXFILTRATION_SHARED_IDS.has(definition.id)) continue;
+  definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Exfiltration"]));
 }

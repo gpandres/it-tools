@@ -354,6 +354,44 @@ const VECTORS = [
     ],
   },
   {
+    name: "Collection to Exfiltration",
+    desc: "A data-loss investigation follows sensitive files from staging to an external destination over web services, alternate protocols and scheduled transfers.",
+    windows_phases: [
+      [
+        { desc: "A process prepares a large document set for automated transfer after a collection burst.", mitre: "T1020", event: "Sysmon 1" },
+        { desc: "The archive is split into fixed-size chunks before leaving the endpoint.", mitre: "T1030", event: "Sysmon 1" },
+      ],
+      [
+        { desc: "The compromised account uploads an archive to an external cloud-storage service.", mitre: "T1567.002", event: "Cloud Audit" },
+        { desc: "A second transfer uses a protocol different from the established C2 channel.", mitre: "T1048.003", event: "5156" },
+      ],
+      [
+        { desc: "A scheduled job transfers small batches outside the normal business window.", mitre: "T1029", event: "4698" },
+        { desc: "A webhook receives data from a process that has no approved integration.", mitre: "T1567.004", event: "Sysmon 3" },
+      ],
+      [
+        { desc: "A cloud account under the actor's control receives a copied dataset through a sharing operation.", mitre: "T1537", event: "Cloud Audit" },
+      ],
+    ],
+    linux_phases: [
+      [
+        { desc: "A job automatically processes and transfers a set of sensitive files after collection.", mitre: "T1020", event: "auditd EXECVE" },
+        { desc: "The dataset is sent in bounded chunks to stay below network transfer thresholds.", mitre: "T1030", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "An archive is uploaded to an external cloud-storage account over an approved-looking web service.", mitre: "T1567.002", event: "auditd EXECVE" },
+        { desc: "Data leaves over an alternate unencrypted protocol rather than the implant's normal channel.", mitre: "T1048.003", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "A timer schedules repeated transfers during a quiet period overnight.", mitre: "T1029", event: "syslog" },
+        { desc: "A webhook endpoint receives files from a process running under a service account.", mitre: "T1567.004", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "A cloud sharing or synchronization operation moves the dataset into an external account.", mitre: "T1537", event: "Cloud Audit" },
+      ],
+    ],
+  },
+  {
     name: "Command and Control Investigation",
     desc: "A C2 investigation that correlates beaconing, protocol abuse, encoding, proxying and remote-access activity across endpoint and network telemetry.",
     windows_phases: [
