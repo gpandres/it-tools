@@ -95,7 +95,7 @@ export function Sidebar() {
       <div className="relative mb-4">
         <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
         <input type="search" aria-label="Search tools in navigation" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search tools..."
-          className="h-9 w-full border border-[#242424] bg-black pl-9 pr-8 text-xs text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-[#00ff9c]" />
+          className="sidebar-tool-search h-9 w-full appearance-none border border-[#242424] bg-black pl-9 pr-8 text-xs text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-[#00ff9c]" />
         {query && <button type="button" onClick={() => setQuery("")} aria-label="Clear tool search" className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"><X className="h-3.5 w-3.5" /></button>}
       </div>
 
