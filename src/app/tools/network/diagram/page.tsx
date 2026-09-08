@@ -16,6 +16,7 @@ import { autoLayout } from '@/lib/diagram-layout';
 import { useNotification } from '@/components/notification-provider';
 import { downloadBlob, downloadUrl } from '@/lib/browser-download';
 import { serializeNetworkDiagram, serializeNetworkInventory } from '@/lib/network-diagram-export';
+import { analyzeNetworkTopology, findNetworkPath } from '@/lib/diagram-analysis';
 import type { NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, DiagramSnapshot } from './types';
 
 const nodeTypes = { networkNode: NetworkNodeComponent };
@@ -44,6 +45,9 @@ function DiagramFlow() {
   const canGroup = selectedNodes.length >= 2 && selectedNodes.every(node => !node.parentId && node.data.type !== 'group');
   const canUngroup = selectedNodes.length === 1 && selectedNodes[0].data.type === 'group';
   const validationIssues = useMemo(() => validateDiagram({ nodes, edges }), [nodes, edges]);
+  const topologyAnalysis = useMemo(() => analyzeNetworkTopology(nodes, edges), [nodes, edges]);
+  const topologyNodes = useMemo(() => nodes.filter(node => node.data.type !== 'group').map(node => ({ id: node.id, label: node.data.label || node.id })), [nodes]);
+  const findPath = useCallback((sourceId: string, targetId: string) => findNetworkPath(nodesRef.current, edgesRef.current, sourceId, targetId), []);
 
   const recordHistory = useCallback(() => {
     setHistory(current => [...current.slice(-29), { nodes: cloneNodes(nodesRef.current), edges: cloneEdges(edgesRef.current) }]);
@@ -511,6 +515,9 @@ function DiagramFlow() {
         autoLayout={runAutoLayout}
         fitView={fitDiagram}
         validationIssues={validationIssues}
+        topologyNodes={topologyNodes}
+        topologyAnalysis={topologyAnalysis}
+        findPath={findPath}
         validate={() => notify(validationIssues.length === 0 ? 'No topology issues detected.' : `${validationIssues.length} topology issue${validationIssues.length === 1 ? '' : 's'} found.`, validationIssues.some(issue => issue.severity === 'error') ? 'error' : 'info')}
         exportDiagram={exportDiagram}
         exportSvg={exportSvg}

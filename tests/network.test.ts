@@ -5,8 +5,50 @@ import { expandIPv6 } from "../src/lib/ipv6.ts";
 import { parseAclRules } from "../src/lib/acl.ts";
 import { parseDiagram, validateDiagram } from "../src/lib/diagram-validation.ts";
 import { autoLayout } from "../src/lib/diagram-layout.ts";
+import { analyzeNetworkTopology, findNetworkPath } from "../src/lib/diagram-analysis.ts";
 import { NETWORK_INVENTORY_HEADERS, serializeNetworkDiagram, serializeNetworkInventory } from "../src/lib/network-diagram-export.ts";
 import type { NetworkNode } from "../src/app/tools/network/diagram/types.ts";
+
+test("analyzes topology cut points, bridge links and shortest paths", () => {
+  const nodes = ["a", "b", "c", "d"].map(id => ({ id, data: { type: "server" } }));
+  const edges = [
+    { id: "ab", source: "a", target: "b" },
+    { id: "bc", source: "b", target: "c" },
+    { id: "cd", source: "c", target: "d" },
+  ];
+  const analysis = analyzeNetworkTopology(nodes, edges);
+
+  assert.equal(analysis.componentCount, 1);
+  assert.deepEqual(analysis.articulationNodeIds, ["b", "c"]);
+  assert.deepEqual(analysis.bridgeEdgeIds, ["ab", "bc", "cd"]);
+  assert.deepEqual(findNetworkPath(nodes, edges, "a", "d"), {
+    nodeIds: ["a", "b", "c", "d"],
+    edgeIds: ["ab", "bc", "cd"],
+  });
+});
+
+test("does not report cut points inside a redundant cycle and ignores groups", () => {
+  const nodes = [
+    { id: "group", data: { type: "group" } },
+    { id: "a", data: { type: "server" }, parentId: "group" },
+    { id: "b", data: { type: "server" } },
+    { id: "c", data: { type: "server" } },
+    { id: "isolated", data: { type: "server" } },
+  ];
+  const edges = [
+    { id: "ab", source: "a", target: "b" },
+    { id: "bc", source: "b", target: "c" },
+    { id: "ca", source: "c", target: "a" },
+  ];
+  const analysis = analyzeNetworkTopology(nodes, edges);
+
+  assert.equal(analysis.nodeCount, 4);
+  assert.equal(analysis.componentCount, 2);
+  assert.deepEqual(analysis.articulationNodeIds, []);
+  assert.deepEqual(analysis.bridgeEdgeIds, []);
+  assert.deepEqual(analysis.isolatedNodeIds, ["isolated"]);
+  assert.equal(findNetworkPath(nodes, edges, "a", "isolated"), null);
+});
 
 test("rejects malformed IPv4 values instead of truncating them", () => {
   assert.throws(() => ipToInt("999.1.1.1"));

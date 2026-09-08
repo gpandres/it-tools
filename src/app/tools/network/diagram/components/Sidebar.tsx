@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ToolActionButton } from "@/components/tool-action-panel";
 import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Download, Eye, EyeOff, FileJson, Globe2, Group, HardDriveDownload, KeyRound, Laptop, LayoutDashboard, Maximize2, Minimize2, Network, Redo2, Router, ScanSearch, Search, Server, ServerCog, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Undo2, Ungroup, Upload, Wifi, X, Zap } from 'lucide-react';
 import type { DiagramIssue } from '@/lib/diagram-validation';
+import type { NetworkPath, TopologyAnalysis } from '@/lib/diagram-analysis';
 import type { NetworkConnectionType, NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, NetworkStatus, NetworkZone } from '../types';
 
 type PaletteItem = { type: NetworkNodeType; label: string; category: 'Network' | 'Security' | 'Compute' | 'Services' | 'Cloud' | 'Endpoints'; icon: typeof Router };
@@ -58,6 +59,9 @@ type SidebarProps = {
   autoLayout: () => void;
   fitView: () => void;
   validationIssues: DiagramIssue[];
+  topologyNodes: Array<{ id: string; label: string }>;
+  topologyAnalysis: TopologyAnalysis;
+  findPath: (sourceId: string, targetId: string) => NetworkPath | null;
   validate: () => void;
   exportDiagram: () => void;
   exportSvg: () => void;
@@ -71,15 +75,24 @@ type SidebarProps = {
   toggleFocusMode: () => void;
 };
 
-export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount, selectedEdgeCount, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, groupSelected, ungroupSelected, canGroup, canUngroup, autoLayout, fitView, validationIssues, validate, exportDiagram, exportSvg, exportInventory, importDiagram, loadTemplate, exportImage, showMinimap, toggleMinimap, focusMode, toggleFocusMode }: SidebarProps) {
+export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount, selectedEdgeCount, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, groupSelected, ungroupSelected, canGroup, canUngroup, autoLayout, fitView, validationIssues, topologyNodes, topologyAnalysis, findPath, validate, exportDiagram, exportSvg, exportInventory, importDiagram, loadTemplate, exportImage, showMinimap, toggleMinimap, focusMode, toggleFocusMode }: SidebarProps) {
   const [query, setQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<string[]>(['Network', 'Security', 'Compute', 'Services']);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const [pathSourceId, setPathSourceId] = useState('');
+  const [pathTargetId, setPathTargetId] = useState('');
+  const [pathResult, setPathResult] = useState<NetworkPath | null>(null);
+  const [pathChecked, setPathChecked] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const filteredItems = useMemo(() => NODE_TYPES.filter(item => `${item.label} ${item.category}`.toLowerCase().includes(query.toLowerCase().trim())), [query]);
   const categories = Array.from(new Set(filteredItems.map(item => item.category)));
   const selectedNodeId = selectedNode?.id;
   const selectedEdgeId = selectedEdge?.id;
+  const topologyLabelById = useMemo(() => new Map(topologyNodes.map(node => [node.id, node.label])), [topologyNodes]);
+  const activePathSourceId = topologyNodes.some(node => node.id === pathSourceId) ? pathSourceId : topologyNodes[0]?.id || '';
+  const activePathTargetId = topologyNodes.some(node => node.id === pathTargetId) ? pathTargetId : topologyNodes[1]?.id || topologyNodes[0]?.id || '';
+  const canFindPath = Boolean(activePathSourceId && activePathTargetId && activePathSourceId !== activePathTargetId);
+  const currentPathResult = pathResult?.nodeIds.every(id => topologyLabelById.has(id)) ? pathResult : null;
 
   useEffect(() => {
     if (selectedNodeId || selectedEdgeId) scrollAreaRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -171,6 +184,33 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
         <section className="border-b border-[#1a1a1a] py-4"><div className="mb-3 flex items-center justify-between"><h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Templates</h3><span className="text-[9px] text-zinc-700">starter topologies</span></div><div className="grid grid-cols-2 gap-2"><Button onClick={() => loadTemplate('Small Office')} variant="outline" size="sm" className="bg-black text-[10px]">Small Office</Button><Button onClick={() => loadTemplate('Enterprise Core')} variant="outline" size="sm" className="bg-black text-[10px]">Enterprise Core</Button><Button onClick={() => loadTemplate('DMZ')} variant="outline" size="sm" className="bg-black text-[10px]">DMZ</Button><Button onClick={() => loadTemplate('VLAN Segmentation')} variant="outline" size="sm" className="bg-black text-[10px]">VLAN Segmentation</Button><Button onClick={() => loadTemplate('Empty Canvas')} variant="outline" size="sm" className="col-span-2 bg-black text-[10px] text-red-400">Clear canvas</Button></div></section>
 
         <section className="border-b border-[#1a1a1a] py-4"><div className="mb-3 flex items-center justify-between"><h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Validation</h3><button type="button" onClick={validate} className="text-[10px] font-bold uppercase text-[#00ff9c] hover:text-white">Run checks</button></div>{validationIssues.length === 0 ? <div className="flex items-center gap-2 text-[10px] text-[#72e6b4]"><CheckCircle2 className="h-3.5 w-3.5" />No issues detected</div> : <div className="space-y-2">{validationIssues.slice(0, 6).map(issue => <div key={issue.id} className={`flex gap-2 text-[10px] ${issue.severity === 'error' ? 'text-red-300' : 'text-amber-300'}`}><AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" /><span><strong>{issue.title}:</strong> {issue.detail}</span></div>)}{validationIssues.length > 6 && <p className="text-[9px] text-zinc-600">+{validationIssues.length - 6} more issues</p>}</div>}</section>
+
+        <details className="border-b border-[#1a1a1a] py-4">
+          <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-zinc-500">Topology analysis</summary>
+          <div className="mt-3 space-y-3">
+            {topologyAnalysis.nodeCount === 0 ? <p className="text-[10px] leading-relaxed text-zinc-600">Add nodes to analyze connectivity and find paths.</p> : <>
+              <div className="grid grid-cols-3 gap-1.5 text-center font-mono text-[9px]">
+                <div className="rounded border border-[#1a1a1a] bg-black px-1 py-2"><strong className="block text-sm text-[#00ff9c]">{topologyAnalysis.nodeCount}</strong>nodes</div>
+                <div className="rounded border border-[#1a1a1a] bg-black px-1 py-2"><strong className="block text-sm text-[#38bdf8]">{topologyAnalysis.edgeCount}</strong>links</div>
+                <div className="rounded border border-[#1a1a1a] bg-black px-1 py-2"><strong className="block text-sm text-amber-300">{topologyAnalysis.componentCount}</strong>segments</div>
+              </div>
+              <div className="space-y-1.5 font-mono text-[10px] text-zinc-500">
+                <p><span className="text-zinc-300">Critical nodes:</span> {topologyAnalysis.articulationNodeIds.length === 0 ? 'none' : topologyAnalysis.articulationNodeIds.map(id => topologyLabelById.get(id) || id).join(', ')}</p>
+                <p><span className="text-zinc-300">Bridge links:</span> {topologyAnalysis.bridgeEdgeIds.length || 'none'}</p>
+                <p><span className="text-zinc-300">Isolated:</span> {topologyAnalysis.isolatedNodeIds.length === 0 ? 'none' : topologyAnalysis.isolatedNodeIds.map(id => topologyLabelById.get(id) || id).join(', ')}</p>
+              </div>
+              <div className="border-t border-[#1a1a1a] pt-3">
+                <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-zinc-600">Path finder</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <select value={activePathSourceId} onChange={event => { setPathSourceId(event.target.value); setPathResult(null); setPathChecked(false); }} aria-label="Path source" className="h-8 min-w-0 rounded border border-[#1a1a1a] bg-black px-2 text-[10px] text-zinc-300">{topologyNodes.map(node => <option key={node.id} value={node.id}>{node.label}</option>)}</select>
+                  <select value={activePathTargetId} onChange={event => { setPathTargetId(event.target.value); setPathResult(null); setPathChecked(false); }} aria-label="Path target" className="h-8 min-w-0 rounded border border-[#1a1a1a] bg-black px-2 text-[10px] text-zinc-300">{topologyNodes.map(node => <option key={node.id} value={node.id}>{node.label}</option>)}</select>
+                </div>
+                <Button type="button" onClick={() => { setPathResult(findPath(activePathSourceId, activePathTargetId)); setPathChecked(true); }} disabled={!canFindPath} variant="outline" size="sm" className="mt-2 w-full bg-black text-[10px]"><ScanSearch className="mr-1 h-3 w-3" />Find path</Button>
+                {pathChecked && (currentPathResult ? <p className="mt-2 rounded border border-[#00ff9c]/30 bg-[#00ff9c]/5 px-2 py-1.5 text-[10px] leading-relaxed text-[#72e6b4]">{currentPathResult.nodeIds.map(id => topologyLabelById.get(id) || id).join(' → ')}<span className="mt-1 block text-[9px] text-zinc-500">{currentPathResult.edgeIds.length} link{currentPathResult.edgeIds.length === 1 ? '' : 's'}</span></p> : <p className="mt-2 rounded border border-amber-300/30 bg-amber-300/5 px-2 py-1.5 text-[10px] text-amber-200">No path found between these nodes.</p>)}
+              </div>
+            </>}
+          </div>
+        </details>
 
         <details className="mt-4 border-t border-[#1a1a1a] pt-4" open>
           <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-zinc-500">Keyboard &amp; guide</summary>
