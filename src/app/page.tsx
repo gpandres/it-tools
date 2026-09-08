@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Star, ArrowRight } from "lucide-react";
 import { CommandMenu } from "@/components/command-menu";
 import { useFavorites } from "@/components/favorites-provider";
@@ -8,12 +8,38 @@ import { toolsRegistry, CATEGORIES } from "@/lib/tools";
 import { searchTools, toolDataFlow, workflows } from "@/lib/tool-discovery";
 import { catalogStructuredData, serializeJsonLd, SITE_URL } from "@/lib/seo";
 
+const HomeToolCard = memo(function HomeToolCard({
+  tool,
+  favorite,
+  onToggleFavorite,
+}: {
+  tool: typeof toolsRegistry[number];
+  favorite: boolean;
+  onToggleFavorite: (toolId: string, isFavorite: boolean) => void;
+}) {
+  const dataFlow = toolDataFlow(tool);
+  return <article className="relative flex flex-col border border-zinc-800 bg-[#050505] p-5 hover:border-zinc-600">
+    <p className="text-[10px] text-zinc-400 tracking-wide pr-8 mb-3">{tool.category}</p>
+    <button aria-label={`${favorite ? "Remove" : "Add"} ${tool.name} ${favorite ? "from" : "to"} favorites`} aria-pressed={favorite} onClick={() => onToggleFavorite(tool.id, favorite)} className="absolute right-3 top-3 p-2 text-zinc-400 hover:text-[#ffb000]"><Star aria-hidden="true" className={`w-4 h-4 ${favorite ? "fill-[#ffb000] text-[#ffb000]" : ""}`} /></button>
+    <h3 className="text-sm font-bold text-[#00ff9c]"><Link href={tool.path} className="hover:underline">{tool.name}</Link></h3>
+    <p className="text-xs text-zinc-400 mt-2 mb-4 flex-1">{tool.description}</p>
+    <details className="text-[11px] text-zinc-400">
+      <summary className="cursor-pointer">{dataFlow.label}</summary>
+      <p className="mt-2 leading-relaxed">{dataFlow.description}</p>
+    </details>
+  </article>;
+});
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [localOnly, setLocalOnly] = useState(false);
-  const { favorites, recent, addFavorite, removeFavorite, clearRecent } = useFavorites();
+  const { favorites, recent, addFavorite, removeFavorite, clearRecent, isLoaded } = useFavorites();
+  const preferencesReady = useRef(isLoaded);
+  useEffect(() => {
+    preferencesReady.current = isLoaded;
+  }, [isLoaded]);
   const filtered = useMemo(() => searchTools(query).filter(tool =>
     (!category || tool.category === category) &&
     (!favoritesOnly || favorites.includes(tool.id)) &&
@@ -23,6 +49,11 @@ export default function Home() {
     const tool = toolsRegistry.find(item => item.id === id);
     return tool ? [tool] : [];
   });
+  const onToggleFavorite = useCallback((toolId: string, isFavorite: boolean) => {
+    if (!preferencesReady.current) return;
+    if (isFavorite) removeFavorite(toolId);
+    else addFavorite(toolId);
+  }, [addFavorite, removeFavorite]);
   return <main className="flex-1 p-4 sm:p-8 lg:p-12">
     <title>IT Tools | andresgp.dev</title>
     <meta name="description" content="Local-first tools for developers, sysadmins, DevOps and cybersecurity teams." />
@@ -51,7 +82,10 @@ export default function Home() {
         </div>
       </header>
 
-      {recentTools.length > 0 && <section aria-labelledby="recent-heading">
+      {!isLoaded ? <section aria-label="Loading recently opened tools" className="border border-zinc-800 bg-[#050505] p-5" role="status">
+        <div className="mb-4 h-4 w-40 animate-pulse bg-[#163b2d]" />
+        <div className="flex gap-2"><div className="h-8 w-36 animate-pulse bg-[#101b17]" /><div className="h-8 w-28 animate-pulse bg-[#101b17]" /><div className="h-8 w-32 animate-pulse bg-[#101b17]" /></div>
+      </section> : recentTools.length > 0 && <section aria-labelledby="recent-heading">
         <div className="flex justify-between gap-4 mb-4">
           <h2 id="recent-heading" className="text-sm text-[#ffb000]">Recently opened</h2>
           <button onClick={clearRecent} className="text-xs text-zinc-400 underline">Clear recent tools</button>
@@ -90,26 +124,13 @@ export default function Home() {
           </div>
         </div>
         <div className="flex flex-wrap gap-5 items-center py-4 text-xs text-zinc-300">
-          <label className="flex items-center gap-2"><input type="checkbox" checked={favoritesOnly} onChange={event => setFavoritesOnly(event.target.checked)} className="accent-[#00ff9c]" />Favorites only</label>
+          {!isLoaded ? <div role="status" className="flex items-center gap-2 text-zinc-500"><span className="h-3 w-3 animate-pulse bg-[#163b2d]" />Loading saved preferences...</div> : <label className="flex items-center gap-2"><input type="checkbox" checked={favoritesOnly} onChange={event => setFavoritesOnly(event.target.checked)} className="accent-[#00ff9c]" />Favorites only</label>}
           <label className="flex items-center gap-2"><input type="checkbox" checked={localOnly} onChange={event => setLocalOnly(event.target.checked)} className="accent-[#00ff9c]" />No external services</label>
           <span role="status" className="text-zinc-400">{filtered.length} tools found</span>
           {(query || category || favoritesOnly || localOnly) && <button className="underline text-[#00ff9c]" onClick={() => { setQuery(""); setCategory(""); setFavoritesOnly(false); setLocalOnly(false); }}>Reset filters</button>}
         </div>
         {filtered.length === 0 ? <p className="p-8 border border-zinc-800 text-sm text-zinc-400">No matching tools. Try another search or reset the filters.</p> : <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(tool => {
-            const favorite = favorites.includes(tool.id);
-            const dataFlow = toolDataFlow(tool);
-            return <article key={tool.id} className="relative flex flex-col border border-zinc-800 bg-[#050505] p-5 hover:border-zinc-600">
-              <p className="text-[10px] text-zinc-400 tracking-wide pr-8 mb-3">{tool.category}</p>
-              <button aria-label={`${favorite ? "Remove" : "Add"} ${tool.name} ${favorite ? "from" : "to"} favorites`} aria-pressed={favorite} onClick={() => favorite ? removeFavorite(tool.id) : addFavorite(tool.id)} className="absolute right-3 top-3 p-2 text-zinc-400 hover:text-[#ffb000]"><Star aria-hidden="true" className={`w-4 h-4 ${favorite ? "fill-[#ffb000] text-[#ffb000]" : ""}`} /></button>
-              <h3 className="text-sm font-bold text-[#00ff9c]"><Link href={tool.path} className="hover:underline">{tool.name}</Link></h3>
-              <p className="text-xs text-zinc-400 mt-2 mb-4 flex-1">{tool.description}</p>
-              <details className="text-[11px] text-zinc-400">
-                <summary className="cursor-pointer">{dataFlow.label}</summary>
-                <p className="mt-2 leading-relaxed">{dataFlow.description}</p>
-              </details>
-            </article>;
-          })}
+          {filtered.map(tool => <HomeToolCard key={tool.id} tool={tool} favorite={favorites.includes(tool.id)} onToggleFavorite={onToggleFavorite} />)}
         </div>}
       </section>
     </div>

@@ -40,12 +40,16 @@ export function Sidebar() {
   const [query, setQuery] = useState("");
   // Keep the first render identical on the server and client; restore persisted UI state after hydration.
   const [collapsedCategories, setCollapsedCategories] = useState<string[]>([]);
+  const [navigationReady, setNavigationReady] = useState(false);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const { favorites, recent, isLoaded } = useFavorites();
 
   useEffect(() => {
     const restoreCollapsedCategories = () => setCollapsedCategories(readCollapsedCategories());
-    const restoreTimer = window.setTimeout(restoreCollapsedCategories, 0);
+    const restoreTimer = window.setTimeout(() => {
+      restoreCollapsedCategories();
+      setNavigationReady(true);
+    }, 0);
     window.addEventListener(STORAGE_CHANGED, restoreCollapsedCategories);
     return () => {
       window.clearTimeout(restoreTimer);
@@ -87,6 +91,12 @@ export function Sidebar() {
         {query && <button type="button" onClick={() => setQuery("")} aria-label="Clear tool search" className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"><X className="h-3.5 w-3.5" /></button>}
       </div>
 
+      {!navigationReady ? <div aria-label="Loading tools" className="space-y-2 px-1 py-3" role="status">
+        <div className="h-2 w-20 animate-pulse bg-[#163b2d]" />
+        <div className="h-7 w-full animate-pulse bg-[#101b17]" />
+        <div className="h-7 w-5/6 animate-pulse bg-[#101b17]" />
+        <div className="h-7 w-11/12 animate-pulse bg-[#101b17]" />
+      </div> : <>
       {isLoaded && favoriteTools.length > 0 && <section className="mb-3 border-b border-[#161616] pb-3">
         <div className="mb-1 flex items-center gap-2 px-1 text-[10px] font-bold tracking-widest text-[#ffb000]"><Star className="h-3 w-3" aria-hidden="true" /> FAVORITES <span className="ml-auto text-zinc-600">{favoriteTools.length}</span></div>
         {favoriteTools.map(renderLink)}
@@ -112,6 +122,7 @@ export function Sidebar() {
         })}
         {filteredTools.length === 0 && <p className="px-1 py-4 text-[11px] text-zinc-500">No tools match “{query}”.</p>}
       </div>
+      </>}
     </nav>
   );
 
