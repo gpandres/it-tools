@@ -105,8 +105,10 @@ function DiagramFlow() {
   }, [nodes, edges, diagramMetadata]);
 
   useEffect(() => {
-    if (workspaceLoaded.current) writeNetworkDiagramLibrary(savedDiagrams);
-  }, [savedDiagrams]);
+    if (workspaceLoaded.current && !writeNetworkDiagramLibrary(savedDiagrams)) {
+      notify('Could not persist the diagram workspace. Browser storage may be full.', 'error');
+    }
+  }, [notify, savedDiagrams]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<NetworkNode>[]) => setNodes((nds) => {
@@ -514,7 +516,7 @@ function DiagramFlow() {
     const timestamp = Date.now();
     const title = diagramMetadata.title?.trim() || 'Untitled topology';
     const snapshot: SavedNetworkDiagram = {
-      id: `diagram_${timestamp}_${nodesRef.current.length}`,
+      id: `diagram_${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${timestamp}_${Math.random().toString(36).slice(2)}`}`,
       title,
       description: diagramMetadata.description?.trim() || '',
       nodes: cloneNodes(nodesRef.current),
@@ -552,8 +554,8 @@ function DiagramFlow() {
   return (
     <>
       <div className="relative">
-        <div className="mb-4 2xl:hidden"><DiagramGuide /></div>
-        <div className="pointer-events-auto absolute right-full top-0 mr-6 hidden w-56 2xl:block"><DiagramGuide /></div>
+        <div className="mb-4 2xl:hidden"><DiagramGuide headingId="diagram-guide-heading-mobile" /></div>
+        <div className="pointer-events-auto absolute right-full top-0 mr-6 hidden w-56 2xl:block"><DiagramGuide headingId="diagram-guide-heading-desktop" /></div>
         <div className={`${focusMode ? 'fixed inset-3 z-50 h-[calc(100dvh-1.5rem)]' : 'h-[800px]'} flex w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]`} data-testid="network-diagram-editor" role="application" aria-label="Network diagram editor">
       <Sidebar 
         selectedNode={selectedNode}

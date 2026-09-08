@@ -2,10 +2,10 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Download, FileJson, FolderOpen, Save, Trash2, Upload } from 'lucide-react';
 import type { SavedNetworkDiagram } from '@/lib/network-diagram-workspace';
 
-export function DiagramGuide() {
+export function DiagramGuide({ headingId = 'diagram-guide-heading' }: { headingId?: string }) {
   return (
-    <section className="rounded-lg border border-[#1a1a1a] bg-[#080808] p-4" aria-labelledby="diagram-guide-heading">
-      <h2 id="diagram-guide-heading" className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Quick guide</h2>
+    <section className="rounded-lg border border-[#1a1a1a] bg-[#080808] p-4" aria-labelledby={headingId}>
+      <h2 id={headingId} className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Quick guide</h2>
       <div className="space-y-3 font-mono text-[10px] leading-relaxed text-zinc-500">
         <p><span className="text-[#00ff9c]">01</span> Add a device from the palette or drag it onto the canvas.</p>
         <p><span className="text-[#00ff9c]">02</span> Connect source to target handles to create a link.</p>
