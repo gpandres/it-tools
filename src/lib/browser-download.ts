@@ -3,11 +3,21 @@ export function safeDownloadName(value: string, fallback: string): string {
 }
 
 export function downloadTextFile(content: string, filename: string, mimeType = "text/plain;charset=utf-8"): void {
-  const blob = new Blob([content], { type: mimeType });
+  downloadBlob(new Blob([content], { type: mimeType }), filename);
+}
+
+export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
+  downloadUrl(url, filename);
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+export function downloadUrl(url: string, filename: string): void {
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
+  link.rel = "noopener";
+  document.body.appendChild(link);
   link.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  link.remove();
 }

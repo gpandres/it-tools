@@ -14,6 +14,7 @@ import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
 import { parseDiagram, validateDiagram } from '@/lib/diagram-validation';
 import { autoLayout } from '@/lib/diagram-layout';
 import { useNotification } from '@/components/notification-provider';
+import { downloadBlob, downloadUrl } from '@/lib/browser-download';
 import type { NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, DiagramSnapshot } from './types';
 
 const nodeTypes = { networkNode: NetworkNodeComponent };
@@ -26,6 +27,7 @@ function DiagramFlow() {
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [history, setHistory] = useState<DiagramSnapshot[]>([]);
   const [future, setFuture] = useState<DiagramSnapshot[]>([]);
+  const exportInFlight = useRef(false);
   const { notify } = useNotification();
   
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -346,11 +348,12 @@ function DiagramFlow() {
   };
 
   const exportDiagram = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ nodes, edges }, null, 2));
-    const dlAnchorElem = document.createElement('a');
-    dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", `network-diagram-${Date.now()}.json`);
-    dlAnchorElem.click();
+    const safeDiagram = parseDiagram({ nodes, edges });
+    if (!safeDiagram) {
+      notify('The current diagram cannot be exported because it is invalid.', 'error');
+      return;
+    }
+    downloadBlob(new Blob([JSON.stringify(safeDiagram, null, 2)], { type: 'application/json;charset=utf-8' }), `network-diagram-${Date.now()}.json`);
   };
 
   const importDiagram = (file: File) => {
@@ -391,12 +394,18 @@ function DiagramFlow() {
     const imageWidth = 1920;
     const imageHeight = 1080;
     
-    const viewport = getViewportForBounds(nodesBounds, imageWidth, imageHeight, 0.5, 2, 0.1);
+    const viewport = getViewportForBounds(nodesBounds, imageWidth, imageHeight, 0.01, 2, 0.1);
     
     const element = document.querySelector('.react-flow__viewport') as HTMLElement;
     if (!element) return;
     
-    let backgroundColor = bgColor === 'black' ? '#0a0a0a' : (bgColor === 'white' ? '#ffffff' : 'transparent');
+    const backgroundColor = bgColor === 'black' ? '#0a0a0a' : (bgColor === 'white' ? '#ffffff' : 'transparent');
+
+    if (exportInFlight.current) {
+      notify('An export is already being generated. Please wait for it to finish.', 'info');
+      return;
+    }
+    exportInFlight.current = true;
 
     toPng(element, {
       backgroundColor,
@@ -408,11 +417,10 @@ function DiagramFlow() {
         transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
       },
     }).then((dataUrl) => {
-      const a = document.createElement('a');
-      a.setAttribute('download', `network-diagram-${bgColor}.png`);
-      a.setAttribute('href', dataUrl);
-      a.click();
-    }).catch(() => notify("Could not export the diagram image.", "error"));
+      downloadUrl(dataUrl, `network-diagram-${bgColor}.png`);
+    }).catch(() => notify("Could not export the diagram image.", "error")).finally(() => {
+      exportInFlight.current = false;
+    });
   };
 
   const exportSvg = () => {
@@ -424,12 +432,18 @@ function DiagramFlow() {
     const nodesBounds = getNodesBoundsFromFlow(nodes);
     const imageWidth = 1920;
     const imageHeight = 1080;
-    const viewport = getViewportForBounds(nodesBounds, imageWidth, imageHeight, 0.5, 2, 0.1);
+    const viewport = getViewportForBounds(nodesBounds, imageWidth, imageHeight, 0.01, 2, 0.1);
     const element = document.querySelector('.react-flow__viewport') as HTMLElement | null;
     if (!element) {
       notify('The diagram canvas is not ready for export.', 'error');
       return;
     }
+
+    if (exportInFlight.current) {
+      notify('An export is already being generated. Please wait for it to finish.', 'info');
+      return;
+    }
+    exportInFlight.current = true;
 
     toSvg(element, {
       backgroundColor: '#0a0a0a',
@@ -441,11 +455,10 @@ function DiagramFlow() {
         transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
       },
     }).then((dataUrl) => {
-      const anchor = document.createElement('a');
-      anchor.download = `network-diagram-${Date.now()}.svg`;
-      anchor.href = dataUrl;
-      anchor.click();
-    }).catch(() => notify('Could not export the diagram as SVG.', 'error'));
+      downloadUrl(dataUrl, `network-diagram-${Date.now()}.svg`);
+    }).catch(() => notify('Could not export the diagram as SVG.', 'error')).finally(() => {
+      exportInFlight.current = false;
+    });
   };
 
   const exportInventory = () => {
@@ -455,11 +468,7 @@ function DiagramFlow() {
     edges.forEach(edge => rows.push(['edge', edge.id, edge.data?.label || '', edge.data?.connectionType || '', edge.source, edge.target, '', '', '', '', '', '', '', edge.data?.sourcePort || '', edge.data?.targetPort || '', edge.data?.bandwidth || '', edge.data?.vlanMode || '', edge.data?.vlans || '', edge.data?.label || '']));
 
     const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\r\n');
-    const anchor = document.createElement('a');
-    anchor.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    anchor.download = `network-inventory-${Date.now()}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(anchor.href);
+    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `network-inventory-${Date.now()}.csv`);
   };
 
   const runAutoLayout = () => {
