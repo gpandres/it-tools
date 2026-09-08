@@ -1,4 +1,4 @@
-import { parseDiagram, type DiagramData } from './diagram-validation.ts';
+import { parseDiagram, type DiagramData, type DiagramMetadata } from './diagram-validation.ts';
 import type { NetworkEdge, NetworkNode } from '@/app/tools/network/diagram/types';
 
 export const NETWORK_INVENTORY_HEADERS = [
@@ -6,12 +6,12 @@ export const NETWORK_INVENTORY_HEADERS = [
   'vendor', 'model', 'source_port', 'target_port', 'bandwidth', 'vlan_mode', 'allowed_vlans', 'hostname_or_label',
 ] as const;
 
-export function normalizeNetworkDiagram(nodes: NetworkNode[], edges: NetworkEdge[]): DiagramData | null {
-  return parseDiagram({ nodes, edges });
+export function normalizeNetworkDiagram(nodes: NetworkNode[], edges: NetworkEdge[], metadata?: DiagramMetadata): DiagramData | null {
+  return parseDiagram({ nodes, edges, metadata });
 }
 
-export function serializeNetworkDiagram(nodes: NetworkNode[], edges: NetworkEdge[]): string | null {
-  const safeDiagram = normalizeNetworkDiagram(nodes, edges);
+export function serializeNetworkDiagram(nodes: NetworkNode[], edges: NetworkEdge[], metadata?: DiagramMetadata): string | null {
+  const safeDiagram = normalizeNetworkDiagram(nodes, edges, metadata);
   return safeDiagram ? JSON.stringify(safeDiagram, null, 2) : null;
 }
 

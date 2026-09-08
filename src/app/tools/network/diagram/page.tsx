@@ -17,10 +17,13 @@ import { useNotification } from '@/components/notification-provider';
 import { downloadBlob, downloadUrl } from '@/lib/browser-download';
 import { serializeNetworkDiagram, serializeNetworkInventory } from '@/lib/network-diagram-export';
 import { analyzeNetworkTopology, findNetworkPath } from '@/lib/diagram-analysis';
+import { serializeNetworkMarkdown } from '@/lib/network-diagram-documentation';
+import type { DiagramMetadata } from '@/lib/diagram-validation';
 import type { NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, DiagramSnapshot } from './types';
 
 const nodeTypes = { networkNode: NetworkNodeComponent };
 const edgeTypes = { networkEdge: NetworkEdgeComponent };
+const DEFAULT_DIAGRAM_METADATA: DiagramMetadata = { title: 'Network topology', description: 'Network topology documentation generated locally in the browser.' };
 
 function DiagramFlow() {
   const [nodes, setNodes] = useState<NetworkNode[]>(() => cloneNodes(TEMPLATES["Empty Canvas"].nodes as NetworkNode[]));
@@ -31,6 +34,7 @@ function DiagramFlow() {
   const [future, setFuture] = useState<DiagramSnapshot[]>([]);
   const [showMinimap, setShowMinimap] = useState(true);
   const [focusMode, setFocusMode] = useState(false);
+  const [diagramMetadata, setDiagramMetadata] = useState<DiagramMetadata>(DEFAULT_DIAGRAM_METADATA);
   const exportInFlight = useRef(false);
   const { notify } = useNotification();
   
@@ -70,11 +74,15 @@ function DiagramFlow() {
     const saved = readLocalStorage('network_diagram');
     if (saved) {
       try {
-        const parsed = parseDiagram(JSON.parse(saved));
-        if (parsed && parsed.nodes.length > 0) {
-          const { nodes: savedNodes, edges: savedEdges } = parsed;
-          replaceDiagram(savedNodes as NetworkNode[], savedEdges as NetworkEdge[], false);
-          setTimeout(() => fitView(), 100);
+        const parsedValue = JSON.parse(saved);
+        const parsed = parseDiagram(parsedValue);
+        if (parsed) {
+          if (parsed.metadata) setDiagramMetadata(current => ({ ...current, ...parsed.metadata }));
+          if (parsed.nodes.length > 0) {
+            const { nodes: savedNodes, edges: savedEdges } = parsed;
+            replaceDiagram(savedNodes as NetworkNode[], savedEdges as NetworkEdge[], false);
+            setTimeout(() => fitView(), 100);
+          }
         }
       } catch (e) {
         console.error("Failed to parse saved diagram", e);
@@ -85,10 +93,10 @@ function DiagramFlow() {
   // Save to local storage on change
   useEffect(() => {
     const saveTimer = setTimeout(() => {
-      writeLocalStorage('network_diagram', JSON.stringify({ nodes, edges }));
+      writeLocalStorage('network_diagram', JSON.stringify({ nodes, edges, metadata: diagramMetadata }));
     }, 1000);
     return () => clearTimeout(saveTimer);
-  }, [nodes, edges]);
+  }, [nodes, edges, diagramMetadata]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<NetworkNode>[]) => setNodes((nds) => {
@@ -359,7 +367,7 @@ function DiagramFlow() {
   };
 
   const exportDiagram = () => {
-    const serialized = serializeNetworkDiagram(nodes, edges);
+    const serialized = serializeNetworkDiagram(nodes, edges, diagramMetadata);
     if (!serialized) {
       notify('The current diagram cannot be exported because it is invalid.', 'error');
       return;
@@ -380,6 +388,7 @@ function DiagramFlow() {
         const parsed = parseDiagram(JSON.parse(content));
         if (parsed) {
           replaceDiagram(parsed.nodes as NetworkNode[], parsed.edges as NetworkEdge[]);
+          if (parsed.metadata) setDiagramMetadata(current => ({ ...current, ...parsed.metadata }));
           setSelectedNodeIds([]);
           setSelectedEdgeIds([]);
           setTimeout(() => fitView({ padding: 0.2 }), 100);
@@ -482,6 +491,11 @@ function DiagramFlow() {
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `network-inventory-${Date.now()}.csv`);
   };
 
+  const exportMarkdown = () => {
+    const markdown = serializeNetworkMarkdown(nodes, edges, topologyAnalysis, validationIssues, diagramMetadata);
+    downloadBlob(new Blob([markdown], { type: 'text/markdown;charset=utf-8' }), `network-documentation-${Date.now()}.md`);
+  };
+
   const runAutoLayout = () => {
     recordHistory();
     const nextNodes = autoLayout(nodesRef.current, edgesRef.current);
@@ -515,6 +529,8 @@ function DiagramFlow() {
         autoLayout={runAutoLayout}
         fitView={fitDiagram}
         validationIssues={validationIssues}
+        diagramMetadata={diagramMetadata}
+        updateDiagramMetadata={newMetadata => setDiagramMetadata(current => ({ ...current, ...newMetadata }))}
         topologyNodes={topologyNodes}
         topologyAnalysis={topologyAnalysis}
         findPath={findPath}
@@ -522,6 +538,7 @@ function DiagramFlow() {
         exportDiagram={exportDiagram}
         exportSvg={exportSvg}
         exportInventory={exportInventory}
+        exportMarkdown={exportMarkdown}
         importDiagram={importDiagram}
         loadTemplate={loadTemplate}
         exportImage={exportImage}

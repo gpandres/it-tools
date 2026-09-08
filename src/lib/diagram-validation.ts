@@ -1,6 +1,7 @@
 import { cidrToMaskInt, ipToInt, validateIp } from './network.ts';
 
-export type DiagramData = { nodes: Record<string, unknown>[]; edges: Record<string, unknown>[] };
+export type DiagramMetadata = { title?: string; description?: string };
+export type DiagramData = { nodes: Record<string, unknown>[]; edges: Record<string, unknown>[]; metadata?: DiagramMetadata };
 export type DiagramIssue = { id: string; severity: 'error' | 'warning'; title: string; detail: string };
 
 const MAX_LABEL_LENGTH = 1000;
@@ -24,7 +25,7 @@ function safeRecordFields(value: unknown, fields: string[]) {
 
 export function parseDiagram(value: unknown): DiagramData | null {
   if (!value || typeof value !== "object") return null;
-  const item = value as { nodes?: unknown; edges?: unknown };
+  const item = value as { nodes?: unknown; edges?: unknown; metadata?: unknown };
   if (!Array.isArray(item.nodes) || !Array.isArray(item.edges) || item.nodes.length > 500 || item.edges.length > 1000) return null;
   const nodes = item.nodes.map((node) => {
     if (!node || typeof node !== "object") return null;
@@ -109,7 +110,14 @@ export function parseDiagram(value: unknown): DiagramData | null {
     return false;
   })) return null;
 
-  return normalizedEdges.every((edge) => nodeIds.has(edge.source as string) && nodeIds.has(edge.target as string)) ? { nodes: normalizedNodes, edges: normalizedEdges } : null;
+  if (!normalizedEdges.every((edge) => nodeIds.has(edge.source as string) && nodeIds.has(edge.target as string))) return null;
+  const rawMetadata = item.metadata && typeof item.metadata === 'object' ? item.metadata as Record<string, unknown> : {};
+  const metadata: DiagramMetadata = {};
+  const title = safeString(rawMetadata.title, 200).trim();
+  const description = safeString(rawMetadata.description, 2000).trim();
+  if (title) metadata.title = title;
+  if (description) metadata.description = description;
+  return Object.keys(metadata).length > 0 ? { nodes: normalizedNodes, edges: normalizedEdges, metadata } : { nodes: normalizedNodes, edges: normalizedEdges };
 }
 
 function readNodeString(node: Record<string, unknown>, key: string) {

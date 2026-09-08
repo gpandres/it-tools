@@ -6,8 +6,9 @@ import { parseAclRules } from "../src/lib/acl.ts";
 import { parseDiagram, validateDiagram } from "../src/lib/diagram-validation.ts";
 import { autoLayout } from "../src/lib/diagram-layout.ts";
 import { analyzeNetworkTopology, findNetworkPath } from "../src/lib/diagram-analysis.ts";
+import { serializeNetworkMarkdown, summarizeNetworkDiagram } from "../src/lib/network-diagram-documentation.ts";
 import { NETWORK_INVENTORY_HEADERS, serializeNetworkDiagram, serializeNetworkInventory } from "../src/lib/network-diagram-export.ts";
-import type { NetworkNode } from "../src/app/tools/network/diagram/types.ts";
+import type { NetworkEdge, NetworkNode } from "../src/app/tools/network/diagram/types.ts";
 
 test("analyzes topology cut points, bridge links and shortest paths", () => {
   const nodes = ["a", "b", "c", "d"].map(id => ({ id, data: { type: "server" } }));
@@ -48,6 +49,24 @@ test("does not report cut points inside a redundant cycle and ignores groups", (
   assert.deepEqual(analysis.bridgeEdgeIds, []);
   assert.deepEqual(analysis.isolatedNodeIds, ["isolated"]);
   assert.equal(findNetworkPath(nodes, edges, "a", "isolated"), null);
+});
+
+test("generates safe network documentation with inventory and resilience findings", () => {
+  const nodes = [
+    { id: "router", position: { x: 0, y: 0 }, data: { type: "router", label: "Edge | Router", zone: "wan", status: "active", ip: "10.0.0.1" } },
+    { id: "server", position: { x: 100, y: 0 }, data: { type: "server", label: "App Server", zone: "server", status: "degraded", ip: "10.0.1.10" } },
+  ] as unknown as NetworkNode[];
+  const edges = [{ id: "link", source: "router", target: "server", data: { connectionType: "fiber" } }] as unknown as NetworkEdge[];
+  const analysis = analyzeNetworkTopology(nodes, edges);
+  const markdown = serializeNetworkMarkdown(nodes, edges, analysis, [], { title: "Office topology", description: "Primary site" });
+  const stats = summarizeNetworkDiagram(nodes, edges);
+
+  assert.equal(stats.deviceCount, 2);
+  assert.equal(stats.zoneCounts.wan, 1);
+  assert.match(markdown, /^# Office topology/m);
+  assert.match(markdown, /Edge \\| Router/);
+  assert.match(markdown, /## Device inventory/);
+  assert.match(markdown, /Critical nodes: Edge \\| Router/);
 });
 
 test("rejects malformed IPv4 values instead of truncating them", () => {
@@ -279,7 +298,7 @@ test("network JSON export is safe and round-trippable", () => {
     { id: "group", type: "networkNode", position: { x: 0, y: 0 }, width: 400, height: 240, data: { label: "DMZ", type: "group" }, selected: true },
     { id: "fw", type: "networkNode", position: { x: 24, y: 24 }, parentId: "group", extent: "parent", data: { label: "Firewall", type: "firewall", ip: "10.0.0.1", injected: "remove" } },
   ] as unknown as NetworkNode[];
-  const json = serializeNetworkDiagram(nodes, []);
+  const json = serializeNetworkDiagram(nodes, [], { title: "DMZ topology", description: "Production perimeter" });
   assert.ok(json);
   const parsed = JSON.parse(json);
   assert.equal(parsed.nodes[0].selected, undefined);
@@ -287,6 +306,7 @@ test("network JSON export is safe and round-trippable", () => {
   assert.equal(parsed.nodes[1].data.injected, undefined);
   assert.equal(parsed.nodes[0].width, 400);
   assert.equal(parsed.nodes[0].height, 240);
+  assert.deepEqual(parsed.metadata, { title: "DMZ topology", description: "Production perimeter" });
 });
 
 test("network inventory export preserves columns and escapes CSV content", () => {

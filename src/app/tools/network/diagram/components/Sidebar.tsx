@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ToolActionButton } from "@/components/tool-action-panel";
 import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Download, Eye, EyeOff, FileJson, Globe2, Group, HardDriveDownload, KeyRound, Laptop, LayoutDashboard, Maximize2, Minimize2, Network, Redo2, Router, ScanSearch, Search, Server, ServerCog, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Undo2, Ungroup, Upload, Wifi, X, Zap } from 'lucide-react';
 import type { DiagramIssue } from '@/lib/diagram-validation';
+import type { DiagramMetadata } from '@/lib/diagram-validation';
 import type { NetworkPath, TopologyAnalysis } from '@/lib/diagram-analysis';
 import type { NetworkConnectionType, NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, NetworkStatus, NetworkZone } from '../types';
 
@@ -59,6 +60,8 @@ type SidebarProps = {
   autoLayout: () => void;
   fitView: () => void;
   validationIssues: DiagramIssue[];
+  diagramMetadata: DiagramMetadata;
+  updateDiagramMetadata: (metadata: Partial<DiagramMetadata>) => void;
   topologyNodes: Array<{ id: string; label: string }>;
   topologyAnalysis: TopologyAnalysis;
   findPath: (sourceId: string, targetId: string) => NetworkPath | null;
@@ -66,6 +69,7 @@ type SidebarProps = {
   exportDiagram: () => void;
   exportSvg: () => void;
   exportInventory: () => void;
+  exportMarkdown: () => void;
   importDiagram: (file: File) => void;
   loadTemplate: (templateName: string) => void;
   exportImage: (bgColor: 'black' | 'white' | 'transparent') => void;
@@ -75,7 +79,7 @@ type SidebarProps = {
   toggleFocusMode: () => void;
 };
 
-export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount, selectedEdgeCount, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, groupSelected, ungroupSelected, canGroup, canUngroup, autoLayout, fitView, validationIssues, topologyNodes, topologyAnalysis, findPath, validate, exportDiagram, exportSvg, exportInventory, importDiagram, loadTemplate, exportImage, showMinimap, toggleMinimap, focusMode, toggleFocusMode }: SidebarProps) {
+export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount, selectedEdgeCount, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, groupSelected, ungroupSelected, canGroup, canUngroup, autoLayout, fitView, validationIssues, diagramMetadata, updateDiagramMetadata, topologyNodes, topologyAnalysis, findPath, validate, exportDiagram, exportSvg, exportInventory, exportMarkdown, importDiagram, loadTemplate, exportImage, showMinimap, toggleMinimap, focusMode, toggleFocusMode }: SidebarProps) {
   const [query, setQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<string[]>(['Network', 'Security', 'Compute', 'Services']);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
@@ -209,6 +213,25 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
                 {pathChecked && (currentPathResult ? <p className="mt-2 rounded border border-[#00ff9c]/30 bg-[#00ff9c]/5 px-2 py-1.5 text-[10px] leading-relaxed text-[#72e6b4]">{currentPathResult.nodeIds.map(id => topologyLabelById.get(id) || id).join(' → ')}<span className="mt-1 block text-[9px] text-zinc-500">{currentPathResult.edgeIds.length} link{currentPathResult.edgeIds.length === 1 ? '' : 's'}</span></p> : <p className="mt-2 rounded border border-amber-300/30 bg-amber-300/5 px-2 py-1.5 text-[10px] text-amber-200">No path found between these nodes.</p>)}
               </div>
             </>}
+          </div>
+        </details>
+
+        <details className="border-b border-[#1a1a1a] py-4">
+          <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-zinc-500">Documentation</summary>
+          <div className="mt-3 space-y-3">
+            <Field label="Diagram title"><Input value={diagramMetadata.title || ''} onChange={event => updateDiagramMetadata({ title: event.target.value })} placeholder="Network topology" className="bg-black font-mono text-xs" /></Field>
+            <Field label="Description"><textarea value={diagramMetadata.description || ''} onChange={event => updateDiagramMetadata({ description: event.target.value })} placeholder="Purpose, scope, or change context..." className="min-h-16 w-full resize-y rounded-lg border border-[#1a1a1a] bg-black px-2.5 py-2 font-mono text-xs text-zinc-300 outline-none focus:border-[#00ff9c]" /></Field>
+            <div className="rounded border border-[#1a1a1a] bg-black p-2.5">
+              <p className="mb-2 text-[9px] font-bold uppercase tracking-widest text-zinc-600">Legend</p>
+              <div className="grid grid-cols-2 gap-2 text-[9px] text-zinc-500">
+                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-[#00ff9c]" />Active</span>
+                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-300" />Degraded</span>
+                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-red-400" />Offline</span>
+                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-zinc-500" />Maintenance</span>
+              </div>
+              <p className="mt-2 text-[9px] leading-relaxed text-zinc-600">Critical nodes and bridge links identify topology single points of failure.</p>
+            </div>
+            <Button type="button" onClick={exportMarkdown} variant="outline" size="sm" className="w-full bg-black text-[10px] text-[#38bdf8]"><Download className="mr-1 h-3 w-3" />Export documentation</Button>
           </div>
         </details>
 
