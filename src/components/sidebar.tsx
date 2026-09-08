@@ -46,13 +46,21 @@ export function Sidebar() {
 
   useEffect(() => {
     const restoreCollapsedCategories = () => setCollapsedCategories(readCollapsedCategories());
-    const restoreTimer = window.setTimeout(() => {
+    const browserWindow = window as unknown as {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const restore = () => {
       restoreCollapsedCategories();
       setNavigationReady(true);
-    }, 0);
+    };
+    const restoreHandle = browserWindow.requestIdleCallback
+      ? browserWindow.requestIdleCallback(restore, { timeout: 500 })
+      : window.setTimeout(restore, 0);
     window.addEventListener(STORAGE_CHANGED, restoreCollapsedCategories);
     return () => {
-      window.clearTimeout(restoreTimer);
+      if (browserWindow.requestIdleCallback) browserWindow.cancelIdleCallback?.(restoreHandle);
+      else window.clearTimeout(restoreHandle);
       window.removeEventListener(STORAGE_CHANGED, restoreCollapsedCategories);
     };
   }, []);

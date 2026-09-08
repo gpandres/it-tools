@@ -4,6 +4,7 @@ const KEY = "it_tools_preferences";
 const initialSnapshot = { ...EMPTY_PREFERENCES, loaded: false, consent: null as StorageConsent, storageError: false };
 let snapshot = initialSnapshot;
 const listeners = new Set<() => void>();
+let cancelInitialSync: (() => void) | null = null;
 const emit = () => listeners.forEach(listener => listener());
 function readPreferences(): ToolPreferences {
   const raw = readLocalStorage(KEY);
@@ -18,16 +19,35 @@ function syncStorage(event?: Event) {
   snapshot = { ...snapshot, ...readPreferences(), consent: getStorageConsent(), loaded: true };
   emit();
 }
+function scheduleInitialSync() {
+  const browserWindow = window as Window & {
+    requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+    cancelIdleCallback?: (handle: number) => void;
+  };
+  const sync = () => {
+    cancelInitialSync = null;
+    if (listeners.size > 0) syncStorage();
+  };
+  if (browserWindow.requestIdleCallback) {
+    const handle = browserWindow.requestIdleCallback(sync, { timeout: 500 });
+    cancelInitialSync = () => browserWindow.cancelIdleCallback?.(handle);
+  } else {
+    const handle = setTimeout(sync, 0);
+    cancelInitialSync = () => clearTimeout(handle);
+  }
+}
 export function subscribePreferences(listener: () => void) {
   listeners.add(listener);
   if (listeners.size === 1) {
     window.addEventListener("storage", syncStorage);
     window.addEventListener(STORAGE_CHANGED, syncStorage);
-    syncStorage();
+    scheduleInitialSync();
   }
   return () => {
     listeners.delete(listener);
     if (!listeners.size) {
+      cancelInitialSync?.();
+      cancelInitialSync = null;
       window.removeEventListener("storage", syncStorage);
       window.removeEventListener(STORAGE_CHANGED, syncStorage);
     }

@@ -7,6 +7,11 @@ import { useFavorites } from "@/components/favorites-provider";
 import { toolsRegistry, CATEGORIES } from "@/lib/tools";
 import { searchTools, toolDataFlow, workflows } from "@/lib/tool-discovery";
 import { catalogStructuredData, serializeJsonLd, SITE_URL } from "@/lib/seo";
+import { readLocalStorage, STORAGE_CHANGED, writeLocalStorage } from "@/lib/storage";
+
+const HOME_JSON_LD = serializeJsonLd(catalogStructuredData(toolsRegistry));
+const TOOL_DATA_FLOW = new Map(toolsRegistry.map(tool => [tool.id, toolDataFlow(tool)]));
+const HOME_FILTERS_KEY = "it_tools_home_filters";
 
 const HomeToolCard = memo(function HomeToolCard({
   tool,
@@ -17,8 +22,8 @@ const HomeToolCard = memo(function HomeToolCard({
   favorite: boolean;
   onToggleFavorite: (toolId: string, isFavorite: boolean) => void;
 }) {
-  const dataFlow = toolDataFlow(tool);
-  return <article className="relative flex flex-col border border-zinc-800 bg-[#050505] p-5 hover:border-zinc-600">
+  const dataFlow = TOOL_DATA_FLOW.get(tool.id)!;
+  return <article className="relative flex flex-col border border-zinc-800 bg-[#050505] p-5 hover:border-zinc-600 [content-visibility:auto] [contain-intrinsic-size:0_190px]">
     <p className="text-[10px] text-zinc-400 tracking-wide pr-8 mb-3">{tool.category}</p>
     <button aria-label={`${favorite ? "Remove" : "Add"} ${tool.name} ${favorite ? "from" : "to"} favorites`} aria-pressed={favorite} onClick={() => onToggleFavorite(tool.id, favorite)} className="absolute right-3 top-3 p-2 text-zinc-400 hover:text-[#ffb000]"><Star aria-hidden="true" className={`w-4 h-4 ${favorite ? "fill-[#ffb000] text-[#ffb000]" : ""}`} /></button>
     <h3 className="text-sm font-bold text-[#00ff9c]"><Link href={tool.path} className="hover:underline">{tool.name}</Link></h3>
@@ -35,15 +40,54 @@ export default function Home() {
   const [category, setCategory] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [localOnly, setLocalOnly] = useState(false);
+  const [filtersReady, setFiltersReady] = useState(false);
   const { favorites, recent, addFavorite, removeFavorite, clearRecent, isLoaded } = useFavorites();
   const preferencesReady = useRef(isLoaded);
   useEffect(() => {
     preferencesReady.current = isLoaded;
   }, [isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const restoreFilters = () => {
+      const raw = readLocalStorage(HOME_FILTERS_KEY);
+      if (raw && raw.length <= 4096) {
+        try {
+          const saved = JSON.parse(raw);
+          if (saved && typeof saved === "object") {
+            if (typeof saved.query === "string") setQuery(saved.query.slice(0, 200));
+            if (typeof saved.category === "string" && CATEGORIES.includes(saved.category as typeof CATEGORIES[number])) setCategory(saved.category);
+            if (typeof saved.favoritesOnly === "boolean") setFavoritesOnly(saved.favoritesOnly);
+            if (typeof saved.localOnly === "boolean") setLocalOnly(saved.localOnly);
+          }
+        } catch {
+          // Ignore malformed filter preferences and keep the default catalogue view.
+        }
+      }
+      setFiltersReady(true);
+    };
+    const restoreTimer = window.setTimeout(restoreFilters, 0);
+    window.addEventListener(STORAGE_CHANGED, restoreFilters);
+    return () => {
+      window.clearTimeout(restoreTimer);
+      window.removeEventListener(STORAGE_CHANGED, restoreFilters);
+    };
+  }, [isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || !filtersReady) return;
+    const saveTimer = window.setTimeout(() => writeLocalStorage(HOME_FILTERS_KEY, JSON.stringify({
+      query,
+      category,
+      favoritesOnly,
+      localOnly,
+    })), 250);
+    return () => window.clearTimeout(saveTimer);
+  }, [category, favoritesOnly, filtersReady, isLoaded, localOnly, query]);
   const filtered = useMemo(() => searchTools(query).filter(tool =>
     (!category || tool.category === category) &&
     (!favoritesOnly || favorites.includes(tool.id)) &&
-    (!localOnly || toolDataFlow(tool).label === "Local processing")
+    (!localOnly || TOOL_DATA_FLOW.get(tool.id)?.label === "Local processing")
   ), [query, category, favoritesOnly, localOnly, favorites]);
   const recentTools = recent.flatMap(id => {
     const tool = toolsRegistry.find(item => item.id === id);
@@ -67,7 +111,7 @@ export default function Home() {
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="IT Tools | Privacy-First Developer Toolbox" />
     <meta name="twitter:description" content="Local-first tools for developers, sysadmins and blue teams." />
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(catalogStructuredData(toolsRegistry)) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: HOME_JSON_LD }} />
     <div className="max-w-7xl mx-auto space-y-10">
       <header className="py-6 sm:py-10 border-b border-[#1a1a1a]">
         <p className="text-xs text-[#00ff9c] tracking-widest mb-4">/ OPERATIONS TOOLKIT</p>
@@ -82,9 +126,9 @@ export default function Home() {
         </div>
       </header>
 
-      {!isLoaded ? <section aria-label="Loading recently opened tools" className="border border-zinc-800 bg-[#050505] p-5" role="status">
-        <div className="mb-4 h-4 w-40 animate-pulse bg-[#163b2d]" />
-        <div className="flex gap-2"><div className="h-8 w-36 animate-pulse bg-[#101b17]" /><div className="h-8 w-28 animate-pulse bg-[#101b17]" /><div className="h-8 w-32 animate-pulse bg-[#101b17]" /></div>
+      {!isLoaded ? <section aria-label="Loading recently opened tools" className="space-y-3" role="status">
+        <div className="flex items-center justify-between gap-4"><div className="h-4 w-40 animate-pulse bg-[#163b2d]" /><div className="h-3 w-28 animate-pulse bg-[#101b17]" /></div>
+        <div className="flex gap-2"><div className="h-8 w-36 animate-pulse border border-zinc-800 bg-[#050505]" /><div className="h-8 w-28 animate-pulse border border-zinc-800 bg-[#050505]" /><div className="h-8 w-32 animate-pulse border border-zinc-800 bg-[#050505]" /></div>
       </section> : recentTools.length > 0 && <section aria-labelledby="recent-heading">
         <div className="flex justify-between gap-4 mb-4">
           <h2 id="recent-heading" className="text-sm text-[#ffb000]">Recently opened</h2>
