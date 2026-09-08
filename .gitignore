@@ -49,6 +49,7 @@ next-env.d.ts
 # local browser QA cache
 /.agent-browser/
 /.tmp-npm-cache/
+/.tmp-command-copy-qa.png
 
 
 /docs

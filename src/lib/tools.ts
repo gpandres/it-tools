@@ -159,13 +159,13 @@ export const toolsRegistry: ToolDefinition[] = [
   {
     id: "command-reference",
     name: "Cross-Vendor Command Reference",
-    description: "Translate operational intents into the exact CLI commands for Cisco, MikroTik, FortiGate, and Linux.",
+    description: "Translate operational intents into CLI commands for Cisco, MikroTik, FortiGate, Linux, Juniper, and Arista.",
     category: "NETWORKING",
     path: "/tools/network/command-reference",
-    keywords: ["command", "cli", "reference", "cisco", "mikrotik", "fortigate", "linux", "routing", "firewall", "cheat sheet"],
+    keywords: ["command", "cli", "reference", "cisco", "mikrotik", "fortigate", "linux", "juniper", "arista", "junos", "eos", "routing", "firewall", "vlan", "dhcp", "lldp", "cheat sheet"],
     aliases: ["Intent-Based CLI Reference", "Multi-Vendor CLI Guide"],
     technologies: ["CLI", "Networking"],
-    vendors: ["Cisco", "MikroTik", "Fortinet", "Linux"],
+    vendors: ["Cisco", "MikroTik", "Fortinet", "Linux", "Juniper", "Arista"],
     offline: true,
   },
 
