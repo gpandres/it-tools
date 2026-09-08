@@ -524,6 +524,71 @@ const COLLECTION_ENTRIES = COLLECTION_CATALOG.map(([id, name, platform, parentId
   collectionEntry(id, name, platform, parentId),
 );
 
+const commandAndControlEntry = (id: string, name: string, platform: Platform, parentId?: string): MitreDef => ({
+  id,
+  ...(parentId ? { parentId } : {}),
+  tactic: "Command and Control",
+  name,
+  description: `${name} can be abused to communicate with compromised systems, relay commands, or conceal command-and-control traffic.`,
+  example: `Investigating anomalous ${name.toLowerCase()} activity through DNS, proxy, endpoint, and network telemetry.`,
+  icon: Radio,
+  color: "text-orange-400",
+  platform,
+});
+
+// Enterprise Command and Control (TA0011), ATT&CK v19.2.
+const COMMAND_AND_CONTROL_CATALOG: Array<[string, string, Platform, string?]> = [
+  ["T1071", "Application Layer Protocol", "Cross-Platform"],
+  ["T1071.001", "Web Protocols", "Cross-Platform", "T1071"],
+  ["T1071.002", "File Transfer Protocols", "Cross-Platform", "T1071"],
+  ["T1071.003", "Mail Protocols", "Cross-Platform", "T1071"],
+  ["T1071.004", "DNS", "Cross-Platform", "T1071"],
+  ["T1071.005", "Publish/Subscribe Protocols", "Cross-Platform", "T1071"],
+  ["T1092", "Communication Through Removable Media", "Cross-Platform"],
+  ["T1659", "Content Injection", "Cross-Platform"],
+  ["T1132", "Data Encoding", "Cross-Platform"],
+  ["T1132.001", "Standard Encoding", "Cross-Platform", "T1132"],
+  ["T1132.002", "Non-Standard Encoding", "Cross-Platform", "T1132"],
+  ["T1001", "Data Obfuscation", "Cross-Platform"],
+  ["T1001.001", "Junk Data", "Cross-Platform", "T1001"],
+  ["T1001.002", "Steganography", "Cross-Platform", "T1001"],
+  ["T1001.003", "Protocol or Service Impersonation", "Cross-Platform", "T1001"],
+  ["T1568", "Dynamic Resolution", "Cross-Platform"],
+  ["T1568.001", "Fast Flux DNS", "Cross-Platform", "T1568"],
+  ["T1568.002", "Domain Generation Algorithms", "Cross-Platform", "T1568"],
+  ["T1568.003", "DNS Calculation", "Cross-Platform", "T1568"],
+  ["T1573", "Encrypted Channel", "Cross-Platform"],
+  ["T1573.001", "Symmetric Cryptography", "Cross-Platform", "T1573"],
+  ["T1573.002", "Asymmetric Cryptography", "Cross-Platform", "T1573"],
+  ["T1008", "Fallback Channels", "Cross-Platform"],
+  ["T1665", "Hide Infrastructure", "Cross-Platform"],
+  ["T1105", "Ingress Tool Transfer", "Cross-Platform"],
+  ["T1104", "Multi-Stage Channels", "Cross-Platform"],
+  ["T1095", "Non-Application Layer Protocol", "Cross-Platform"],
+  ["T1571", "Non-Standard Port", "Cross-Platform"],
+  ["T1572", "Protocol Tunneling", "Cross-Platform"],
+  ["T1090", "Proxy", "Cross-Platform"],
+  ["T1090.001", "Internal Proxy", "Cross-Platform", "T1090"],
+  ["T1090.002", "External Proxy", "Cross-Platform", "T1090"],
+  ["T1090.003", "Multi-hop Proxy", "Cross-Platform", "T1090"],
+  ["T1090.004", "Domain Fronting", "Cross-Platform", "T1090"],
+  ["T1219", "Remote Access Tools", "Cross-Platform"],
+  ["T1219.001", "IDE Tunneling", "Cross-Platform", "T1219"],
+  ["T1219.002", "Remote Desktop Software", "Cross-Platform", "T1219"],
+  ["T1219.003", "Remote Access Hardware", "Network Devices", "T1219"],
+  ["T1205", "Traffic Signaling", "Cross-Platform"],
+  ["T1205.001", "Port Knocking", "Cross-Platform", "T1205"],
+  ["T1205.002", "Socket Filters", "Linux", "T1205"],
+  ["T1102", "Web Service", "Cross-Platform"],
+  ["T1102.001", "Dead Drop Resolver", "Cross-Platform", "T1102"],
+  ["T1102.002", "Bidirectional Communication", "Cross-Platform", "T1102"],
+  ["T1102.003", "One-Way Communication", "Cross-Platform", "T1102"],
+];
+
+const COMMAND_AND_CONTROL_ENTRIES = COMMAND_AND_CONTROL_CATALOG.map(([id, name, platform, parentId]) =>
+  commandAndControlEntry(id, name, platform, parentId),
+);
+
 // The entries below are the remaining Enterprise Persistence objects in v19.2.
 // Names and hierarchy follow MITRE's TA0003 tactic page; descriptions are deliberately
 // concise but operational so the local reference remains usable without a remote feed.
@@ -693,7 +758,7 @@ export const MITRE_DB: MitreDef[] = [
   { id: "T1135", tactic: "Discovery", name: "Network Share Discovery", description: "Adversaries may identify shared folders and drives on local or remote systems.", example: "Enumerating SMB shares before collection or lateral movement.", icon: SearchIcon, color: "text-teal-400", platform: "Cross-Platform" },
   { id: "T1070.004", parentId: "T1070", tactic: "Stealth", name: "File Deletion", description: "Adversaries may delete files to remove artifacts or tools.", example: "Deleting a dropped payload after execution.", icon: ShieldOff, color: "text-red-400", platform: "Cross-Platform" },
   { id: "T1059.003", tactic: "Execution", name: "Windows Command Shell", description: "Adversaries may abuse cmd.exe and its commands for execution.", example: "Launching a command through cmd.exe.", icon: Terminal, color: "text-[#00ff9c]", platform: "Windows" },
-  { id: "T1071.004", tactic: "Command and Control", name: "DNS", description: "Adversaries may communicate using DNS to avoid or blend with normal traffic.", example: "Embedding beacon data in DNS queries.", icon: Radio, color: "text-orange-400", platform: "Cross-Platform" },
+  { id: "T1071.004", parentId: "T1071", tactic: "Command and Control", name: "DNS", description: "Adversaries may communicate using DNS to avoid or blend with normal traffic.", example: "Embedding beacon data in DNS queries.", icon: Radio, color: "text-orange-400", platform: "Cross-Platform" },
   { id: "T1204.001", tactic: "Execution", name: "Malicious Link", description: "Adversaries may rely on a user clicking a malicious link to gain execution.", example: "A victim follows a link to a fake authentication page.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" },
   { id: "T1204.002", tactic: "Execution", name: "Malicious File", description: "Adversaries may rely on a user opening a malicious file to gain execution.", example: "A victim opens a weaponized document or executable.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" },
   { id: "T1566.001", tactic: "Initial Access", name: "Spearphishing Attachment", description: "Adversaries may send spearphishing emails with malicious attachments.", example: "Delivering a weaponized document as an email attachment.", icon: LogIn, color: "text-blue-400", platform: "Cross-Platform" },
@@ -712,7 +777,7 @@ export const MITRE_DB: MitreDef[] = [
   { id: "T1110.001", tactic: "Credential Access", name: "Password Guessing", description: "Adversaries may guess passwords to gain access to accounts.", example: "Trying a small set of likely passwords against an exposed service.", icon: Key, color: "text-pink-500", platform: "Cross-Platform" },
   { id: "T1110.003", tactic: "Credential Access", name: "Password Spraying", description: "Adversaries may use one or a few common passwords against many accounts.", example: "Testing a common password across a large set of user accounts.", icon: Key, color: "text-pink-500", platform: "Cross-Platform" },
   { id: "T1112", tactic: "Defense Impairment", tactics: ["Defense Impairment", "Persistence"], name: "Modify Registry", description: "Adversaries may interact with the Windows Registry to hide configuration or establish behavior.", example: "Changing a registry value to configure persistence or weaken controls.", icon: ShieldOff, color: "text-red-400", platform: "Windows" },
-  { id: "T1568.002", tactic: "Command and Control", name: "Dynamic Resolution: Domain Generation Algorithms", description: "Adversaries may use algorithmically generated domains to dynamically locate command and control infrastructure.", example: "Generating pseudo-random domains for periodic beacon resolution.", icon: Radio, color: "text-orange-400", platform: "Cross-Platform" },
+  { id: "T1568.002", parentId: "T1568", tactic: "Command and Control", name: "Dynamic Resolution: Domain Generation Algorithms", description: "Adversaries may use algorithmically generated domains to dynamically locate command and control infrastructure.", example: "Generating pseudo-random domains for periodic beacon resolution.", icon: Radio, color: "text-orange-400", platform: "Cross-Platform" },
   { id: "T1570", tactic: "Lateral Movement", name: "Lateral Tool Transfer", description: "Adversaries may transfer tools or files between systems in a compromised environment.", example: "Copying a payload between hosts using SMB, SCP or a remote share.", icon: MoveHorizontal, color: "text-indigo-400", platform: "Cross-Platform" },
   { id: "T1546.012", tactic: "Persistence", name: "Image File Execution Options Injection", description: "Adversaries may abuse Image File Execution Options to execute code when a target application starts.", example: "Registering a debugger value for a commonly launched executable.", icon: Anchor, color: "text-purple-400", platform: "Windows" }
   ,{ id: "T1059.013", tactic: "Execution", name: "Container CLI/API", description: "Adversaries may abuse container command-line interfaces and APIs to execute commands or manage workloads.", example: "Using a container runtime or orchestration API to execute a command in a workload.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" }
@@ -903,6 +968,7 @@ export const MITRE_DB: MitreDef[] = [
   ,...DISCOVERY_ENTRIES
   ,...LATERAL_MOVEMENT_ENTRIES
   ,...COLLECTION_ENTRIES
+  ,...COMMAND_AND_CONTROL_ENTRIES
 ];
 
 // A few Stealth entries already exist because they are also part of another
@@ -989,4 +1055,11 @@ const COLLECTION_SHARED_IDS = new Set(COLLECTION_CATALOG.map(([id]) => id));
 for (const definition of MITRE_DB) {
   if (!COLLECTION_SHARED_IDS.has(definition.id)) continue;
   definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Collection"]));
+}
+
+const COMMAND_AND_CONTROL_SHARED_IDS = new Set(COMMAND_AND_CONTROL_CATALOG.map(([id]) => id));
+
+for (const definition of MITRE_DB) {
+  if (!COMMAND_AND_CONTROL_SHARED_IDS.has(definition.id)) continue;
+  definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Command and Control"]));
 }

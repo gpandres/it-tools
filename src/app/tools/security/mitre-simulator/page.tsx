@@ -354,6 +354,46 @@ const VECTORS = [
     ],
   },
   {
+    name: "Command and Control Investigation",
+    desc: "A C2 investigation that correlates beaconing, protocol abuse, encoding, proxying and remote-access activity across endpoint and network telemetry.",
+    windows_phases: [
+      [
+        { desc: "A workstation makes periodic HTTPS requests to a rare external domain with a stable beacon interval.", mitre: "T1071.001", event: "Sysmon 22" },
+        { desc: "DNS queries contain unusually long, encoded labels and a low-volume recurring pattern.", mitre: "T1071.004", event: "DNS Query" },
+      ],
+      [
+        { desc: "The payload encodes command traffic using a standard representation before transmission.", mitre: "T1132.001", event: "Sysmon 3" },
+        { desc: "A process connects through an internal proxy to reach another compromised host.", mitre: "T1090.001", event: "5156" },
+      ],
+      [
+        { desc: "A remote-access application creates an interactive session outside the approved support window.", mitre: "T1219.002", event: "4688" },
+        { desc: "A second-stage payload is transferred into the host over the active command channel.", mitre: "T1105", event: "Sysmon 11" },
+      ],
+      [
+        { desc: "The endpoint falls back to a non-standard port after the primary destination becomes unavailable.", mitre: "T1571", event: "5156" },
+        { desc: "A traffic-signaling sequence precedes access to a service that is normally closed.", mitre: "T1205.001", event: "Firewall Log" },
+      ],
+    ],
+    linux_phases: [
+      [
+        { desc: "A daemon periodically resolves a rare domain and sends small HTTPS requests with a stable interval.", mitre: "T1071.001", event: "auditd EXECVE" },
+        { desc: "DNS requests contain encoded subdomains that are inconsistent with normal resolver use.", mitre: "T1071.004", event: "DNS Query" },
+      ],
+      [
+        { desc: "C2 messages use non-standard encoding to conceal command content from simple inspection.", mitre: "T1132.002", event: "auditd EXECVE" },
+        { desc: "The compromised host relays traffic through an internal proxy or pivot service.", mitre: "T1090.001", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "An IDE tunnel creates remote development access from an unusual user session.", mitre: "T1219.001", event: "auth.log" },
+        { desc: "A second-stage tool is downloaded into a temporary directory.", mitre: "T1105", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "The implant switches to a non-application protocol when its normal channel is blocked.", mitre: "T1095", event: "auditd SYSCALL" },
+        { desc: "A port-knocking sequence is followed by a new listening service.", mitre: "T1205.001", event: "firewalld" },
+      ],
+    ],
+  },
+  {
     name: "Collection & Data Staging",
     desc: "A collection exercise that follows sensitive data from endpoints, repositories and shared storage into local and remote staging areas.",
     windows_phases: [
