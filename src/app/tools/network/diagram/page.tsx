@@ -15,6 +15,7 @@ import { parseDiagram, validateDiagram } from '@/lib/diagram-validation';
 import { autoLayout } from '@/lib/diagram-layout';
 import { useNotification } from '@/components/notification-provider';
 import { downloadBlob, downloadUrl } from '@/lib/browser-download';
+import { serializeNetworkDiagram, serializeNetworkInventory } from '@/lib/network-diagram-export';
 import type { NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, DiagramSnapshot } from './types';
 
 const nodeTypes = { networkNode: NetworkNodeComponent };
@@ -348,12 +349,12 @@ function DiagramFlow() {
   };
 
   const exportDiagram = () => {
-    const safeDiagram = parseDiagram({ nodes, edges });
-    if (!safeDiagram) {
+    const serialized = serializeNetworkDiagram(nodes, edges);
+    if (!serialized) {
       notify('The current diagram cannot be exported because it is invalid.', 'error');
       return;
     }
-    downloadBlob(new Blob([JSON.stringify(safeDiagram, null, 2)], { type: 'application/json;charset=utf-8' }), `network-diagram-${Date.now()}.json`);
+    downloadBlob(new Blob([serialized], { type: 'application/json;charset=utf-8' }), `network-diagram-${Date.now()}.json`);
   };
 
   const importDiagram = (file: File) => {
@@ -462,12 +463,7 @@ function DiagramFlow() {
   };
 
   const exportInventory = () => {
-    const headers = ['record_type', 'id', 'name', 'type', 'source', 'target', 'ip_cidr', 'vlan', 'zone', 'status', 'role', 'vendor', 'model', 'source_port', 'target_port', 'bandwidth', 'vlan_mode', 'allowed_vlans', 'hostname_or_label'];
-    const rows: string[][] = [headers];
-    nodes.forEach(node => rows.push(['node', node.id, node.data.label, node.data.type, '', '', node.data.ip || '', node.data.vlan || '', node.data.zone || '', node.data.status || '', node.data.role || '', node.data.vendor || '', node.data.model || '', '', '', '', '', '', node.data.hostname || '']));
-    edges.forEach(edge => rows.push(['edge', edge.id, edge.data?.label || '', edge.data?.connectionType || '', edge.source, edge.target, '', '', '', '', '', '', '', edge.data?.sourcePort || '', edge.data?.targetPort || '', edge.data?.bandwidth || '', edge.data?.vlanMode || '', edge.data?.vlans || '', edge.data?.label || '']));
-
-    const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\r\n');
+    const csv = serializeNetworkInventory(nodes, edges);
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `network-inventory-${Date.now()}.csv`);
   };
 
@@ -482,7 +478,7 @@ function DiagramFlow() {
   const fitDiagram = () => fitView({ padding: 0.2 });
 
   return (
-    <div className="flex w-full h-[800px] border border-[#1a1a1a] rounded-lg overflow-hidden bg-[#0a0a0a]">
+    <div className="flex h-[800px] w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]" data-testid="network-diagram-editor" role="application" aria-label="Network diagram editor">
       <Sidebar 
         selectedNode={selectedNode}
         selectedEdge={selectedEdge}
@@ -512,7 +508,7 @@ function DiagramFlow() {
         loadTemplate={loadTemplate}
         exportImage={exportImage}
       />
-      <div className="flex-1 h-full" ref={reactFlowWrapper}>
+      <div className="h-full flex-1" ref={reactFlowWrapper} data-testid="network-diagram-canvas" aria-label="Network diagram canvas">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -541,7 +537,7 @@ function DiagramFlow() {
             maskColor="rgba(0, 0, 0, 0.72)"
             style={{ backgroundColor: '#050505', border: '1px solid #1a1a1a' }}
           />
-          <Panel position="bottom-left" className="!m-3 !rounded border border-[#1a1a1a] !bg-[#050505]/95 px-2.5 py-1.5 font-mono text-[10px] text-zinc-500">
+          <Panel position="bottom-left" className="!m-3 !rounded border border-[#1a1a1a] !bg-[#050505]/95 px-2.5 py-1.5 font-mono text-[10px] text-zinc-500" aria-live="polite">
             <span className="text-[#00ff9c]">{nodes.length}</span> nodes · <span className="text-[#38bdf8]">{edges.length}</span> links · {validationIssues.length === 0 ? <span className="text-[#72e6b4]">topology ok</span> : <span className="text-amber-300">{validationIssues.length} issue{validationIssues.length === 1 ? '' : 's'}</span>}
           </Panel>
         </ReactFlow>

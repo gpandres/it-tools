@@ -5,6 +5,8 @@ import { expandIPv6 } from "../src/lib/ipv6.ts";
 import { parseAclRules } from "../src/lib/acl.ts";
 import { parseDiagram, validateDiagram } from "../src/lib/diagram-validation.ts";
 import { autoLayout } from "../src/lib/diagram-layout.ts";
+import { NETWORK_INVENTORY_HEADERS, serializeNetworkDiagram, serializeNetworkInventory } from "../src/lib/network-diagram-export.ts";
+import type { NetworkNode } from "../src/app/tools/network/diagram/types.ts";
 
 test("rejects malformed IPv4 values instead of truncating them", () => {
   assert.throws(() => ipToInt("999.1.1.1"));
@@ -180,4 +182,30 @@ test("diagram imports keep only safe editable fields and preserve dimensions", (
     nodes: [{ id: "router", position: { x: 10, y: 20 }, parentId: "missing", extent: "parent", data: { label: "Router" } }],
     edges: [],
   }), null);
+});
+
+test("network JSON export is safe and round-trippable", () => {
+  const nodes = [
+    { id: "group", type: "networkNode", position: { x: 0, y: 0 }, width: 400, height: 240, data: { label: "DMZ", type: "group" }, selected: true },
+    { id: "fw", type: "networkNode", position: { x: 24, y: 24 }, parentId: "group", extent: "parent", data: { label: "Firewall", type: "firewall", ip: "10.0.0.1", injected: "remove" } },
+  ] as unknown as NetworkNode[];
+  const json = serializeNetworkDiagram(nodes, []);
+  assert.ok(json);
+  const parsed = JSON.parse(json);
+  assert.equal(parsed.nodes[0].selected, undefined);
+  assert.equal(parsed.nodes[1].parentId, "group");
+  assert.equal(parsed.nodes[1].data.injected, undefined);
+  assert.equal(parsed.nodes[0].width, 400);
+  assert.equal(parsed.nodes[0].height, 240);
+});
+
+test("network inventory export preserves columns and escapes CSV content", () => {
+  const csv = serializeNetworkInventory([
+    { id: "router", type: "networkNode", position: { x: 0, y: 0 }, data: { label: 'Edge, "primary"', type: "router", hostname: "edge\n01", role: "=HYPERLINK(\"https://example.test\")" } },
+  ], []);
+  const lines = csv.split("\r\n");
+  assert.equal(lines[0], NETWORK_INVENTORY_HEADERS.join(",").replaceAll(/(^|,)([^,]*)/g, '$1"$2"'));
+  assert.match(csv, /"Edge, ""primary"""/);
+  assert.match(csv, /"edge\n01"/);
+  assert.match(csv, /"'=HYPERLINK\(""https:\/\/example\.test""\)"/);
 });
