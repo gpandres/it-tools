@@ -1,10 +1,10 @@
-import { validateIp } from './network.ts';
+import { cidrToMaskInt, ipToInt, validateIp } from './network.ts';
 
 export type DiagramData = { nodes: Record<string, unknown>[]; edges: Record<string, unknown>[] };
 export type DiagramIssue = { id: string; severity: 'error' | 'warning'; title: string; detail: string };
 
 const MAX_LABEL_LENGTH = 1000;
-const NODE_DATA_FIELDS = ['label', 'type', 'ip', 'vlan', 'hostname', 'vendor', 'model', 'role', 'zone', 'status', 'notes', 'interfaces'];
+const NODE_DATA_FIELDS = ['label', 'type', 'ip', 'subnet', 'vlan', 'hostname', 'vendor', 'model', 'role', 'zone', 'status', 'notes', 'interfaces'];
 const EDGE_DATA_FIELDS = ['connectionType', 'label', 'sourcePort', 'targetPort', 'bandwidth', 'vlanMode', 'vlans'];
 const CONNECTION_TYPES = new Set(['ethernet', 'fiber', 'wireless', 'vpn']);
 const VLAN_MODES = new Set(['access', 'trunk', 'routed', 'unknown']);
@@ -121,6 +121,10 @@ export function validateDiagram(diagram: DiagramData): DiagramIssue[] {
   const connectedNodeIds = new Set(diagram.edges.flatMap((edge) => [edge.source, edge.target].filter((id): id is string => typeof id === 'string')));
   const nodesById = new Map(diagram.nodes.map((node) => [readNodeString(node, 'id'), node]));
   const seenIps = new Map<string, string>();
+  const explicitSubnets: SubnetRange[] = [];
+  const usedPorts = new Map<string, { edgeId: string; label: string }>();
+  const reportedPorts = new Set<string>();
+  const nodeDegrees = new Map<string, number>();
   const seenEdges = new Set<string>();
 
   for (const node of diagram.nodes) {
@@ -128,6 +132,7 @@ export function validateDiagram(diagram: DiagramData): DiagramIssue[] {
     const data = node.data && typeof node.data === 'object' ? node.data as Record<string, unknown> : {};
     const label = readNodeString(data, 'label') || nodeId;
     const ip = readNodeString(data, 'ip').trim();
+    const subnet = readNodeString(data, 'subnet').trim();
     const vlan = readNodeString(data, 'vlan').trim();
 
     if (!connectedNodeIds.has(nodeId)) {
@@ -146,6 +151,24 @@ export function validateDiagram(diagram: DiagramData): DiagramIssue[] {
     }
     if (vlan && (!/^\d+$/.test(vlan) || Number(vlan) < 1 || Number(vlan) > 4094)) {
       issues.push({ id: `vlan-invalid-${nodeId}`, severity: 'error', title: 'Invalid VLAN', detail: `${label} uses VLAN ${vlan}; use a value from 1 to 4094.` });
+    }
+    if (subnet) {
+      const subnetRange = parseSubnetRange(subnet);
+      if (!subnetRange) {
+        issues.push({ id: `subnet-invalid-${nodeId}`, severity: 'error', title: 'Invalid subnet', detail: `${label} uses ${subnet}; enter an IPv4 network in CIDR notation.` });
+      } else {
+        explicitSubnets.push({ ...subnetRange, nodeId, label, value: subnet });
+      }
+    }
+  }
+
+  for (let leftIndex = 0; leftIndex < explicitSubnets.length; leftIndex += 1) {
+    const left = explicitSubnets[leftIndex];
+    for (let rightIndex = leftIndex + 1; rightIndex < explicitSubnets.length; rightIndex += 1) {
+      const right = explicitSubnets[rightIndex];
+      if (left.network <= right.broadcast && right.network <= left.broadcast) {
+        issues.push({ id: `subnet-overlap-${left.nodeId}-${right.nodeId}`, severity: 'warning', title: 'Overlapping subnets', detail: `${left.label} (${left.value}) overlaps ${right.label} (${right.value}).` });
+      }
     }
   }
 
@@ -192,6 +215,10 @@ export function validateDiagram(diagram: DiagramData): DiagramIssue[] {
     }
     const sourceType = readNodeString(sourceData, 'type');
     const targetType = readNodeString(targetData, 'type');
+    incrementDegree(nodeDegrees, readNodeString(edge, 'source'));
+    incrementDegree(nodeDegrees, readNodeString(edge, 'target'));
+    registerPort(usedPorts, reportedPorts, issues, readNodeString(edge, 'source'), readNodeString(data, 'sourcePort'), readNodeString(edge, 'id'), readNodeString(sourceData, 'label') || readNodeString(edge, 'source'));
+    registerPort(usedPorts, reportedPorts, issues, readNodeString(edge, 'target'), readNodeString(data, 'targetPort'), readNodeString(edge, 'id'), readNodeString(targetData, 'label') || readNodeString(edge, 'target'));
     if (connectionType === 'wireless' && sourceType !== 'wireless' && targetType !== 'wireless') {
       issues.push({ id: `wireless-endpoints-${edge.id}`, severity: 'warning', title: 'Wireless link endpoints', detail: 'Wireless links normally include a WiFi access point or wireless bridge.' });
     }
@@ -209,5 +236,46 @@ export function validateDiagram(diagram: DiagramData): DiagramIssue[] {
     }
   }
 
+  const infrastructureTypes = new Set(['router', 'firewall', 'switch', 'load-balancer', 'ids-ips', 'vpn']);
+  for (const node of diagram.nodes) {
+    const nodeId = readNodeString(node, 'id');
+    const data = node.data && typeof node.data === 'object' ? node.data as Record<string, unknown> : {};
+    const type = readNodeString(data, 'type');
+    if (infrastructureTypes.has(type) && (nodeDegrees.get(nodeId) ?? 0) === 1) {
+      const label = readNodeString(data, 'label') || nodeId;
+      issues.push({ id: `single-homed-${nodeId}`, severity: 'warning', title: 'Single-homed infrastructure', detail: `${label} has one connection; consider a redundant link or document the dependency.` });
+    }
+  }
+
   return issues;
+}
+
+type SubnetRange = { nodeId: string; label: string; value: string; network: number; broadcast: number };
+
+function parseSubnetRange(value: string): Omit<SubnetRange, 'nodeId' | 'label' | 'value'> | null {
+  const match = /^(\d{1,3}(?:\.\d{1,3}){3})\/(\d{1,2})$/.exec(value);
+  if (!match || !validateIp(match[1])) return null;
+  const cidr = Number(match[2]);
+  if (!Number.isInteger(cidr) || cidr < 0 || cidr > 32) return null;
+  const mask = cidrToMaskInt(cidr);
+  const network = (ipToInt(match[1]) & mask) >>> 0;
+  const broadcast = (network | (~mask >>> 0)) >>> 0;
+  return { network, broadcast };
+}
+
+function incrementDegree(degrees: Map<string, number>, nodeId: string) {
+  if (nodeId) degrees.set(nodeId, (degrees.get(nodeId) ?? 0) + 1);
+}
+
+function registerPort(usedPorts: Map<string, { edgeId: string; label: string }>, reportedPorts: Set<string>, issues: DiagramIssue[], nodeId: string, port: string, edgeId: string, label: string) {
+  const normalizedPort = port.trim().toLowerCase();
+  if (!nodeId || !normalizedPort) return;
+  const key = `${nodeId}|${normalizedPort}`;
+  const previous = usedPorts.get(key);
+  if (previous && !reportedPorts.has(key)) {
+    reportedPorts.add(key);
+    issues.push({ id: `port-reused-${nodeId}-${normalizedPort}`, severity: 'error', title: 'Port reused', detail: `${label} uses port ${port} on multiple connections (${previous.edgeId} and ${edgeId}).` });
+  } else if (!previous) {
+    usedPorts.set(key, { edgeId, label });
+  }
 }

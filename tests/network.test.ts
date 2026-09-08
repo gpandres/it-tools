@@ -176,6 +176,35 @@ test("validates connection semantics and VLAN lists", () => {
   ]);
 });
 
+test("validates explicit subnet overlaps, reused ports and single-homed infrastructure", () => {
+  const issues = validateDiagram({
+    nodes: [
+      { id: "router", position: { x: 0, y: 0 }, data: { type: "router", label: "Edge Router", ip: "10.0.0.1", subnet: "10.0.0.0/24" } },
+      { id: "firewall", position: { x: 100, y: 0 }, data: { type: "firewall", label: "Firewall", ip: "10.0.0.2", subnet: "10.0.0.128/25" } },
+      { id: "server-a", position: { x: 200, y: 0 }, data: { type: "server", label: "Server A", ip: "10.0.1.10" } },
+      { id: "server-b", position: { x: 300, y: 0 }, data: { type: "server", label: "Server B", ip: "10.0.1.11" } },
+    ],
+    edges: [
+      { id: "link-a", source: "router", target: "server-a", data: { connectionType: "ethernet", sourcePort: "Gi0/1" } },
+      { id: "link-b", source: "router", target: "server-b", data: { connectionType: "ethernet", sourcePort: "Gi0/1" } },
+      { id: "link-c", source: "firewall", target: "server-a", data: { connectionType: "ethernet" } },
+    ],
+  });
+
+  assert.deepEqual(issues.map(issue => issue.title), [
+    "Overlapping subnets", "Port reused", "Single-homed infrastructure",
+  ]);
+});
+
+test("rejects malformed explicit subnet declarations", () => {
+  const issues = validateDiagram({
+    nodes: [{ id: "router", position: { x: 0, y: 0 }, data: { type: "router", label: "Router", subnet: "10.0.0.0/33" } }],
+    edges: [],
+  });
+
+  assert.equal(issues.some(issue => issue.title === "Invalid subnet" && issue.severity === "error"), true);
+});
+
 test("diagram imports keep only safe editable fields and preserve dimensions", () => {
   const parsed = parseDiagram({
     nodes: [{

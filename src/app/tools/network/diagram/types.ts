@@ -15,6 +15,7 @@ export type NetworkNodeData = {
   label: string;
   type: NetworkNodeType;
   ip?: string;
+  subnet?: string;
   vlan?: string;
   hostname?: string;
   vendor?: string;
