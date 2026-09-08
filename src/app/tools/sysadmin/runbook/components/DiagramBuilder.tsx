@@ -12,7 +12,8 @@ import {
   NodeChange,
   EdgeChange,
   BackgroundVariant,
-  useReactFlow
+  useReactFlow,
+  ReactFlowProvider
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Runbook, RunbookStep } from './types';
@@ -30,7 +31,7 @@ const nodeTypes = {
   runbookStep: RunbookNode
 };
 
-export default function DiagramBuilder({ runbook, onChange }: DiagramBuilderProps) {
+function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
   const diagramRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
   const [pngBackground, setPngBackground] = useState<'black' | 'white' | 'transparent'>('black');
@@ -255,5 +256,13 @@ export default function DiagramBuilder({ runbook, onChange }: DiagramBuilderProp
       </div>
       </div>
     </div>
+  );
+}
+
+export default function DiagramBuilder(props: DiagramBuilderProps) {
+  return (
+    <ReactFlowProvider>
+      <DiagramBuilderCanvas {...props} />
+    </ReactFlowProvider>
   );
 }
