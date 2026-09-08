@@ -32,8 +32,11 @@ export function relatedToolsFor(id: string): ToolDefinition[] {
 }
 
 export function toolDataFlow(tool: ToolDefinition): { label: string; description: string } {
-  if (tool.id === "headers-scorecard") return { label: "Network request", description: "On request, the application server connects to the public domain you enter to inspect HTTP and TLS." };
-  if (tool.id === "hibp-check") return { label: "External API", description: "On request, sends the first five characters of a SHA-1 password hash to the HIBP API. The password itself is not sent." };
-  if (tool.id === "incident-report") return { label: "Local processing · PDF CDN", description: "Report content is processed in your browser. The PDF exporter loads pdfmake and fonts from cdnjs.cloudflare.com." };
+  if (tool.dataFlow === "network" || tool.id === "headers-scorecard") {
+    return { label: "Network request", description: "This tool sends the value you submit to a network service. Review the destination and response before using it with sensitive data." };
+  }
+  if (tool.dataFlow === "mixed" || tool.id === "incident-report") {
+    return { label: "Local processing · external service", description: "Most processing happens in your browser, but part of this tool uses an external service when you request it. Do not submit sensitive data unless you trust that service." };
+  }
   return { label: "Local processing", description: "This tool processes your input in your browser." };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
 type Notification = { id: number; message: string; tone: "info" | "error" };
@@ -9,16 +9,32 @@ const NotificationContext = createContext<NotificationContextValue | null>(null)
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const nextId = useRef(0);
+  const timers = useRef(new Map<number, number>());
   const notify = useCallback((message: string, tone: Notification["tone"] = "info") => {
-    const id = Date.now() + Math.random();
+    const id = nextId.current += 1;
     setNotifications(current => [...current.slice(-2), { id, message, tone }]);
-    window.setTimeout(() => setNotifications(current => current.filter(item => item.id !== id)), 4500);
+    const timer = window.setTimeout(() => {
+      timers.current.delete(id);
+      setNotifications(current => current.filter(item => item.id !== id));
+    }, 4500);
+    timers.current.set(id, timer);
   }, []);
-  const dismiss = (id: number) => setNotifications(current => current.filter(item => item.id !== id));
+  const dismiss = (id: number) => {
+    const timer = timers.current.get(id);
+    if (timer !== undefined) window.clearTimeout(timer);
+    timers.current.delete(id);
+    setNotifications(current => current.filter(item => item.id !== id));
+  };
   useEffect(() => {
     const nativeAlert = window.alert;
     window.alert = (message?: unknown) => notify(String(message ?? "Notification"), "error");
-    return () => { window.alert = nativeAlert; };
+    const activeTimers = timers.current;
+    return () => {
+      window.alert = nativeAlert;
+      activeTimers.forEach(timer => window.clearTimeout(timer));
+      activeTimers.clear();
+    };
   }, [notify]);
 
   return <NotificationContext.Provider value={{ notify }}>

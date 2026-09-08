@@ -18,7 +18,7 @@ export function toolStructuredData(
   const features = [
     `${tool.name} for ${tool.category.toLowerCase()}`,
     ...tool.keywords.slice(0, 8),
-    ...(tool.offline ? ["local processing", "no data upload"] : []),
+    ...(tool.dataFlow === "local" || (!tool.dataFlow && tool.offline) ? ["local processing", "no data upload"] : []),
   ];
 
   return {

@@ -31,7 +31,7 @@ test("workflows reuse real tools and related tools do not link to themselves", (
 });
 test("network and PDF dependencies are excluded from the no external services filter", () => {
   const exceptions = toolsRegistry.filter(tool => toolDataFlow(tool).label !== "Local processing").map(tool => tool.id);
-  assert.deepEqual(exceptions.sort(), ["headers-scorecard", "hibp-check", "incident-report"].sort());
+  assert.deepEqual(exceptions.sort(), ["dns-recon", "headers-scorecard", "hibp-check", "incident-report"].sort());
 });
 test("saved preferences reject invalid versions, oversized data and malformed JSON", () => {
   for (const raw of ["{", "null", JSON.stringify({ version: 2, favorites: [], recent: [] }), " ".repeat(64001)]) {

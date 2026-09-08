@@ -9,6 +9,7 @@ export type ToolDefinition = {
   technologies?: string[];
   vendors?: string[];
   offline?: boolean; // True if the tool processes everything locally
+  dataFlow?: "local" | "network" | "mixed";
 };
 
 export const CATEGORIES = [
@@ -280,6 +281,7 @@ export const toolsRegistry: ToolDefinition[] = [
     aliases: ["Postmortem Builder", "RCA Generator"],
     technologies: ["Incident Response", "Documentation"],
     offline: true,
+    dataFlow: "mixed",
   },
   {
     id: "mitre-simulator",
@@ -337,6 +339,7 @@ export const toolsRegistry: ToolDefinition[] = [
     aliases: ["Security Scorecard", "Header Analyzer"],
     technologies: ["HTTP", "TLS", "Web"],
     offline: false, // Requires internet to scan
+    dataFlow: "network",
   },
   {
     id: "log-parser",
@@ -426,6 +429,7 @@ export const toolsRegistry: ToolDefinition[] = [
     aliases: ["Breach Checker", "Password Tester"],
     technologies: ["Cryptography", "Web"],
     offline: false, // Requires calling the HIBP API
+    dataFlow: "network",
   },
 
   // ==========================================
@@ -484,7 +488,8 @@ export const toolsRegistry: ToolDefinition[] = [
     keywords: ["dns", "recon", "reconnaissance", "subdomain", "records", "a", "mx", "txt", "cname", "ns", "lookup"],
     aliases: ["DNS Lookup", "Subdomain Analyzer"],
     technologies: ["DNS", "Networking"],
-    offline: true, // Requires external API if resolving, but builder/workspace is local
+    offline: false, // Requires an external resolver when looking up records
+    dataFlow: "mixed",
   },
   {
     id: "attack-surface-mapper",

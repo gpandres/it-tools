@@ -41,6 +41,10 @@ const decisionLabelStyle = {
   paintOrder: 'stroke' as const
 };
 
+function createStepId() {
+  return `step-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function DiagramBuilderCanvas({ runbook, onChange, onExportReady }: DiagramBuilderProps) {
   const diagramRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, getNodes } = useReactFlow();
@@ -170,8 +174,11 @@ function DiagramBuilderCanvas({ runbook, onChange, onExportReady }: DiagramBuild
 
   // Sync internal state if runbook changes externally
   useEffect(() => {
-    setNodes(initialNodes);
-    setEdges(initialEdges);
+    const frame = requestAnimationFrame(() => {
+      setNodes(initialNodes);
+      setEdges(initialEdges);
+    });
+    return () => cancelAnimationFrame(frame);
   }, [initialNodes, initialEdges]);
 
   const onNodesChange = useCallback(
@@ -286,7 +293,7 @@ function DiagramBuilderCanvas({ runbook, onChange, onExportReady }: DiagramBuild
   const addStep = (type: RunbookStep['type'], position?: { x: number; y: number }) => {
     const stepNumber = runbook.steps.length + 1;
     const newStep: RunbookStep = {
-      id: `step-${Date.now()}`,
+      id: createStepId(),
       type,
       title: `New ${type} step`,
       description: '',

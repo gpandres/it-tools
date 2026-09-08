@@ -1,10 +1,10 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Runbook, RunbookStep, RunbookVariable } from "./types";
-import { Check, Copy, ArrowRight, Play, Terminal, Info, ShieldCheck, GitBranch, AlertTriangle, CheckSquare } from "lucide-react";
+import { Runbook, RunbookVariable } from "./types";
+import { Check, Copy, ArrowRight, Terminal, Info, ShieldCheck, GitBranch, AlertTriangle, CheckSquare } from "lucide-react";
 
 function isValidIPv4(value: string) {
   const octets = value.trim().split('.');
@@ -20,6 +20,8 @@ interface RunnerProps {
   onExit: () => void;
 }
 
+type DecisionSelection = { stepKey: string; choice: 'yes' | 'no' } | null;
+
 export default function Runner({ runbook, onExit }: RunnerProps) {
   const [variables, setVariables] = useState<RunbookVariable[]>(
     runbook.variables.map(v => ({ ...v, value: v.defaultValue || '' }))
@@ -32,16 +34,14 @@ export default function Runner({ runbook, onExit }: RunnerProps) {
   const [variableErrors, setVariableErrors] = useState<Record<string, string>>({});
 
   const [checklistState, setChecklistState] = useState<Record<string, boolean>>({});
-  const [decisionChoice, setDecisionChoice] = useState<'yes' | 'no' | null>(null);
+  const [decisionChoice, setDecisionChoice] = useState<DecisionSelection>(null);
 
   const currentStep = useMemo(() => {
     if (completed || currentStepIndex >= runbook.steps.length) return null;
     return runbook.steps[currentStepIndex];
   }, [runbook.steps, currentStepIndex, completed]);
 
-  useEffect(() => {
-    setDecisionChoice(null);
-  }, [currentStep?.id]);
+  const currentStepKey = currentStep ? `${runbook.id}:${currentStep.id}` : '';
 
   // Replace variables in text
   const hydrateText = (text: string = '') => {
@@ -99,8 +99,8 @@ export default function Runner({ runbook, onExit }: RunnerProps) {
   };
 
   const chooseDecision = (choice: 'yes' | 'no', stepId: string) => {
-    if (decisionChoice) return;
-    setDecisionChoice(choice);
+    if (decisionChoice?.stepKey === currentStepKey) return;
+    setDecisionChoice({ stepKey: currentStepKey, choice });
     proceedToSpecific(stepId);
   };
 
@@ -116,7 +116,7 @@ export default function Runner({ runbook, onExit }: RunnerProps) {
         <p className="text-zinc-400 mb-8">You have reached the end of the procedure.</p>
         <div className="flex gap-4">
           <Button onClick={onExit} variant="outline" className="bg-black border-[#1a1a1a]">Exit Runner</Button>
-          <Button onClick={() => { setHistory([]); setCurrentStepIndex(0); setCompleted(false); }} className="bg-[#00ff9c] text-black hover:bg-[#00cc7a]">
+          <Button onClick={() => { setHistory([]); setCurrentStepIndex(0); setCompleted(false); setDecisionChoice(null); }} className="bg-[#00ff9c] text-black hover:bg-[#00cc7a]">
             Restart Runbook
           </Button>
         </div>
@@ -256,14 +256,14 @@ export default function Runner({ runbook, onExit }: RunnerProps) {
                   <div className="flex justify-center gap-4">
                     <Button 
                       onClick={() => chooseDecision('yes', currentStep.decisionTrueNext || '')}
-                      disabled={Boolean(decisionChoice)}
+                      disabled={decisionChoice?.stepKey === currentStepKey}
                       className="bg-[#00ff9c] text-black hover:bg-[#00cc7a] px-8"
                     >
                       YES
                     </Button>
                     <Button 
                       onClick={() => chooseDecision('no', currentStep.decisionFalseNext || '')}
-                      disabled={Boolean(decisionChoice)}
+                      disabled={decisionChoice?.stepKey === currentStepKey}
                       className="bg-red-500 text-white hover:bg-red-600 px-8"
                     >
                       NO
