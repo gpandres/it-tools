@@ -3,7 +3,8 @@ import { IOC, IOCType, IOCTag } from './types';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Copy, Shield, ShieldOff, Plus } from "lucide-react";
+import { Trash2, Copy, Shield, Plus } from "lucide-react";
+import { useNotification } from "@/components/notification-provider";
 
 interface IOCManagerProps {
   iocs: IOC[];
@@ -13,6 +14,7 @@ interface IOCManagerProps {
 export default function IOCManager({ iocs, onChange }: IOCManagerProps) {
   const [newValue, setNewValue] = useState("");
   const [newType, setNewType] = useState<IOCType>("ip");
+  const { notify } = useNotification();
 
   // Auto-detect IOC type if user just pastes something
   const handleValueChange = (val: string) => {
@@ -25,11 +27,23 @@ export default function IOCManager({ iocs, onChange }: IOCManagerProps) {
   };
 
   const addIOC = () => {
-    if (!newValue.trim()) return;
+    const value = newValue.trim();
+    if (!value) {
+      notify("Enter an indicator before adding it.", "error");
+      return;
+    }
+    if (iocs.length >= 500) {
+      notify("An investigation can contain up to 500 indicators.", "error");
+      return;
+    }
+    if (iocs.some((ioc) => ioc.type === newType && ioc.value.trim().toLowerCase() === value.toLowerCase())) {
+      notify("That indicator is already in this investigation.", "error");
+      return;
+    }
     const newIOC: IOC = {
       id: crypto.randomUUID(),
       type: newType,
-      value: newValue.trim(),
+      value,
       tag: 'unknown',
       timestamp: Date.now()
     };

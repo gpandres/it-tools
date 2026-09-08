@@ -28,6 +28,7 @@ test("rejects malformed ACL ports and reversed ranges", () => {
     srcPort: "1024-2048", dstPort: "443", log: false,
   };
   assert.ok(parseAclRules([valid]));
+  assert.equal(parseAclRules([valid, { ...valid }]), null);
   assert.equal(parseAclRules([{ ...valid, dstPort: "2048-1024" }]), null);
   assert.equal(parseAclRules([{ ...valid, dstPort: "0" }]), null);
 });

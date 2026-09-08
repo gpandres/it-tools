@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Trash2, Plus, Clock } from "lucide-react";
+import { useNotification } from "@/components/notification-provider";
 
 interface TimelineViewProps {
   events: TimelineEvent[];
@@ -14,9 +15,17 @@ export default function TimelineView({ events, onChange }: TimelineViewProps) {
   const [newTimestamp, setNewTimestamp] = useState(new Date().toISOString().slice(0, 16));
   const [newDescription, setNewDescription] = useState("");
   const [newSource, setNewSource] = useState("");
+  const { notify } = useNotification();
 
   const addEvent = () => {
-    if (!newDescription.trim() || !newTimestamp) return;
+    if (!newDescription.trim() || !newTimestamp) {
+      notify("A timestamp and event description are required.", "error");
+      return;
+    }
+    if (events.length >= 1000) {
+      notify("A timeline can contain up to 1,000 events.", "error");
+      return;
+    }
     
     const newEvent: TimelineEvent = {
       id: crypto.randomUUID(),

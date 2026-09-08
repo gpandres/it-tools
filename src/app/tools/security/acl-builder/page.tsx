@@ -4,7 +4,8 @@ import { Suspense, useState, useRef } from "react";
 import { ToolLayout } from "@/components/tool-layout";
 import { Plus, Trash2, Download, Upload, Copy, Check, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AclRule, parseAclRules } from "@/lib/acl";
+import { AclRule, createDefaultAclRule, parseAclRules, MAX_ACL_RULES } from "@/lib/acl";
+import { useNotification } from "@/components/notification-provider";
 
 // Helper: Convert CIDR to wildcard mask (for Cisco)
 export function cidrToWildcard(cidr: number): string {
@@ -47,18 +48,14 @@ function AclBuilderContent() {
   const [copied, setCopied] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { notify } = useNotification();
 
   const addRule = () => {
-    setRules([...rules, {
-      id: crypto.randomUUID(),
-      action: "permit",
-      protocol: "ip",
-      srcIp: "any",
-      dstIp: "any",
-      srcPort: "any",
-      dstPort: "any",
-      log: false
-    }]);
+    if (rules.length >= MAX_ACL_RULES) {
+      notify(`ACLs are limited to ${MAX_ACL_RULES} rules in the browser.`, "error");
+      return;
+    }
+    setRules((current) => [...current, createDefaultAclRule()]);
   };
 
   const updateRule = (id: string, field: keyof AclRule, value: AclRule[keyof AclRule]) => {
@@ -90,6 +87,11 @@ function AclBuilderContent() {
   const importRules = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 2_000_000) {
+      notify("ACL JSON is too large (maximum 2 MB).", "error");
+      e.target.value = "";
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
@@ -98,10 +100,12 @@ function AclBuilderContent() {
         if (!rules) throw new Error("Invalid ACL schema");
         setRules(rules);
       } catch {
-        alert("Invalid JSON file");
+        notify("Invalid ACL JSON file or schema.", "error");
       }
     };
+    reader.onerror = () => notify("Could not read the ACL file.", "error");
     reader.readAsText(file);
+    e.target.value = "";
   };
 
   const generateCisco = () => {

@@ -11,6 +11,21 @@ export type AclRule = {
   log: boolean;
 };
 
+export const MAX_ACL_RULES = 500;
+
+export function createDefaultAclRule(): AclRule {
+  return {
+    id: crypto.randomUUID(),
+    action: "permit",
+    protocol: "ip",
+    srcIp: "any",
+    dstIp: "any",
+    srcPort: "any",
+    dstPort: "any",
+    log: false,
+  };
+}
+
 function validAddress(value: unknown): value is string {
   if (typeof value !== "string" || value.length > 64) return false;
   if (value.toLowerCase() === "any" || validateIp(value)) return true;
@@ -27,7 +42,7 @@ function validPort(value: unknown): value is string {
 }
 
 export function parseAclRules(value: unknown): AclRule[] | null {
-  if (!Array.isArray(value) || value.length > 500) return null;
+  if (!Array.isArray(value) || value.length > MAX_ACL_RULES) return null;
   const rules = value.filter((rule): rule is AclRule => {
     if (!rule || typeof rule !== "object") return false;
     const r = rule as Partial<AclRule>;
@@ -37,5 +52,7 @@ export function parseAclRules(value: unknown): AclRule[] | null {
       validAddress(r.srcIp) && validAddress(r.dstIp) &&
       validPort(r.srcPort) && validPort(r.dstPort) && typeof r.log === "boolean";
   });
-  return rules.length === value.length ? rules : null;
+  if (rules.length !== value.length) return null;
+  const ids = new Set(rules.map((rule) => rule.id));
+  return ids.size === rules.length ? rules : null;
 }

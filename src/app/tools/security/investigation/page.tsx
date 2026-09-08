@@ -13,6 +13,7 @@ import IOCManager from './components/IOCManager';
 import TimelineView from './components/TimelineView';
 import Findings from './components/Findings';
 import { parseInvestigationCase } from '@/lib/investigation-validation';
+import { useNotification } from '@/components/notification-provider';
 
 export default function InvestigationWorkspace() {
   const [cases, setCases] = useState<InvestigationCase[]>([]);
@@ -20,10 +21,14 @@ export default function InvestigationWorkspace() {
   const [activeCase, setActiveCase] = useState<InvestigationCase | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletePending, setDeletePending] = useState(false);
+  const { notify } = useNotification();
 
   // Load all cases on mount
   useEffect(() => {
     loadCases();
+    // This is the one-time IndexedDB bootstrap; the callback is intentionally not recreated for it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadCases = async () => {
@@ -72,6 +77,7 @@ export default function InvestigationWorkspace() {
       setCases(allCases);
     } catch (e) {
       console.error("Failed to save case", e);
+      notify("Could not save this investigation locally.", "error");
     }
     setTimeout(() => setIsSaving(false), 500);
   };
@@ -87,12 +93,22 @@ export default function InvestigationWorkspace() {
 
   const deleteCurrentCase = async () => {
     if (!activeCaseId) return;
-    if (!confirm("Are you sure you want to delete this case? This cannot be undone.")) return;
+    if (!deletePending) {
+      setDeletePending(true);
+      notify("Click delete again within 4 seconds to remove this case.", "error");
+      window.setTimeout(() => setDeletePending(false), 4000);
+      return;
+    }
     
-    await db.deleteCase(activeCaseId);
-    setActiveCaseId(null);
-    setActiveCase(null);
-    loadCases();
+    try {
+      await db.deleteCase(activeCaseId);
+      setDeletePending(false);
+      setActiveCaseId(null);
+      setActiveCase(null);
+      loadCases();
+    } catch {
+      notify("Could not delete the investigation.", "error");
+    }
   };
 
   const exportJSON = () => {
@@ -100,11 +116,16 @@ export default function InvestigationWorkspace() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(activeCase, null, 2));
     const dlAnchorElem = document.createElement('a');
     dlAnchorElem.setAttribute("href", dataStr);
-    dlAnchorElem.setAttribute("download", `investigation-${activeCase.title.replace(/\s+/g, '-')}.json`);
+    const safeTitle = activeCase.title.replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'case';
+    dlAnchorElem.setAttribute("download", `investigation-${safeTitle}.json`);
     dlAnchorElem.click();
   };
 
   const importJSON = (file: File) => {
+    if (file.size > 2_000_000) {
+      notify("Investigation JSON is too large (maximum 2 MB).", "error");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
@@ -120,12 +141,13 @@ export default function InvestigationWorkspace() {
           loadCases();
           selectCase(parsed.id);
         } else {
-          alert("Invalid case JSON format.");
+          notify("Invalid investigation JSON format.", "error");
         }
-      } catch (err) {
-        alert("Failed to parse JSON file.");
+      } catch {
+        notify("Could not parse the investigation JSON file.", "error");
       }
     };
+    reader.onerror = () => notify("Could not read the investigation file.", "error");
     reader.readAsText(file);
   };
 
@@ -185,8 +207,8 @@ export default function InvestigationWorkspace() {
                 }} 
               />
             </Button>
-            <Button onClick={deleteCurrentCase} variant="outline" size="sm" className="bg-black border-red-900/50 text-red-400 hover:bg-red-900/20 hover:text-red-300">
-              <Trash2 className="w-4 h-4" />
+            <Button onClick={deleteCurrentCase} variant="outline" size="sm" className={`bg-black border-red-900/50 text-red-400 hover:bg-red-900/20 hover:text-red-300 ${deletePending ? 'ring-1 ring-red-500' : ''}`} aria-label={deletePending ? "Confirm delete case" : "Delete case"}>
+              <Trash2 className="w-4 h-4" />{deletePending && <span className="ml-2 text-xs">Confirm</span>}
             </Button>
           </div>
         </div>

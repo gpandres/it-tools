@@ -3,7 +3,7 @@
 import { ToolLayout } from "@/components/tool-layout";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useRef } from "react";
-import { Upload, FileDown, Search, ArrowRight, ShieldAlert, Cpu, Clock, Activity, ArrowLeftRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ShieldAlert, Cpu, Clock, Activity, ArrowLeftRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ParsedPacket {
   id: number;
@@ -21,6 +21,10 @@ interface ParsedPacket {
   payloadOffset: number;
   raw: Uint8Array;
 }
+
+const MAX_PCAP_FILE_SIZE = 100 * 1024 * 1024;
+const MAX_PACKET_COUNT = 50_000;
+const MAX_PACKET_SIZE = 1024 * 1024;
 
 export default function PcapViewer() {
   const [isDragging, setIsDragging] = useState(false);
@@ -48,8 +52,11 @@ export default function PcapViewer() {
     if (!filterQuery) return packets;
     const q = filterQuery.toLowerCase();
     return packets.filter(p => 
+      String(p.id).includes(q) ||
       p.srcIp.includes(q) || 
-      p.dstIp.includes(q) || 
+      p.dstIp.includes(q) ||
+      p.srcMac.includes(q) ||
+      p.dstMac.includes(q) ||
       p.protocolName.toLowerCase().includes(q)
     );
   }, [packets, filterQuery]);
@@ -60,11 +67,6 @@ export default function PcapViewer() {
     const start = (page - 1) * ITEMS_PER_PAGE;
     return filteredPackets.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredPackets, page]);
-
-  // Handle page change when filtering
-  useMemo(() => {
-    setPage(1);
-  }, [filterQuery]);
 
   // Analytics
   const analytics = useMemo(() => {
@@ -152,7 +154,7 @@ export default function PcapViewer() {
           const parsed: ParsedPacket[] = [];
 
           while (offset + 16 <= buffer.byteLength) {
-            if (packetCount > 50000) {
+            if (packetCount >= MAX_PACKET_COUNT) {
               setErrorMsg("Displaying first 50,000 packets to prevent out-of-memory errors.");
               break;
             }
@@ -164,9 +166,9 @@ export default function PcapViewer() {
 
             offset += 16;
             
-            // Safety check for corrupted packets
-            if (inclLen > 100000 || offset + inclLen > buffer.byteLength) {
-              break;
+            // Safety check for corrupted packets and hostile capture sizes.
+            if (inclLen > MAX_PACKET_SIZE || offset + inclLen > buffer.byteLength) {
+              throw new Error("Truncated or invalid packet record in PCAP file.");
             }
 
             const rawPacket = bytes.slice(offset, offset + inclLen);
@@ -233,11 +235,23 @@ export default function PcapViewer() {
   };
 
   const handleFileUpload = (file: File) => {
+    if (file.size > MAX_PCAP_FILE_SIZE) {
+      setErrorMsg("PCAP files are limited to 100 MB in the browser to protect memory.");
+      return;
+    }
+    if (!file.name.toLowerCase().endsWith(".pcap")) {
+      setErrorMsg("Choose a standard .pcap file.");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
         parsePcap(e.target.result as ArrayBuffer);
       }
+    };
+    reader.onerror = () => {
+      setLoading(false);
+      setErrorMsg("Could not read the PCAP file.");
     };
     reader.readAsArrayBuffer(file);
   };
@@ -350,7 +364,7 @@ export default function PcapViewer() {
                       type="text"
                       placeholder="Filter IP / Protocol..."
                       value={filterQuery}
-                      onChange={(e) => setFilterQuery(e.target.value)}
+                      onChange={(e) => { setFilterQuery(e.target.value); setPage(1); }}
                       className="bg-transparent border-none text-xs font-mono text-zinc-300 w-40 px-2 py-1.5 focus:outline-none placeholder:text-zinc-600"
                     />
                   </div>

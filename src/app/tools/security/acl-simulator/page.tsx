@@ -5,7 +5,8 @@ import { ToolLayout } from "@/components/tool-layout";
 import { isIpInNetwork } from "@/lib/network"; // Force Turbopack reload
 import { Plus, Trash2, Upload, Play, ShieldAlert, ShieldCheck, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AclRule, parseAclRules } from "@/lib/acl";
+import { AclRule, createDefaultAclRule, parseAclRules, MAX_ACL_RULES } from "@/lib/acl";
+import { useNotification } from "@/components/notification-provider";
 
 function AclSimulatorContent() {
   const [rules, setRules] = useState<AclRule[]>([]);
@@ -27,10 +28,16 @@ function AclSimulatorContent() {
   } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { notify } = useNotification();
 
   const importRules = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 2_000_000) {
+      notify("ACL JSON is too large (maximum 2 MB).", "error");
+      e.target.value = "";
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
@@ -39,24 +46,21 @@ function AclSimulatorContent() {
         if (!rules) throw new Error("Invalid ACL schema");
         setRules(rules);
         setSimulationResult(null);
-      } catch (err) {
-        alert("Invalid JSON file");
+      } catch {
+        notify("Invalid ACL JSON file or schema.", "error");
       }
     };
+    reader.onerror = () => notify("Could not read the ACL file.", "error");
     reader.readAsText(file);
+    e.target.value = "";
   };
 
   const addRule = () => {
-    setRules([...rules, {
-      id: crypto.randomUUID(),
-      action: "permit",
-      protocol: "ip",
-      srcIp: "any",
-      dstIp: "any",
-      srcPort: "any",
-      dstPort: "any",
-      log: false
-    }]);
+    if (rules.length >= MAX_ACL_RULES) {
+      notify(`ACLs are limited to ${MAX_ACL_RULES} rules in the browser.`, "error");
+      return;
+    }
+    setRules((current) => [...current, createDefaultAclRule()]);
     setSimulationResult(null);
   };
 
