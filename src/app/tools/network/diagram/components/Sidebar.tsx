@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToolActionButton } from "@/components/tool-action-panel";
-import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Download, Eye, EyeOff, FileJson, Globe2, Group, HardDriveDownload, KeyRound, Laptop, LayoutDashboard, Maximize2, Minimize2, Network, Redo2, Router, ScanSearch, Search, Server, ServerCog, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Undo2, Ungroup, Upload, Wifi, X, Zap } from 'lucide-react';
+import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Eye, EyeOff, Globe2, Group, HardDriveDownload, KeyRound, Laptop, LayoutDashboard, Maximize2, Minimize2, Network, Redo2, Router, ScanSearch, Search, Server, ServerCog, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Undo2, Ungroup, Wifi, X, Zap } from 'lucide-react';
 import type { DiagramIssue } from '@/lib/diagram-validation';
 import type { DiagramMetadata } from '@/lib/diagram-validation';
 import type { NetworkPath, TopologyAnalysis } from '@/lib/diagram-analysis';
@@ -66,20 +66,14 @@ type SidebarProps = {
   topologyAnalysis: TopologyAnalysis;
   findPath: (sourceId: string, targetId: string) => NetworkPath | null;
   validate: () => void;
-  exportDiagram: () => void;
-  exportSvg: () => void;
-  exportInventory: () => void;
-  exportMarkdown: () => void;
-  importDiagram: (file: File) => void;
   loadTemplate: (templateName: string) => void;
-  exportImage: (bgColor: 'black' | 'white' | 'transparent') => void;
   showMinimap: boolean;
   toggleMinimap: () => void;
   focusMode: boolean;
   toggleFocusMode: () => void;
 };
 
-export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount, selectedEdgeCount, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, groupSelected, ungroupSelected, canGroup, canUngroup, autoLayout, fitView, validationIssues, diagramMetadata, updateDiagramMetadata, topologyNodes, topologyAnalysis, findPath, validate, exportDiagram, exportSvg, exportInventory, exportMarkdown, importDiagram, loadTemplate, exportImage, showMinimap, toggleMinimap, focusMode, toggleFocusMode }: SidebarProps) {
+export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount, selectedEdgeCount, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, groupSelected, ungroupSelected, canGroup, canUngroup, autoLayout, fitView, validationIssues, diagramMetadata, updateDiagramMetadata, topologyNodes, topologyAnalysis, findPath, validate, loadTemplate, showMinimap, toggleMinimap, focusMode, toggleFocusMode }: SidebarProps) {
   const [query, setQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<string[]>(['Network', 'Security', 'Compute', 'Services']);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
@@ -231,23 +225,10 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
               </div>
               <p className="mt-2 text-[9px] leading-relaxed text-zinc-600">Critical nodes and bridge links identify topology single points of failure.</p>
             </div>
-            <Button type="button" onClick={exportMarkdown} variant="outline" size="sm" className="w-full bg-black text-[10px] text-[#38bdf8]"><Download className="mr-1 h-3 w-3" />Export documentation</Button>
+            <p className="text-[9px] leading-relaxed text-zinc-600">Export actions are grouped below the canvas.</p>
           </div>
         </details>
 
-        <details className="mt-4 border-t border-[#1a1a1a] pt-4" open>
-          <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-zinc-500">Keyboard &amp; guide</summary>
-          <div className="mt-3 space-y-2 font-mono text-[10px] leading-relaxed text-zinc-500">
-            <p><Kbd>Shift</Kbd> + drag selects multiple nodes.</p>
-            <p><Kbd>Delete</Kbd> removes selected nodes or links.</p>
-            <p><Kbd>Ctrl/Cmd + Z</Kbd> undo · <Kbd>Ctrl/Cmd + Shift + Z</Kbd> redo.</p>
-            <p>Click a node or link to edit its properties at the top of this toolbox.</p>
-            <p>Drag a palette item into the canvas, or click it to add it to the center.</p>
-            <p><Kbd>Esc</Kbd> exits focus mode. Use the eye button to toggle the minimap.</p>
-          </div>
-        </details>
-
-        <section className="mt-4 rounded border border-[#1a1a1a] bg-[#080808] p-3" aria-labelledby="diagram-export-heading"><h3 id="diagram-export-heading" className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Export / import</h3><div className="grid grid-cols-2 gap-2"><Button onClick={() => exportImage('black')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG dark</Button><Button onClick={() => exportImage('white')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG light</Button><Button onClick={() => exportImage('transparent')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG alpha</Button><Button onClick={exportSvg} variant="outline" size="sm" className="bg-black text-[10px] text-[#38bdf8]"><Download className="mr-1 h-3 w-3" />SVG</Button><Button onClick={exportInventory} variant="outline" size="sm" className="bg-black text-[10px] text-amber-300"><FileJson className="mr-1 h-3 w-3" />CSV inventory</Button><Button onClick={exportDiagram} variant="outline" size="sm" className="bg-black text-[10px] text-purple-300"><FileJson className="mr-1 h-3 w-3" />JSON</Button><label htmlFor="network-diagram-json" className={`${buttonVariants({ variant: 'outline', size: 'sm' })} relative col-span-2 w-full cursor-pointer bg-black text-[10px]`}><Upload className="mr-1 h-3 w-3" />Load JSON<input id="network-diagram-json" type="file" accept=".json" aria-label="Choose diagram JSON file" className="sr-only" onChange={event => { const file = event.target.files?.[0]; if (file) importDiagram(file); event.currentTarget.value = ''; }} /></label></div></section>
       </div>
   </aside>
   );
@@ -255,8 +236,4 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="space-y-1.5"><Label className="text-[10px] text-zinc-500">{label}</Label>{children}</div>;
-}
-
-function Kbd({ children }: { children: React.ReactNode }) {
-  return <kbd className="rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-[9px] text-zinc-300">{children}</kbd>;
 }

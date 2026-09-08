@@ -9,6 +9,7 @@ import { ToolLayout } from "@/components/tool-layout";
 import NetworkNodeComponent from './nodes/NetworkNode';
 import NetworkEdgeComponent from './edges/NetworkEdge';
 import Sidebar from './components/Sidebar';
+import { DiagramExportPanel, DiagramGuide } from './components/DiagramSupportPanels';
 import { TEMPLATES } from './components/Templates';
 import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
 import { parseDiagram, validateDiagram } from '@/lib/diagram-validation';
@@ -507,7 +508,11 @@ function DiagramFlow() {
   const fitDiagram = () => fitView({ padding: 0.2 });
 
   return (
-    <div className={`${focusMode ? 'fixed inset-3 z-50 h-[calc(100dvh-1.5rem)]' : 'h-[800px]'} flex w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]`} data-testid="network-diagram-editor" role="application" aria-label="Network diagram editor">
+    <>
+      <div className="relative">
+        <div className="mb-4 2xl:hidden"><DiagramGuide /></div>
+        <div className="pointer-events-auto absolute right-full top-0 mr-6 hidden w-56 2xl:block"><DiagramGuide /></div>
+        <div className={`${focusMode ? 'fixed inset-3 z-50 h-[calc(100dvh-1.5rem)]' : 'h-[800px]'} flex w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]`} data-testid="network-diagram-editor" role="application" aria-label="Network diagram editor">
       <Sidebar 
         selectedNode={selectedNode}
         selectedEdge={selectedEdge}
@@ -535,13 +540,7 @@ function DiagramFlow() {
         topologyAnalysis={topologyAnalysis}
         findPath={findPath}
         validate={() => notify(validationIssues.length === 0 ? 'No topology issues detected.' : `${validationIssues.length} topology issue${validationIssues.length === 1 ? '' : 's'} found.`, validationIssues.some(issue => issue.severity === 'error') ? 'error' : 'info')}
-        exportDiagram={exportDiagram}
-        exportSvg={exportSvg}
-        exportInventory={exportInventory}
-        exportMarkdown={exportMarkdown}
-        importDiagram={importDiagram}
         loadTemplate={loadTemplate}
-        exportImage={exportImage}
         showMinimap={showMinimap}
         toggleMinimap={() => setShowMinimap(current => !current)}
         focusMode={focusMode}
@@ -581,7 +580,10 @@ function DiagramFlow() {
           </Panel>
         </ReactFlow>
       </div>
-    </div>
+        </div>
+      </div>
+      <DiagramExportPanel exportImage={exportImage} exportSvg={exportSvg} exportInventory={exportInventory} exportDiagram={exportDiagram} exportMarkdown={exportMarkdown} importDiagram={importDiagram} />
+    </>
   );
 }
 
