@@ -22,6 +22,8 @@ export default function NetworkEdge({
     targetX,
     targetY,
     targetPosition,
+    offset: 24,
+    borderRadius: 12,
   });
 
   const connType = data?.connectionType || 'ethernet';
@@ -67,7 +69,8 @@ export default function NetworkEdge({
       <BaseEdge 
         path={edgePath} 
         markerEnd={markerEnd} 
-        style={{ ...style, stroke: strokeColor, strokeWidth, strokeDasharray, transition: 'all 0.3s' }} 
+        interactionWidth={24}
+        style={{ ...style, stroke: strokeColor, strokeWidth, strokeDasharray }}
       />
       
       {(isVpn || metadataLabel) && (

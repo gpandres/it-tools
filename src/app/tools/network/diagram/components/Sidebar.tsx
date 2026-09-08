@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToolActionButton } from "@/components/tool-action-panel";
-import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Download, FileJson, Globe2, Group, HardDriveDownload, KeyRound, Laptop, LayoutDashboard, Maximize2, Network, Redo2, Router, Search, Server, ServerCog, Shield, ShieldCheck, Sparkles, Undo2, Ungroup, Upload, Wifi, X, Zap } from 'lucide-react';
+import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Download, Eye, EyeOff, FileJson, Globe2, Group, HardDriveDownload, KeyRound, Laptop, LayoutDashboard, Maximize2, Minimize2, Network, Redo2, Router, Search, Server, ServerCog, Shield, ShieldCheck, Sparkles, Undo2, Ungroup, Upload, Wifi, X, Zap } from 'lucide-react';
 import type { DiagramIssue } from '@/lib/diagram-validation';
 import type { NetworkConnectionType, NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, NetworkStatus, NetworkZone } from '../types';
 
@@ -65,13 +65,24 @@ type SidebarProps = {
   importDiagram: (file: File) => void;
   loadTemplate: (templateName: string) => void;
   exportImage: (bgColor: 'black' | 'white' | 'transparent') => void;
+  showMinimap: boolean;
+  toggleMinimap: () => void;
+  focusMode: boolean;
+  toggleFocusMode: () => void;
 };
 
-export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount, selectedEdgeCount, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, groupSelected, ungroupSelected, canGroup, canUngroup, autoLayout, fitView, validationIssues, validate, exportDiagram, exportSvg, exportInventory, importDiagram, loadTemplate, exportImage }: SidebarProps) {
+export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount, selectedEdgeCount, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, groupSelected, ungroupSelected, canGroup, canUngroup, autoLayout, fitView, validationIssues, validate, exportDiagram, exportSvg, exportInventory, importDiagram, loadTemplate, exportImage, showMinimap, toggleMinimap, focusMode, toggleFocusMode }: SidebarProps) {
   const [query, setQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<string[]>(['Network', 'Security', 'Compute', 'Services']);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const filteredItems = useMemo(() => NODE_TYPES.filter(item => `${item.label} ${item.category}`.toLowerCase().includes(query.toLowerCase().trim())), [query]);
   const categories = Array.from(new Set(filteredItems.map(item => item.category)));
+  const selectedNodeId = selectedNode?.id;
+  const selectedEdgeId = selectedEdge?.id;
+
+  useEffect(() => {
+    if (selectedNodeId || selectedEdgeId) scrollAreaRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [selectedNodeId, selectedEdgeId]);
 
   const toggleCategory = (category: string) => setOpenCategories(current => current.includes(category) ? current.filter(item => item !== category) : [...current, category]);
   const onDragStart = (event: React.DragEvent<HTMLButtonElement>, nodeType: NetworkNodeType, label: string) => {
@@ -81,13 +92,15 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
 
   return (
     <aside className="flex h-full w-[19rem] shrink-0 flex-col overflow-hidden border-r border-[#1a1a1a] bg-[#050505]" aria-label="Diagram toolbox">
-      <div className="flex shrink-0 items-center justify-between border-b border-[#1a1a1a] p-3">
+      <div className="flex shrink-0 items-start justify-between gap-2 border-b border-[#1a1a1a] p-3">
         <h2 className="flex items-center gap-2 font-bold"><Network className="h-4 w-4 text-[#00ff9c]" /> Diagram toolbox</h2>
-        <div className="flex items-center gap-1">
+        <div className="flex max-w-[9rem] flex-wrap justify-end gap-1">
           <ToolActionButton type="button" onClick={undo} disabled={!canUndo} aria-label="Undo" title="Undo (Ctrl+Z)"><Undo2 /></ToolActionButton>
           <ToolActionButton type="button" onClick={redo} disabled={!canRedo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)"><Redo2 /></ToolActionButton>
           <ToolActionButton type="button" onClick={autoLayout} aria-label="Auto layout" title="Auto layout"><LayoutDashboard /></ToolActionButton>
           <ToolActionButton type="button" onClick={fitView} aria-label="Fit view" title="Fit view"><Maximize2 /></ToolActionButton>
+          <ToolActionButton type="button" onClick={toggleMinimap} aria-label={showMinimap ? 'Hide minimap' : 'Show minimap'} title={showMinimap ? 'Hide minimap' : 'Show minimap'}>{showMinimap ? <EyeOff /> : <Eye />}</ToolActionButton>
+          <ToolActionButton type="button" onClick={toggleFocusMode} aria-label={focusMode ? 'Exit focus mode' : 'Enter focus mode'} title={focusMode ? 'Exit focus mode (Esc)' : 'Enter focus mode'}>{focusMode ? <Minimize2 /> : <Maximize2 />}</ToolActionButton>
           {selectedNodeCount > 0 && <ToolActionButton type="button" onClick={duplicateSelected} aria-label="Duplicate selection" title="Duplicate selection"><Sparkles /></ToolActionButton>}
           {canGroup && <ToolActionButton type="button" onClick={groupSelected} aria-label="Group selected nodes" title="Group selected nodes"><Group /></ToolActionButton>}
           {canUngroup && <ToolActionButton type="button" onClick={ungroupSelected} aria-label="Ungroup selected nodes" title="Ungroup selected nodes"><Ungroup /></ToolActionButton>}
@@ -97,7 +110,7 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
 
       {(selectedNodeCount > 1 || selectedEdgeCount > 1) && <div className="flex shrink-0 items-center gap-2 border-b border-[#1a1a1a] bg-[#00ff9c]/5 px-3 py-2 font-mono text-[10px] text-zinc-400"><span className="text-[#00ff9c]">{selectedNodeCount} nodes</span>{selectedEdgeCount > 0 && <><span>·</span><span className="text-[#38bdf8]">{selectedEdgeCount} links</span></>}<span className="ml-auto text-zinc-600">Shift + drag</span></div>}
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
+      <div ref={scrollAreaRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
         <section className="border-b border-[#1a1a1a] pb-4">
           <div className="mb-3 flex items-center justify-between"><h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Node palette</h3><span className="text-[9px] text-zinc-700">{filteredItems.length}/{NODE_TYPES.length}</span></div>
           <div className="relative mb-3"><Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" /><Input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search nodes..." aria-label="Search nodes" className="h-8 bg-black pl-7 font-mono text-xs" /></div>
@@ -112,7 +125,7 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
           </div>
         </section>
 
-        {selectedNode && <section className="border-b border-[#1a1a1a] py-4">
+        {selectedNode && <section className="order-first border-b border-[#1a1a1a] py-4">
           <div className="mb-3 flex items-center justify-between"><h3 className="text-[10px] font-bold uppercase tracking-widest text-[#00aaff]">Node properties</h3><span className="font-mono text-[9px] text-zinc-700">{selectedNode.id}</span></div>
           <div className="space-y-3">
             <Field label="Label"><Input value={selectedNode.data.label || ''} onChange={event => updateNodeData(selectedNode.id, { label: event.target.value })} className="bg-black font-mono text-xs" /></Field>
@@ -125,7 +138,7 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
           </div>
         </section>}
 
-        {selectedEdge && <section className="border-b border-[#1a1a1a] py-4">
+        {selectedEdge && <section className="order-first border-b border-[#1a1a1a] py-4">
           <div className="mb-3 flex items-center justify-between"><h3 className="text-[10px] font-bold uppercase tracking-widest text-[#00ff9c]">Connection properties</h3><span className="font-mono text-[9px] text-zinc-700">{selectedEdge.id}</span></div>
           <div className="space-y-3">
             <Field label="Connection type"><Select value={selectedEdge.data?.connectionType || 'ethernet'} onValueChange={value => updateEdgeData(selectedEdge.id, { connectionType: value as NetworkConnectionType })}><SelectTrigger className="bg-black font-mono text-xs"><SelectValue /></SelectTrigger><SelectContent className="bg-black font-mono text-xs text-zinc-300"><SelectItem value="ethernet">Ethernet (Copper)</SelectItem><SelectItem value="fiber">Fiber Optic</SelectItem><SelectItem value="wireless">Wireless</SelectItem><SelectItem value="vpn">VPN / Logical</SelectItem></SelectContent></Select></Field>
@@ -140,7 +153,19 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
 
         <section className="border-b border-[#1a1a1a] py-4"><div className="mb-3 flex items-center justify-between"><h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Validation</h3><button type="button" onClick={validate} className="text-[10px] font-bold uppercase text-[#00ff9c] hover:text-white">Run checks</button></div>{validationIssues.length === 0 ? <div className="flex items-center gap-2 text-[10px] text-[#72e6b4]"><CheckCircle2 className="h-3.5 w-3.5" />No issues detected</div> : <div className="space-y-2">{validationIssues.slice(0, 6).map(issue => <div key={issue.id} className={`flex gap-2 text-[10px] ${issue.severity === 'error' ? 'text-red-300' : 'text-amber-300'}`}><AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" /><span><strong>{issue.title}:</strong> {issue.detail}</span></div>)}{validationIssues.length > 6 && <p className="text-[9px] text-zinc-600">+{validationIssues.length - 6} more issues</p>}</div>}</section>
 
-        <section className="py-4" aria-labelledby="diagram-export-heading"><h3 id="diagram-export-heading" className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Export / import</h3><div className="grid grid-cols-2 gap-2"><Button onClick={() => exportImage('black')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG dark</Button><Button onClick={() => exportImage('white')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG light</Button><Button onClick={() => exportImage('transparent')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG alpha</Button><Button onClick={exportSvg} variant="outline" size="sm" className="bg-black text-[10px] text-[#38bdf8]"><Download className="mr-1 h-3 w-3" />SVG</Button><Button onClick={exportInventory} variant="outline" size="sm" className="bg-black text-[10px] text-amber-300"><FileJson className="mr-1 h-3 w-3" />CSV inventory</Button><Button onClick={exportDiagram} variant="outline" size="sm" className="bg-black text-[10px] text-purple-300"><FileJson className="mr-1 h-3 w-3" />JSON</Button><label htmlFor="network-diagram-json" className={`${buttonVariants({ variant: 'outline', size: 'sm' })} relative col-span-2 w-full cursor-pointer bg-black text-[10px]`}><Upload className="mr-1 h-3 w-3" />Load JSON<input id="network-diagram-json" type="file" accept=".json" aria-label="Choose diagram JSON file" className="sr-only" onChange={event => { const file = event.target.files?.[0]; if (file) importDiagram(file); event.currentTarget.value = ''; }} /></label></div></section>
+        <details className="mt-4 border-t border-[#1a1a1a] pt-4" open>
+          <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-zinc-500">Keyboard &amp; guide</summary>
+          <div className="mt-3 space-y-2 font-mono text-[10px] leading-relaxed text-zinc-500">
+            <p><Kbd>Shift</Kbd> + drag selects multiple nodes.</p>
+            <p><Kbd>Delete</Kbd> removes selected nodes or links.</p>
+            <p><Kbd>Ctrl/Cmd + Z</Kbd> undo · <Kbd>Ctrl/Cmd + Shift + Z</Kbd> redo.</p>
+            <p>Click a node or link to edit its properties at the top of this toolbox.</p>
+            <p>Drag a palette item into the canvas, or click it to add it to the center.</p>
+            <p><Kbd>Esc</Kbd> exits focus mode. Use the eye button to toggle the minimap.</p>
+          </div>
+        </details>
+
+        <section className="mt-4 rounded border border-[#1a1a1a] bg-[#080808] p-3" aria-labelledby="diagram-export-heading"><h3 id="diagram-export-heading" className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Export / import</h3><div className="grid grid-cols-2 gap-2"><Button onClick={() => exportImage('black')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG dark</Button><Button onClick={() => exportImage('white')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG light</Button><Button onClick={() => exportImage('transparent')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG alpha</Button><Button onClick={exportSvg} variant="outline" size="sm" className="bg-black text-[10px] text-[#38bdf8]"><Download className="mr-1 h-3 w-3" />SVG</Button><Button onClick={exportInventory} variant="outline" size="sm" className="bg-black text-[10px] text-amber-300"><FileJson className="mr-1 h-3 w-3" />CSV inventory</Button><Button onClick={exportDiagram} variant="outline" size="sm" className="bg-black text-[10px] text-purple-300"><FileJson className="mr-1 h-3 w-3" />JSON</Button><label htmlFor="network-diagram-json" className={`${buttonVariants({ variant: 'outline', size: 'sm' })} relative col-span-2 w-full cursor-pointer bg-black text-[10px]`}><Upload className="mr-1 h-3 w-3" />Load JSON<input id="network-diagram-json" type="file" accept=".json" aria-label="Choose diagram JSON file" className="sr-only" onChange={event => { const file = event.target.files?.[0]; if (file) importDiagram(file); event.currentTarget.value = ''; }} /></label></div></section>
       </div>
   </aside>
   );
@@ -148,4 +173,8 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="space-y-1.5"><Label className="text-[10px] text-zinc-500">{label}</Label>{children}</div>;
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return <kbd className="rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-[9px] text-zinc-300">{children}</kbd>;
 }

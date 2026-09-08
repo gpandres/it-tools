@@ -22,12 +22,14 @@ const nodeTypes = { networkNode: NetworkNodeComponent };
 const edgeTypes = { networkEdge: NetworkEdgeComponent };
 
 function DiagramFlow() {
-  const [nodes, setNodes] = useState<NetworkNode[]>(() => cloneNodes(TEMPLATES["Small Office"].nodes as NetworkNode[]));
-  const [edges, setEdges] = useState<NetworkEdge[]>(() => cloneEdges(TEMPLATES["Small Office"].edges as NetworkEdge[]));
+  const [nodes, setNodes] = useState<NetworkNode[]>(() => cloneNodes(TEMPLATES["Empty Canvas"].nodes as NetworkNode[]));
+  const [edges, setEdges] = useState<NetworkEdge[]>(() => cloneEdges(TEMPLATES["Empty Canvas"].edges as NetworkEdge[]));
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [history, setHistory] = useState<DiagramSnapshot[]>([]);
   const [future, setFuture] = useState<DiagramSnapshot[]>([]);
+  const [showMinimap, setShowMinimap] = useState(true);
+  const [focusMode, setFocusMode] = useState(false);
   const exportInFlight = useRef(false);
   const { notify } = useNotification();
   
@@ -320,6 +322,10 @@ function DiagramFlow() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setFocusMode(false);
+        return;
+      }
       const target = event.target as HTMLElement | null;
       if (target?.matches('input, textarea, select, [contenteditable="true"]')) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
@@ -483,7 +489,7 @@ function DiagramFlow() {
   const fitDiagram = () => fitView({ padding: 0.2 });
 
   return (
-    <div className="flex h-[800px] w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]" data-testid="network-diagram-editor" role="application" aria-label="Network diagram editor">
+    <div className={`${focusMode ? 'fixed inset-3 z-50 h-[calc(100dvh-1.5rem)]' : 'h-[800px]'} flex w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]`} data-testid="network-diagram-editor" role="application" aria-label="Network diagram editor">
       <Sidebar 
         selectedNode={selectedNode}
         selectedEdge={selectedEdge}
@@ -512,6 +518,10 @@ function DiagramFlow() {
         importDiagram={importDiagram}
         loadTemplate={loadTemplate}
         exportImage={exportImage}
+        showMinimap={showMinimap}
+        toggleMinimap={() => setShowMinimap(current => !current)}
+        focusMode={focusMode}
+        toggleFocusMode={() => setFocusMode(current => !current)}
       />
       <div className="h-full flex-1" ref={reactFlowWrapper} data-testid="network-diagram-canvas" aria-label="Network diagram canvas">
         <ReactFlow
@@ -535,13 +545,13 @@ function DiagramFlow() {
         >
           <Background color="#1a1a1a" variant={BackgroundVariant.Dots} gap={20} size={2} />
           <Controls style={{ backgroundColor: '#050505', border: '1px solid #1a1a1a' }} />
-          <MiniMap
-            pannable
-            zoomable
-            nodeColor={node => (node.data as { status?: string } | undefined)?.status === 'offline' ? '#ef4444' : '#00ff9c'}
-            maskColor="rgba(0, 0, 0, 0.72)"
-            style={{ backgroundColor: '#050505', border: '1px solid #1a1a1a' }}
-          />
+          {showMinimap && <MiniMap
+              pannable
+              zoomable
+              nodeColor={node => (node.data as { status?: string } | undefined)?.status === 'offline' ? '#ef4444' : '#00ff9c'}
+              maskColor="rgba(0, 0, 0, 0.72)"
+              style={{ backgroundColor: '#050505', border: '1px solid #1a1a1a' }}
+            />}
           <Panel position="bottom-left" className="!m-3 !rounded border border-[#1a1a1a] !bg-[#050505]/95 px-2.5 py-1.5 font-mono text-[10px] text-zinc-500" aria-live="polite">
             <span className="text-[#00ff9c]">{nodes.length}</span> nodes · <span className="text-[#38bdf8]">{edges.length}</span> links · {validationIssues.length === 0 ? <span className="text-[#72e6b4]">topology ok</span> : <span className="text-amber-300">{validationIssues.length} issue{validationIssues.length === 1 ? '' : 's'}</span>}
           </Panel>

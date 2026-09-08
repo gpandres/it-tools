@@ -58,11 +58,11 @@ export default function NetworkNode({ data, selected }: NodeProps<NetworkNode>) 
   const isGroup = data.type === 'group';
 
   return (
-    <div className={`relative flex h-full min-h-[100px] min-w-[120px] flex-col ${isGroup ? 'items-start justify-start rounded-lg border border-dashed border-[#00ff9c]/50 bg-[#00ff9c]/5 p-3' : 'items-center justify-center overflow-hidden rounded-xl border-2 p-3 backdrop-blur-md shadow-2xl'} transition-all ${colorClass} ${selected ? 'ring-2 ring-white shadow-white/20' : ''}`}>
+    <div className={`group/node relative flex h-full min-h-[100px] min-w-[120px] flex-col ${isGroup ? 'items-start justify-start rounded-lg border border-dashed border-[#00ff9c]/50 bg-[#00ff9c]/5 p-3' : 'items-center justify-center overflow-hidden rounded-xl border-2 p-3 backdrop-blur-md shadow-2xl'} transition-all ${colorClass} ${selected ? 'ring-2 ring-white shadow-white/20' : ''}`}>
       <NodeResizer isVisible={selected} minWidth={120} minHeight={100} lineClassName="!border-[#00ff9c]/60" handleClassName="!h-2 !w-2 !border-[#00ff9c] !bg-[#050505]" />
       {!isGroup && <>
-        <Handle type="target" position={Position.Top} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="top-target" />
-        <Handle type="source" position={Position.Top} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="top-source" />
+        <Handle type="target" position={Position.Top} className="h-3 w-3 border-2 border-black bg-zinc-400 opacity-0 transition-opacity group-hover/node:opacity-100" id="top-target" />
+        <Handle type="source" position={Position.Top} className="h-3 w-3 border-2 border-black bg-zinc-400 opacity-0 transition-opacity group-hover/node:opacity-100" id="top-source" />
 
         <div className="mb-2"><Icon className="w-8 h-8" strokeWidth={1.5} /></div>
 
@@ -76,12 +76,12 @@ export default function NetworkNode({ data, selected }: NodeProps<NetworkNode>) 
           </div>
         </div>
 
-        <Handle type="source" position={Position.Right} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="right-source" />
-        <Handle type="target" position={Position.Right} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="right-target" />
-        <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="bottom-source" />
-        <Handle type="target" position={Position.Bottom} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="bottom-target" />
-        <Handle type="source" position={Position.Left} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="left-source" />
-        <Handle type="target" position={Position.Left} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="left-target" />
+        <Handle type="source" position={Position.Right} className="h-3 w-3 border-2 border-black bg-zinc-400 opacity-0 transition-opacity group-hover/node:opacity-100" id="right-source" />
+        <Handle type="target" position={Position.Right} className="h-3 w-3 border-2 border-black bg-zinc-400 opacity-0 transition-opacity group-hover/node:opacity-100" id="right-target" />
+        <Handle type="source" position={Position.Bottom} className="h-3 w-3 border-2 border-black bg-zinc-400 opacity-0 transition-opacity group-hover/node:opacity-100" id="bottom-source" />
+        <Handle type="target" position={Position.Bottom} className="h-3 w-3 border-2 border-black bg-zinc-400 opacity-0 transition-opacity group-hover/node:opacity-100" id="bottom-target" />
+        <Handle type="source" position={Position.Left} className="h-3 w-3 border-2 border-black bg-zinc-400 opacity-0 transition-opacity group-hover/node:opacity-100" id="left-source" />
+        <Handle type="target" position={Position.Left} className="h-3 w-3 border-2 border-black bg-zinc-400 opacity-0 transition-opacity group-hover/node:opacity-100" id="left-target" />
       </>}
       {isGroup && <div className="font-mono"><div className="text-[10px] font-bold uppercase tracking-widest text-[#00ff9c]">{data.label}</div><div className="mt-1 text-[9px] text-zinc-500">Group container</div></div>}
     </div>
