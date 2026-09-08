@@ -51,6 +51,10 @@ function decodeScenario(value: string) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
+const UNIQUE_MITRE_CODES = Array.from(new Set(MITRE_DB.map(item => item.id)));
+const UNIQUE_WINDOWS_EVENT_CODES = Array.from(new Set(WIN_EVENTS_DB.map(item => item.id)));
+const UNIQUE_LINUX_EVENT_CODES = Array.from(new Set(LINUX_EVENTS_DB.map(item => item.id)));
+
 function localSubtechniques(def: MitreDef): MitreDef[] {
   return MITRE_DB.filter(item => item.parentId === def.id || (!item.parentId && item.id.startsWith(`${def.id}.`)));
 }
@@ -782,6 +786,7 @@ function MitreSimulator() {
   const [shareLink, setShareLink] = useState("");
   const [builderError, setBuilderError] = useState("");
   const [focusedField, setFocusedField] = useState<{index: number, type: "mitre" | "event"} | null>(null);
+  const [hardFocusedField, setHardFocusedField] = useState<{stepId: string, type: "mitre" | "event"} | null>(null);
   const [seedError, setSeedError] = useState<string>("");
 
   // Info Modal State
@@ -1299,7 +1304,14 @@ function MitreSimulator() {
                       {isHardMode ? (
                         <div className="relative flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold text-zinc-500 flex items-center gap-1"><Shield className="w-3 h-3"/> Mitre ID</label>
-                          <input type="text" autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="" value={mapping[step.id].textMitre} onChange={(e) => handleTextChange(step.id, "textMitre", e.target.value)} className={`w-full bg-black border p-3 text-xs font-mono text-[#00ff9c] focus:outline-none transition-colors ${validation.isChecked && !res?.mitre ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a] focus:border-[#00ff9c]'}`} />
+                          <input type="text" autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="" value={mapping[step.id].textMitre} onFocus={() => setHardFocusedField({ stepId: step.id, type: "mitre" })} onBlur={() => setTimeout(() => setHardFocusedField(null), 300)} onChange={(e) => { handleTextChange(step.id, "textMitre", e.target.value); setHardFocusedField({ stepId: step.id, type: "mitre" }); }} className={`w-full bg-black border p-3 text-xs font-mono text-[#00ff9c] focus:outline-none transition-colors ${validation.isChecked && !res?.mitre ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a] focus:border-[#00ff9c]'}`} />
+                          {hardFocusedField?.stepId === step.id && hardFocusedField.type === "mitre" && mapping[step.id].textMitre.length > 0 && (
+                            <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto border border-[#00ff9c]/40 bg-black shadow-2xl">
+                              {UNIQUE_MITRE_CODES.filter(id => !mapping[step.id].textMitre || id.toLowerCase().includes(mapping[step.id].textMitre.toLowerCase())).slice(0, 12).map(id => (
+                                <button key={id} type="button" onMouseDown={(event) => { event.preventDefault(); handleTextChange(step.id, "textMitre", id); setHardFocusedField(null); }} className="block w-full border-b border-[#1a1a1a] p-2 text-left text-[10px] font-mono text-[#00ff9c] hover:bg-[#00ff9c]/10">{id}</button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div onDragOver={handleDragOver} onDrop={(e) => handleDropToSlot(e, step.id, "mitre")} className={`min-h-[60px] border-2 border-dashed flex flex-col items-center justify-center p-2 transition-colors ${mapping[step.id]?.mitre ? 'border-transparent bg-transparent p-0' : 'border-zinc-800 bg-black/50'} ${validation.isChecked && !res?.mitre ? 'border-red-500/50 bg-red-500/10' : ''}`}>
@@ -1323,7 +1335,14 @@ function MitreSimulator() {
                       {isHardMode ? (
                         <div className="relative flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold text-zinc-500 flex items-center gap-1"><Terminal className="w-3 h-3"/> Event / Telemetry</label>
-                          <input type="text" autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="" value={mapping[step.id].textEvent} onChange={(e) => handleTextChange(step.id, "textEvent", e.target.value)} className={`w-full bg-black border p-3 text-xs font-mono ${scenario.platform === 'Windows' ? 'text-blue-400 focus:border-blue-400' : 'text-orange-400 focus:border-orange-400'} focus:outline-none transition-colors ${validation.isChecked && !res?.event ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a]'}`} />
+                          <input type="text" autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="" value={mapping[step.id].textEvent} onFocus={() => setHardFocusedField({ stepId: step.id, type: "event" })} onBlur={() => setTimeout(() => setHardFocusedField(null), 300)} onChange={(e) => { handleTextChange(step.id, "textEvent", e.target.value); setHardFocusedField({ stepId: step.id, type: "event" }); }} className={`w-full bg-black border p-3 text-xs font-mono ${scenario.platform === 'Windows' ? 'text-blue-400 focus:border-blue-400' : 'text-orange-400 focus:border-orange-400'} focus:outline-none transition-colors ${validation.isChecked && !res?.event ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a]'}`} />
+                          {hardFocusedField?.stepId === step.id && hardFocusedField.type === "event" && mapping[step.id].textEvent.length > 0 && (
+                            <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto border border-blue-400/40 bg-black shadow-2xl">
+                              {(scenario.platform === "Windows" ? UNIQUE_WINDOWS_EVENT_CODES : UNIQUE_LINUX_EVENT_CODES).filter(id => !mapping[step.id].textEvent || id.toLowerCase().includes(mapping[step.id].textEvent.toLowerCase())).slice(0, 12).map(id => (
+                                <button key={id} type="button" onMouseDown={(event) => { event.preventDefault(); handleTextChange(step.id, "textEvent", id); setHardFocusedField(null); }} className={`block w-full border-b border-[#1a1a1a] p-2 text-left text-[10px] font-mono ${scenario.platform === 'Windows' ? 'text-blue-400 hover:bg-blue-400/10' : 'text-orange-400 hover:bg-orange-400/10'}`}>{id}</button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div onDragOver={handleDragOver} onDrop={(e) => handleDropToSlot(e, step.id, "event")} className={`min-h-[60px] border-2 border-dashed flex flex-col items-center justify-center p-2 transition-colors ${mapping[step.id]?.event ? 'border-transparent bg-transparent p-0' : 'border-zinc-800 bg-black/50'} ${validation.isChecked && !res?.event ? 'border-red-500/50 bg-red-500/10' : ''}`}>

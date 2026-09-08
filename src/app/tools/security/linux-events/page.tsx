@@ -17,6 +17,7 @@ const TYPES: LinuxEventType[] = [
 export default function LinuxEventsLookup() {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<LinuxEventType>("All");
+  const [visibleLimit, setVisibleLimit] = useState(5);
 
   const filteredEvents = useMemo(() => {
     return LINUX_EVENTS_DB.filter(def => {
@@ -30,6 +31,9 @@ export default function LinuxEventsLookup() {
              def.maliciousUse.toLowerCase().includes(term);
     });
   }, [search, filterType]);
+
+  const typeCounts = useMemo(() => Object.fromEntries(TYPES.map(type => [type, type === "All" ? LINUX_EVENTS_DB.length : LINUX_EVENTS_DB.filter(event => event.type === type).length])), []);
+  const visibleEvents = filteredEvents.slice(0, visibleLimit);
 
   return (
     <ToolLayout
@@ -62,13 +66,14 @@ export default function LinuxEventsLookup() {
                   <button
                     key={type}
                     onClick={() => setFilterType(type)}
-                    className={`text-left px-3 py-2 text-[11px] uppercase tracking-wider font-bold border transition-colors ${
+                    className={`flex items-center gap-2 text-left px-3 py-2 text-[11px] uppercase tracking-wider font-bold border transition-colors ${
                       filterType === type 
                       ? "bg-orange-400/10 border-orange-400/50 text-orange-400" 
                       : "bg-black border-[#1a1a1a] text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
                     }`}
                   >
-                    {type === "All" ? "All Log Types" : type}
+                    <span>{type === "All" ? "All Log Types" : type}</span>
+                    <span className="ml-auto min-w-5 rounded border border-[#1a1a1a] px-1.5 py-0.5 text-center text-[9px] font-mono text-zinc-500">{typeCounts[type]}</span>
                   </button>
                 ))}
               </div>
@@ -91,7 +96,7 @@ export default function LinuxEventsLookup() {
                 <p className="text-zinc-500 font-mono text-sm">No telemetry logs found matching your filters.</p>
               </div>
             ) : (
-              filteredEvents.map((def) => {
+              visibleEvents.map((def) => {
                 const Icon = def.icon;
                 return (
                   <div key={def.id} className="group border border-[#1a1a1a] bg-[#050505] p-5 hover:border-orange-400/30 transition-colors">
@@ -143,6 +148,11 @@ export default function LinuxEventsLookup() {
                   </div>
                 );
               })
+            )}
+            {visibleEvents.length < filteredEvents.length && (
+              <button onClick={() => setVisibleLimit(limit => limit + 5)} className="w-full border border-orange-400/30 bg-orange-400/5 px-4 py-3 text-xs font-bold uppercase tracking-widest text-orange-400 transition-colors hover:border-orange-400 hover:bg-orange-400/10">
+                Show more ({Math.min(5, filteredEvents.length - visibleEvents.length)} logs)
+              </button>
             )}
           </div>
         </div>
