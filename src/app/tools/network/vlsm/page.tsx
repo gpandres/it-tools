@@ -45,8 +45,8 @@ function VlsmCalculatorContent() {
   };
 
   const isValidIp = validateIp(state.ip);
-  const cidrNum = parseInt(state.cidr, 10);
-  const isValidCidr = !isNaN(cidrNum) && cidrNum >= 0 && cidrNum <= 32;
+  const cidrNum = /^(?:0|[1-9]\d*)$/.test(state.cidr) ? Number(state.cidr) : NaN;
+  const isValidCidr = Number.isInteger(cidrNum) && cidrNum >= 0 && cidrNum <= 32;
 
   const result = useMemo(() => {
     if (isValidIp && isValidCidr && parsedSubnets.length > 0) {
@@ -129,7 +129,10 @@ function VlsmCalculatorContent() {
                       type="number"
                       min="1"
                       value={sub.hosts} 
-                      onChange={(e) => updateSubnet(i, "hosts", parseInt(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const hosts = e.target.value === "" ? 0 : Number(e.target.value);
+                        updateSubnet(i, "hosts", Number.isInteger(hosts) ? hosts : 0);
+                      }}
                       className="h-7 bg-[#050505] border-[#1a1a1a] text-xs font-mono text-center rounded-none text-zinc-300 focus-visible:ring-[#00ff9c]"
                     />
                   </div>

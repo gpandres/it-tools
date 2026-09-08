@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateSubnet, isIpInNetwork, ipToInt } from "../src/lib/network.ts";
+import { calculateSubnet, calculateVlsm, isIpInNetwork, ipToInt } from "../src/lib/network.ts";
 import { expandIPv6 } from "../src/lib/ipv6.ts";
 import { parseAclRules } from "../src/lib/acl.ts";
 
@@ -8,6 +8,7 @@ test("rejects malformed IPv4 values instead of truncating them", () => {
   assert.throws(() => ipToInt("999.1.1.1"));
   assert.equal(isIpInNetwork("10.0.0.1", "10.0.0.0/8"), true);
   assert.equal(isIpInNetwork("not-an-ip", "10.0.0.0/8"), false);
+  assert.equal(isIpInNetwork("10.0.0.1", "10.0.0.0/8-nope"), false);
 });
 
 test("calculates the IPv4 /0 network correctly", () => {
@@ -31,4 +32,16 @@ test("rejects malformed ACL ports and reversed ranges", () => {
   assert.equal(parseAclRules([valid, { ...valid }]), null);
   assert.equal(parseAclRules([{ ...valid, dstPort: "2048-1024" }]), null);
   assert.equal(parseAclRules([{ ...valid, dstPort: "0" }]), null);
+});
+
+test("rejects zero-host VLSM requests instead of allocating a fake /31", () => {
+  const result = calculateVlsm("192.168.1.0", 24, [{ name: "empty", hosts: 0 }]);
+  assert.equal(result[0]?.error, "Hosts must be a positive integer");
+  assert.equal(result[0]?.allocatedHosts, 0);
+});
+
+test("allocates a conventional subnet for a one-host VLSM request", () => {
+  const result = calculateVlsm("192.168.1.0", 24, [{ name: "router", hosts: 1 }]);
+  assert.equal(result[0]?.cidr, 30);
+  assert.equal(result[0]?.allocatedHosts, 2);
 });

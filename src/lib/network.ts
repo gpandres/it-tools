@@ -81,8 +81,9 @@ export function isIpInNetwork(testIp: string, networkCidr: string): boolean {
     return validateIp(networkCidr) && testIp === networkCidr;
   }
   const [netIp, cidrStr] = networkCidr.split("/");
-  const cidr = parseInt(cidrStr, 10);
-  if (isNaN(cidr) || cidr < 0 || cidr > 32) return false;
+  if (!/^(?:0|[1-9]\d*)$/.test(cidrStr)) return false;
+  const cidr = Number(cidrStr);
+  if (!Number.isInteger(cidr) || cidr < 0 || cidr > 32) return false;
   
   try {
     if (!validateIp(netIp)) return false;
@@ -121,8 +122,23 @@ export function calculateVlsm(majorNetworkIp: string, majorCidr: number, subnets
     let currentIpInt = ipToInt(majorNetwork.network!);
     const maxIpInt = ipToInt(majorNetwork.broadcast!);
     
-    // Sort subnets by required hosts descending
-    const sortedReqs = [...subnets].sort((a, b) => b.hosts - a.hosts);
+    // Reject malformed requirements before calculating block sizes.
+    const invalidReqs = subnets.filter((req) => !Number.isInteger(req.hosts) || req.hosts < 1);
+    const invalidResults = invalidReqs.map((req) => ({
+      name: req.name,
+      neededHosts: req.hosts,
+      allocatedHosts: 0,
+      network: "N/A",
+      cidr: 0,
+      mask: "N/A",
+      firstHost: "N/A",
+      lastHost: "N/A",
+      broadcast: "N/A",
+      error: "Hosts must be a positive integer",
+    }));
+
+    // Sort valid subnets by required hosts descending, without mutating caller state.
+    const sortedReqs = subnets.filter((req) => Number.isInteger(req.hosts) && req.hosts >= 1).sort((a, b) => b.hosts - a.hosts);
     const results: VlsmResult[] = [];
 
     for (const req of sortedReqs) {
@@ -185,7 +201,7 @@ export function calculateVlsm(majorNetworkIp: string, majorCidr: number, subnets
       currentIpInt += requiredSpace;
     }
 
-    return results;
+    return [...results, ...invalidResults];
   } catch {
     return [];
   }

@@ -30,8 +30,8 @@ export default function CidrConverter() {
       return;
     }
 
-    const num = parseInt(val, 10);
-    if (!isNaN(num) && num >= 0 && num <= 32) {
+    const num = /^(?:0|[1-9]\d*)$/.test(val) ? Number(val) : NaN;
+    if (Number.isInteger(num) && num >= 0 && num <= 32) {
       const maskInt = cidrToMaskInt(num);
       setMask(intToIp(maskInt));
     } else {
@@ -82,8 +82,8 @@ export default function CidrConverter() {
   let wildcard = "";
   let hosts = 0;
   
-  const cidrNum = parseInt(cidr, 10);
-  if (!error && !isNaN(cidrNum) && cidrNum >= 0 && cidrNum <= 32) {
+  const cidrNum = /^(?:0|[1-9]\d*)$/.test(cidr) ? Number(cidr) : NaN;
+  if (!error && Number.isInteger(cidrNum) && cidrNum >= 0 && cidrNum <= 32) {
     const maskInt = cidrToMaskInt(cidrNum);
     const wildcardInt = (~maskInt) >>> 0;
     wildcard = intToIp(wildcardInt);

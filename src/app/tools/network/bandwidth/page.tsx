@@ -21,7 +21,7 @@ function BandwidthToolContent() {
   const rtt = parseFloat(rttStr);
   const windowSize = parseFloat(windowSizeStr);
 
-  const isValid = !isNaN(fileSize) && !isNaN(linkSpeed) && !isNaN(rtt) && !isNaN(windowSize) && 
+  const isValid = Number.isFinite(fileSize) && Number.isFinite(linkSpeed) && Number.isFinite(rtt) && Number.isFinite(windowSize) &&
                   fileSize >= 0 && linkSpeed > 0 && rtt > 0 && windowSize > 0;
 
   let theoreticalTimeStr = "-";
@@ -65,12 +65,15 @@ function BandwidthToolContent() {
   }
 
   function formatTime(seconds: number) {
+    if (!Number.isFinite(seconds) || seconds < 0) return "-";
     if (seconds < 1) return "< 1 second";
-    if (seconds < 60) return `${Math.round(seconds)} seconds`;
+
+    const roundedSeconds = Math.round(seconds);
+    if (roundedSeconds < 60) return `${roundedSeconds} seconds`;
     
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.round(seconds % 60);
+    const h = Math.floor(roundedSeconds / 3600);
+    const m = Math.floor((roundedSeconds % 3600) / 60);
+    const s = roundedSeconds % 60;
 
     const parts = [];
     if (h > 0) parts.push(`${h}h`);
@@ -186,7 +189,7 @@ function BandwidthToolContent() {
                     min="1"
                     className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
                   />
-                  <p className="text-[10px] text-zinc-600 mt-1 uppercase tracking-wider">Default unscaled TCP Window is usually 64 KB</p>
+                  <p className="text-[10px] text-zinc-600 mt-1 uppercase tracking-wider">Without window scaling, 64 KB is a common baseline; modern systems negotiate larger windows.</p>
                 </div>
               </div>
             )}
