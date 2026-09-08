@@ -24,7 +24,7 @@ export type Tactic =
   | "Exfiltration" 
   | "Impact";
 
-export type Platform = "Windows" | "Linux" | "Cross-Platform" | "PRE";
+export type Platform = "Windows" | "Linux" | "macOS" | "Network Devices" | "Cross-Platform" | "PRE";
 
 export const MITRE_VERSION = "19.2";
 
@@ -79,6 +79,18 @@ const stealthEntry = (id: string, name: string, platform: Platform, parentId?: s
   example: `Hunting for unexpected ${name.toLowerCase()} behavior and correlating it with process, file, identity, and network telemetry.`,
   icon: ShieldOff,
   color: "text-red-300",
+  platform,
+});
+
+const defenseImpairmentEntry = (id: string, name: string, platform: Platform, parentId?: string): MitreDef => ({
+  id,
+  ...(parentId ? { parentId } : {}),
+  tactic: "Defense Impairment",
+  name,
+  description: `${name} can be abused to degrade, disable, or undermine security controls, monitoring, or response capabilities.`,
+  example: `Investigating unexpected ${name.toLowerCase()} changes together with privilege, configuration, and telemetry gaps.`,
+  icon: ShieldOff,
+  color: "text-red-400",
   platform,
 });
 
@@ -214,6 +226,55 @@ const STEALTH_CATALOG: Array<[string, string, Platform, string?]> = [
 
 const STEALTH_ENTRIES = STEALTH_CATALOG.map(([id, name, platform, parentId]) =>
   stealthEntry(id, name, platform, parentId),
+);
+
+const DEFENSE_IMPAIRMENT_CATALOG: Array<[string, string, Platform, string?]> = [
+  ["T1686", "Disable or Modify System Firewall", "Cross-Platform"],
+  ["T1686.001", "Cloud Firewall", "Cross-Platform", "T1686"],
+  ["T1686.002", "Network Device Firewall", "Cross-Platform", "T1686"],
+  ["T1686.003", "Windows Host Firewall", "Windows", "T1686"],
+  ["T1685", "Disable or Modify Tools", "Cross-Platform"],
+  ["T1685.001", "Disable or Modify Windows Event Log", "Windows", "T1685"],
+  ["T1685.002", "Disable or Modify Cloud Log", "Cross-Platform", "T1685"],
+  ["T1685.003", "Modify or Spoof Tool UI", "Cross-Platform", "T1685"],
+  ["T1685.004", "Disable or Modify Linux Audit System Log", "Linux", "T1685"],
+  ["T1685.005", "Clear Windows Event Logs", "Windows", "T1685"],
+  ["T1685.006", "Clear Linux or Mac System Logs", "Cross-Platform", "T1685"],
+  ["T1689", "Downgrade Attack", "Cross-Platform"],
+  ["T1687", "Exploitation for Defense Impairment", "Cross-Platform"],
+  ["T1222", "File and Directory Permissions Modification", "Cross-Platform"],
+  ["T1222.001", "Windows Permissions", "Windows", "T1222"],
+  ["T1222.002", "Linux and Mac Permissions", "Cross-Platform", "T1222"],
+  ["T1578", "Modify Cloud Compute Infrastructure", "Cross-Platform"],
+  ["T1578.001", "Create Snapshot", "Cross-Platform", "T1578"],
+  ["T1578.002", "Create Cloud Instance", "Cross-Platform", "T1578"],
+  ["T1578.003", "Delete Cloud Instance", "Cross-Platform", "T1578"],
+  ["T1578.004", "Revert Cloud Instance", "Cross-Platform", "T1578"],
+  ["T1578.005", "Modify Cloud Compute Configurations", "Cross-Platform", "T1578"],
+  ["T1666", "Modify Cloud Resource Hierarchy", "Cross-Platform"],
+  ["T1601", "Modify System Image", "Network Devices"],
+  ["T1601.001", "Patch System Image", "Network Devices", "T1601"],
+  ["T1601.002", "Downgrade System Image", "Network Devices", "T1601"],
+  ["T1599", "Network Boundary Bridging", "Network Devices"],
+  ["T1599.001", "Network Address Translation Traversal", "Network Devices", "T1599"],
+  ["T1647", "Plist File Modification", "Cross-Platform"],
+  ["T1690", "Prevent Command History Logging", "Cross-Platform"],
+  ["T1207", "Rogue Domain Controller", "Windows"],
+  ["T1688", "Safe Mode Boot", "Windows"],
+  ["T1553", "Subvert Trust Controls", "Cross-Platform"],
+  ["T1553.001", "Gatekeeper Bypass", "macOS", "T1553"],
+  ["T1553.002", "Code Signing", "Cross-Platform", "T1553"],
+  ["T1553.003", "SIP and Trust Provider Hijacking", "Cross-Platform", "T1553"],
+  ["T1553.004", "Install Root Certificate", "Cross-Platform", "T1553"],
+  ["T1553.005", "Mark-of-the-Web Bypass", "Windows", "T1553"],
+  ["T1553.006", "Code Signing Policy Modification", "Cross-Platform", "T1553"],
+  ["T1600", "Weaken Encryption", "Network Devices"],
+  ["T1600.001", "Reduce Key Space", "Network Devices", "T1600"],
+  ["T1600.002", "Disable Crypto Hardware", "Network Devices", "T1600"],
+];
+
+const DEFENSE_IMPAIRMENT_ENTRIES = DEFENSE_IMPAIRMENT_CATALOG.map(([id, name, platform, parentId]) =>
+  defenseImpairmentEntry(id, name, platform, parentId),
 );
 
 // The entries below are the remaining Enterprise Persistence objects in v19.2.
@@ -416,8 +477,8 @@ export const MITRE_DB: MitreDef[] = [
   ,{ id: "T1679", tactic: "Stealth", name: "Selective Exclusion", description: "Adversaries may exclude specific files, directories or system components from encryption or tampering to evade detection or preserve operations.", example: "Skipping security-tool paths and executable files during a destructive file operation.", icon: ShieldOff, color: "text-red-300", platform: "Windows" }
   ,{ id: "T1681", tactic: "Reconnaissance", name: "Search Threat Vendor Data", description: "Adversaries may search threat-intelligence sources for information about campaigns, victims and defensive responses.", example: "Using closed or open threat reports to refine targeting and change operational behavior.", icon: SearchIcon, color: "text-sky-400", platform: "PRE" }
   ,{ id: "T1036.012", parentId: "T1036", tactic: "Stealth", name: "Browser Fingerprint", description: "Adversaries may spoof browser and system attributes to blend malicious traffic with legitimate user activity.", example: "A script sends a browser-like User-Agent inconsistent with its process lineage.", icon: ShieldOff, color: "text-red-300", platform: "Cross-Platform" }
-  ,{ id: "T1686.002", tactic: "Defense Impairment", name: "Network Device Firewall", description: "Adversaries may disable or modify network-device firewall rules to bypass controls or create paths for command and control.", example: "Adding an allow rule to a perimeter appliance from an unusual management session.", icon: ShieldOff, color: "text-red-400", platform: "Cross-Platform" }
-  ,{ id: "T1686.003", tactic: "Defense Impairment", name: "Windows Host Firewall", description: "Adversaries may disable or modify Windows host firewall profiles and rules.", example: "Adding a Windows Firewall rule to expose a remote service during an intrusion.", icon: ShieldOff, color: "text-red-400", platform: "Windows" }
+  ,{ id: "T1686.002", parentId: "T1686", tactic: "Defense Impairment", name: "Network Device Firewall", description: "Adversaries may disable or modify network-device firewall rules to bypass controls or create paths for command and control.", example: "Adding an allow rule to a perimeter appliance from an unusual management session.", icon: ShieldOff, color: "text-red-400", platform: "Cross-Platform" }
+  ,{ id: "T1686.003", parentId: "T1686", tactic: "Defense Impairment", name: "Windows Host Firewall", description: "Adversaries may disable or modify Windows host firewall profiles and rules.", example: "Adding a Windows Firewall rule to expose a remote service during an intrusion.", icon: ShieldOff, color: "text-red-400", platform: "Windows" }
   ,{ id: "T1204.005", parentId: "T1204", tactic: "Execution", name: "Malicious Library", description: "Adversaries may rely on a user installing a malicious library to facilitate execution.", example: "A typosquatted npm or PyPI package runs a loader during installation.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" }
   ,{ id: "T1059", tactic: "Execution", name: "Command and Scripting Interpreter", description: "Adversaries may abuse command and scripting interpreters to execute commands, scripts and payloads.", example: "Selecting the interpreter that matches the process and script evidence.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" }
   ,{ id: "T1518", tactic: "Discovery", name: "Software Discovery", description: "Adversaries may attempt to get a listing of software and software versions installed on a system or in a cloud environment.", example: "Inventorying installed backup and security software before follow-on activity.", icon: SearchIcon, color: "text-teal-400", platform: "Cross-Platform" }
@@ -590,6 +651,7 @@ export const MITRE_DB: MitreDef[] = [
   ,...PERSISTENCE_ENTRIES
   ,...PRIVILEGE_ESCALATION_ENTRIES
   ,...STEALTH_ENTRIES
+  ,...DEFENSE_IMPAIRMENT_ENTRIES
 ];
 
 // A few Stealth entries already exist because they are also part of another
@@ -634,4 +696,14 @@ const STEALTH_SHARED_IDS = new Set([
 for (const definition of MITRE_DB) {
   if (!STEALTH_SHARED_IDS.has(definition.id)) continue;
   definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Stealth"]));
+}
+
+const DEFENSE_IMPAIRMENT_SHARED_IDS = new Set([
+  "T1562.001", "T1484", "T1484.001", "T1484.002", "T1556", "T1556.001", "T1556.002", "T1556.003", "T1556.004", "T1556.005", "T1556.006", "T1556.007", "T1556.008", "T1556.009",
+  "T1112", "T1222", "T1222.001", "T1222.002",
+]);
+
+for (const definition of MITRE_DB) {
+  if (!DEFENSE_IMPAIRMENT_SHARED_IDS.has(definition.id)) continue;
+  definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Defense Impairment"]));
 }

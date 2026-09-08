@@ -314,6 +314,45 @@ const VECTORS = [
     ]
   },
   {
+    name: "Defense Impairment",
+    desc: "A blue-team exercise focused on detecting firewall tampering, logging gaps, tool degradation and trust-control changes.",
+    windows_phases: [
+      [
+        { desc: "A host firewall profile is disabled and a new inbound rule exposes a remote service.", mitre: "T1686.003", event: "4946" },
+        { desc: "The Windows Event Log service is stopped to create a telemetry gap.", mitre: "T1685.001", event: "7036" },
+      ],
+      [
+        { desc: "Security tooling configuration is modified after an administrative token is obtained.", mitre: "T1562.001", event: "4688" },
+        { desc: "The attacker clears the Security event log to remove evidence of prior activity.", mitre: "T1685.005", event: "1102" },
+      ],
+      [
+        { desc: "A code-signing policy is weakened so unsigned content can execute.", mitre: "T1553.006", event: "4688" },
+        { desc: "A domain policy is changed to weaken centrally enforced controls.", mitre: "T1484.001", event: "5136" },
+      ],
+      [
+        { desc: "An obsolete protocol or security component is selected to bypass a newer control.", mitre: "T1689", event: "Sysmon 1" },
+      ],
+    ],
+    linux_phases: [
+      [
+        { desc: "A Linux audit rule set is altered and audit collection is stopped.", mitre: "T1685.004", event: "auditd SYSCALL" },
+        { desc: "The host firewall rules are changed to expose an unexpected service.", mitre: "T1686", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "System logs under `/var/log` are cleared after suspicious command execution.", mitre: "T1685.006", event: "auditd SYSCALL" },
+        { desc: "Permissions on a protected directory are weakened to bypass access controls.", mitre: "T1222.002", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "A PAM module is modified to weaken the authentication boundary.", mitre: "T1556.003", event: "auditd SYSCALL" },
+        { desc: "A system image is downgraded to an older version with weaker protections.", mitre: "T1601.002", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "Command history logging is prevented for an interactive shell.", mitre: "T1690", event: "auditd SYSCALL" },
+        { desc: "A security component vulnerability is exploited to reduce monitoring coverage.", mitre: "T1687", event: "auditd EXECVE" },
+      ],
+    ],
+  },
+  {
     name: "Stealth & Evasion",
     desc: "A detection-focused exercise covering obfuscation, hidden artifacts, masquerading, process injection and evidence removal.",
     windows_phases: [
