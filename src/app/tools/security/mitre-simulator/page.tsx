@@ -314,6 +314,46 @@ const VECTORS = [
     ]
   },
   {
+    name: "Stealth & Evasion",
+    desc: "A detection-focused exercise covering obfuscation, hidden artifacts, masquerading, process injection and evidence removal.",
+    windows_phases: [
+      [
+        { desc: "The payload uses command obfuscation to conceal a PowerShell command from simple signatures.", mitre: "T1027.010", event: "4688" },
+        { desc: "A malicious file is hidden with NTFS attributes in a user-writable directory.", mitre: "T1564.004", event: "Sysmon 11" },
+      ],
+      [
+        { desc: "A trusted Windows binary proxies execution of a script-backed payload.", mitre: "T1218.005", event: "4688" },
+        { desc: "The process tree is altered so the payload appears to originate from a trusted parent.", mitre: "T1036.009", event: "Sysmon 1" },
+      ],
+      [
+        { desc: "Code is injected into a legitimate process to mask execution under a benign image.", mitre: "T1055.012", event: "Sysmon 10" },
+        { desc: "The payload checks for a virtualized analysis environment before continuing.", mitre: "T1497.001", event: "Sysmon 1" },
+      ],
+      [
+        { desc: "The attacker removes command history and timestamps a dropped file to resemble a legitimate artifact.", mitre: "T1070.003", event: "1102" },
+        { desc: "A trusted-looking account name is used to blend malicious activity into normal administration.", mitre: "T1036.010", event: "4720" },
+      ],
+    ],
+    linux_phases: [
+      [
+        { desc: "A compressed and encoded payload is reconstructed only in memory before execution.", mitre: "T1027.013", event: "auditd EXECVE" },
+        { desc: "A hidden file is placed in a dot-directory under a user home path.", mitre: "T1564.001", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "The attacker uses a dynamic-linker hijack to load a malicious shared library.", mitre: "T1574.006", event: "auditd EXECVE" },
+        { desc: "Process arguments are overwritten so `/proc/<pid>/cmdline` resembles a normal daemon.", mitre: "T1036.011", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "Code is injected into a privileged process through `/proc` memory.", mitre: "T1055.009", event: "auditd SYSCALL" },
+        { desc: "The payload delays execution and checks uptime before activating its main routine.", mitre: "T1678", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "The attacker clears shell history and removes a temporary payload after execution.", mitre: "T1070.003", event: "auditd SYSCALL" },
+        { desc: "A bind mount hides an attacker-controlled path behind a normal filesystem location.", mitre: "T1564.013", event: "auditd SYSCALL" },
+      ],
+    ],
+  },
+  {
     name: "Initial Access Entry Points",
     desc: "A multi-vector intrusion begins with targeting, delivery and abuse of an exposed access path.",
     windows_phases: [

@@ -70,6 +70,18 @@ const privilegeEscalationEntry = (id: string, name: string, platform: Platform, 
   platform,
 });
 
+const stealthEntry = (id: string, name: string, platform: Platform, parentId?: string): MitreDef => ({
+  id,
+  ...(parentId ? { parentId } : {}),
+  tactic: "Stealth",
+  name,
+  description: `${name} can be abused to conceal activity, reduce observable indicators, or blend attacker behavior with legitimate system activity.`,
+  example: `Hunting for unexpected ${name.toLowerCase()} behavior and correlating it with process, file, identity, and network telemetry.`,
+  icon: ShieldOff,
+  color: "text-red-300",
+  platform,
+});
+
 const PRIVILEGE_ESCALATION_ENTRIES: MitreDef[] = [
   privilegeEscalationEntry("T1548", "Abuse Elevation Control Mechanism", "Cross-Platform"),
   privilegeEscalationEntry("T1134", "Access Token Manipulation", "Windows"),
@@ -98,6 +110,111 @@ const PRIVILEGE_ESCALATION_ENTRIES: MitreDef[] = [
   privilegeEscalationEntry("T1055.014", "VDSO Hijacking", "Linux", "T1055"),
   privilegeEscalationEntry("T1055.015", "ListPlanting", "Windows", "T1055"),
 ];
+
+// Remaining Enterprise Stealth objects in v19.2. Shared objects are linked below
+// so each ID keeps one canonical definition while appearing in every ATT&CK tactic.
+const STEALTH_CATALOG: Array<[string, string, Platform, string?]> = [
+  ["T1612", "Build Image on Host", "Cross-Platform"],
+  ["T1622", "Debugger Evasion", "Cross-Platform"],
+  ["T1678", "Delay Execution", "Cross-Platform"],
+  ["T1140", "Deobfuscate/Decode Files or Information", "Cross-Platform"],
+  ["T1006", "Direct Volume Access", "Windows"],
+  ["T1480", "Execution Guardrails", "Cross-Platform"],
+  ["T1480.001", "Environmental Keying", "Cross-Platform", "T1480"],
+  ["T1480.002", "Mutual Exclusion", "Cross-Platform", "T1480"],
+  ["T1211", "Exploitation for Stealth", "Cross-Platform"],
+  ["T1564", "Hide Artifacts", "Cross-Platform"],
+  ["T1564.001", "Hidden Files and Directories", "Cross-Platform", "T1564"],
+  ["T1564.002", "Hidden Users", "Cross-Platform", "T1564"],
+  ["T1564.003", "Hidden Window", "Windows", "T1564"],
+  ["T1564.004", "NTFS File Attributes", "Windows", "T1564"],
+  ["T1564.005", "Hidden File System", "Cross-Platform", "T1564"],
+  ["T1564.006", "Run Virtual Instance", "Windows", "T1564"],
+  ["T1564.007", "VBA Stomping", "Windows", "T1564"],
+  ["T1564.008", "Email Hiding Rules", "Windows", "T1564"],
+  ["T1564.009", "Resource Forking", "Cross-Platform", "T1564"],
+  ["T1564.010", "Process Argument Spoofing", "Cross-Platform", "T1564"],
+  ["T1564.011", "Ignore Process Interrupts", "Linux", "T1564"],
+  ["T1564.012", "File and Directory Discovery Exclusions", "Cross-Platform", "T1564"],
+  ["T1564.013", "Bind Mounts", "Linux", "T1564"],
+  ["T1564.014", "Extended Attributes", "Cross-Platform", "T1564"],
+  ["T1070", "Indicator Removal", "Cross-Platform"],
+  ["T1070.005", "Network Share Connection Removal", "Windows", "T1070"],
+  ["T1070.006", "Timestomp", "Cross-Platform", "T1070"],
+  ["T1070.007", "Clear Network Connection History and Configurations", "Cross-Platform", "T1070"],
+  ["T1070.008", "Clear Mailbox Data", "Cross-Platform", "T1070"],
+  ["T1070.009", "Clear Persistence", "Cross-Platform", "T1070"],
+  ["T1070.010", "Relocate Malware", "Cross-Platform", "T1070"],
+  ["T1202", "Indirect Command Execution", "Windows"],
+  ["T1036", "Masquerading", "Cross-Platform"],
+  ["T1036.001", "Invalid Code Signature", "Windows", "T1036"],
+  ["T1036.002", "Right-to-Left Override", "Windows", "T1036"],
+  ["T1036.003", "Rename Legitimate Utilities", "Cross-Platform", "T1036"],
+  ["T1036.004", "Masquerade Task or Service", "Cross-Platform", "T1036"],
+  ["T1036.005", "Match Legitimate Resource Name or Location", "Cross-Platform", "T1036"],
+  ["T1036.006", "Space after Filename", "Windows", "T1036"],
+  ["T1036.007", "Double File Extension", "Windows", "T1036"],
+  ["T1036.008", "Masquerade File Type", "Cross-Platform", "T1036"],
+  ["T1036.009", "Break Process Trees", "Cross-Platform", "T1036"],
+  ["T1036.010", "Masquerade Account Name", "Cross-Platform", "T1036"],
+  ["T1036.011", "Overwrite Process Arguments", "Linux", "T1036"],
+  ["T1027", "Obfuscated Files or Information", "Cross-Platform"],
+  ["T1027.001", "Binary Padding", "Cross-Platform", "T1027"],
+  ["T1027.002", "Software Packing", "Cross-Platform", "T1027"],
+  ["T1027.003", "Steganography", "Cross-Platform", "T1027"],
+  ["T1027.004", "Compile After Delivery", "Cross-Platform", "T1027"],
+  ["T1027.005", "Indicator Removal from Tools", "Cross-Platform", "T1027"],
+  ["T1027.006", "HTML Smuggling", "Cross-Platform", "T1027"],
+  ["T1027.007", "Dynamic API Resolution", "Cross-Platform", "T1027"],
+  ["T1027.008", "Stripped Payloads", "Cross-Platform", "T1027"],
+  ["T1027.009", "Embedded Payloads", "Cross-Platform", "T1027"],
+  ["T1027.010", "Command Obfuscation", "Cross-Platform", "T1027"],
+  ["T1027.011", "Fileless Storage", "Cross-Platform", "T1027"],
+  ["T1027.012", "LNK Icon Smuggling", "Windows", "T1027"],
+  ["T1027.013", "Encrypted/Encoded File", "Cross-Platform", "T1027"],
+  ["T1027.014", "Polymorphic Code", "Cross-Platform", "T1027"],
+  ["T1027.015", "Compression", "Cross-Platform", "T1027"],
+  ["T1027.016", "Junk Code Insertion", "Cross-Platform", "T1027"],
+  ["T1027.017", "SVG Smuggling", "Cross-Platform", "T1027"],
+  ["T1027.018", "Invisible Unicode", "Cross-Platform", "T1027"],
+  ["T1620", "Reflective Code Loading", "Cross-Platform"],
+  ["T1014", "Rootkit", "Cross-Platform"],
+  ["T1684", "Social Engineering", "Cross-Platform"],
+  ["T1684.001", "Impersonation", "Cross-Platform", "T1684"],
+  ["T1684.002", "Email Spoofing", "Cross-Platform", "T1684"],
+  ["T1218", "System Binary Proxy Execution", "Windows"],
+  ["T1218.001", "Compiled HTML File", "Windows", "T1218"],
+  ["T1218.002", "Control Panel", "Windows", "T1218"],
+  ["T1218.003", "CMSTP", "Windows", "T1218"],
+  ["T1218.004", "InstallUtil", "Windows", "T1218"],
+  ["T1218.005", "Mshta", "Windows", "T1218"],
+  ["T1218.007", "Msiexec", "Windows", "T1218"],
+  ["T1218.008", "Odbcconf", "Windows", "T1218"],
+  ["T1218.009", "Regsvcs/Regasm", "Windows", "T1218"],
+  ["T1218.010", "Regsvr32", "Windows", "T1218"],
+  ["T1218.011", "Rundll32", "Windows", "T1218"],
+  ["T1218.012", "Verclsid", "Windows", "T1218"],
+  ["T1218.013", "Mavinject", "Windows", "T1218"],
+  ["T1218.014", "MMC", "Windows", "T1218"],
+  ["T1218.015", "Electron Applications", "Cross-Platform", "T1218"],
+  ["T1216", "System Script Proxy Execution", "Windows"],
+  ["T1216.001", "PubPrn", "Windows", "T1216"],
+  ["T1216.002", "SyncAppvPublishingServer", "Windows", "T1216"],
+  ["T1127", "Trusted Developer Utilities Proxy Execution", "Cross-Platform"],
+  ["T1127.001", "MSBuild", "Windows", "T1127"],
+  ["T1127.002", "ClickOnce", "Windows", "T1127"],
+  ["T1127.003", "JamPlus", "Cross-Platform", "T1127"],
+  ["T1220", "XSL Script Processing", "Windows"],
+  ["T1221", "Template Injection", "Cross-Platform"],
+  ["T1535", "Unused/Unsupported Cloud Regions", "Cross-Platform"],
+  ["T1497.001", "System Checks", "Cross-Platform", "T1497"],
+  ["T1497.002", "User Activity Based Checks", "Cross-Platform", "T1497"],
+  ["T1497.003", "Time Based Checks", "Cross-Platform", "T1497"],
+];
+
+const STEALTH_ENTRIES = STEALTH_CATALOG.map(([id, name, platform, parentId]) =>
+  stealthEntry(id, name, platform, parentId),
+);
 
 // The entries below are the remaining Enterprise Persistence objects in v19.2.
 // Names and hierarchy follow MITRE's TA0003 tactic page; descriptions are deliberately
@@ -282,8 +399,8 @@ export const MITRE_DB: MitreDef[] = [
   { id: "T1588", tactic: "Resource Development", name: "Obtain Capabilities", description: "Adversaries may buy and/or steal capabilities that can be used during targeting.", example: "Acquiring malware, tools, certificates, exploits or vulnerability information.", icon: Key, color: "text-violet-400", platform: "PRE" },
   { id: "T1497", tactic: "Stealth", name: "Virtualization/Sandbox Evasion", description: "Adversaries may detect analysis environments and change or suppress malicious behavior.", example: "Checking for virtual-machine artifacts before executing the payload.", icon: ShieldOff, color: "text-red-300", platform: "Cross-Platform" },
   { id: "T1021.002", tactic: "Lateral Movement", name: "SMB/Windows Admin Shares", description: "Adversaries may use SMB and Windows administrative shares to move laterally or execute tools.", example: "Writing a payload to ADMIN$ or accessing a remote share with stolen credentials.", icon: MoveHorizontal, color: "text-indigo-400", platform: "Windows" },
-  { id: "T1055.001", tactic: "Privilege Escalation", name: "Dynamic-link Library Injection", description: "Adversaries may inject a dynamic-link library into a process to execute code in its context.", example: "Injecting a DLL into a trusted process to evade controls.", icon: ArrowUpCircle, color: "text-amber-500", platform: "Windows" },
-  { id: "T1055.002", tactic: "Privilege Escalation", name: "Portable Executable Injection", description: "Adversaries may inject a portable executable image into a process.", example: "Reflectively loading a PE image into a running process.", icon: ArrowUpCircle, color: "text-amber-500", platform: "Windows" },
+  { id: "T1055.001", parentId: "T1055", tactic: "Privilege Escalation", name: "Dynamic-link Library Injection", description: "Adversaries may inject a dynamic-link library into a process to execute code in its context.", example: "Injecting a DLL into a trusted process to evade controls.", icon: ArrowUpCircle, color: "text-amber-500", platform: "Windows" },
+  { id: "T1055.002", parentId: "T1055", tactic: "Privilege Escalation", name: "Portable Executable Injection", description: "Adversaries may inject a portable executable image into a process.", example: "Reflectively loading a PE image into a running process.", icon: ArrowUpCircle, color: "text-amber-500", platform: "Windows" },
   { id: "T1110.001", tactic: "Credential Access", name: "Password Guessing", description: "Adversaries may guess passwords to gain access to accounts.", example: "Trying a small set of likely passwords against an exposed service.", icon: Key, color: "text-pink-500", platform: "Cross-Platform" },
   { id: "T1110.003", tactic: "Credential Access", name: "Password Spraying", description: "Adversaries may use one or a few common passwords against many accounts.", example: "Testing a common password across a large set of user accounts.", icon: Key, color: "text-pink-500", platform: "Cross-Platform" },
   { id: "T1112", tactic: "Defense Evasion", tactics: ["Defense Evasion", "Persistence"], name: "Modify Registry", description: "Adversaries may interact with the Windows Registry to hide configuration or establish behavior.", example: "Changing a registry value to configure persistence or weaken controls.", icon: ShieldOff, color: "text-red-400", platform: "Windows" },
@@ -298,7 +415,7 @@ export const MITRE_DB: MitreDef[] = [
   ,{ id: "T1518.002", tactic: "Discovery", name: "Backup Software Discovery", description: "Adversaries may identify installed backup software and configurations to shape destruction or recovery-inhibition activity.", example: "Enumerating Veeam, Acronis or system backup services before ransomware deployment.", icon: SearchIcon, color: "text-teal-400", platform: "Cross-Platform" }
   ,{ id: "T1679", tactic: "Stealth", name: "Selective Exclusion", description: "Adversaries may exclude specific files, directories or system components from encryption or tampering to evade detection or preserve operations.", example: "Skipping security-tool paths and executable files during a destructive file operation.", icon: ShieldOff, color: "text-red-300", platform: "Windows" }
   ,{ id: "T1681", tactic: "Reconnaissance", name: "Search Threat Vendor Data", description: "Adversaries may search threat-intelligence sources for information about campaigns, victims and defensive responses.", example: "Using closed or open threat reports to refine targeting and change operational behavior.", icon: SearchIcon, color: "text-sky-400", platform: "PRE" }
-  ,{ id: "T1036.012", tactic: "Stealth", name: "Browser Fingerprint", description: "Adversaries may spoof browser and system attributes to blend malicious traffic with legitimate user activity.", example: "A script sends a browser-like User-Agent inconsistent with its process lineage.", icon: ShieldOff, color: "text-red-300", platform: "Cross-Platform" }
+  ,{ id: "T1036.012", parentId: "T1036", tactic: "Stealth", name: "Browser Fingerprint", description: "Adversaries may spoof browser and system attributes to blend malicious traffic with legitimate user activity.", example: "A script sends a browser-like User-Agent inconsistent with its process lineage.", icon: ShieldOff, color: "text-red-300", platform: "Cross-Platform" }
   ,{ id: "T1686.002", tactic: "Defense Impairment", name: "Network Device Firewall", description: "Adversaries may disable or modify network-device firewall rules to bypass controls or create paths for command and control.", example: "Adding an allow rule to a perimeter appliance from an unusual management session.", icon: ShieldOff, color: "text-red-400", platform: "Cross-Platform" }
   ,{ id: "T1686.003", tactic: "Defense Impairment", name: "Windows Host Firewall", description: "Adversaries may disable or modify Windows host firewall profiles and rules.", example: "Adding a Windows Firewall rule to expose a remote service during an intrusion.", icon: ShieldOff, color: "text-red-400", platform: "Windows" }
   ,{ id: "T1204.005", parentId: "T1204", tactic: "Execution", name: "Malicious Library", description: "Adversaries may rely on a user installing a malicious library to facilitate execution.", example: "A typosquatted npm or PyPI package runs a loader during installation.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" }
@@ -472,7 +589,20 @@ export const MITRE_DB: MitreDef[] = [
   ,{ id: "T1127.003", parentId: "T1127", tactic: "Execution", name: "JamPlus", description: "Adversaries may use JamPlus to proxy execution of a malicious script.", example: "Using a JamPlus build file to invoke an attacker-controlled command.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" }
   ,...PERSISTENCE_ENTRIES
   ,...PRIVILEGE_ESCALATION_ENTRIES
+  ,...STEALTH_ENTRIES
 ];
+
+// A few Stealth entries already exist because they are also part of another
+// tactic. Keep their existing rich definition and remove any catalog duplicate.
+const seenMitreIds = new Set<string>();
+for (let index = 0; index < MITRE_DB.length; index += 1) {
+  if (seenMitreIds.has(MITRE_DB[index].id)) {
+    MITRE_DB.splice(index, 1);
+    index -= 1;
+  } else {
+    seenMitreIds.add(MITRE_DB[index].id);
+  }
+}
 
 // ATT&CK intentionally maps several mechanisms to both Persistence and Privilege
 // Escalation. Keep one canonical definition per ID while exposing both tactic filters.
@@ -489,4 +619,19 @@ const PRIVILEGE_ESCALATION_SHARED_IDS = new Set([
 for (const definition of MITRE_DB) {
   if (!PRIVILEGE_ESCALATION_SHARED_IDS.has(definition.id)) continue;
   definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Privilege Escalation"]));
+}
+
+const STEALTH_SHARED_IDS = new Set([
+  ...STEALTH_CATALOG.map(([id]) => id),
+  "T1134", "T1134.001", "T1134.002", "T1134.003", "T1134.004", "T1134.005",
+  "T1197", "T1036.012", "T1542", "T1542.001", "T1542.002", "T1542.003", "T1542.004", "T1542.005",
+  "T1574", "T1574.001", "T1574.004", "T1574.005", "T1574.006", "T1574.007", "T1574.008", "T1574.009", "T1574.010", "T1574.011", "T1574.012", "T1574.013", "T1574.014",
+  "T1055", "T1055.001", "T1055.002", "T1055.003", "T1055.004", "T1055.005", "T1055.008", "T1055.009", "T1055.011", "T1055.012", "T1055.013", "T1055.014", "T1055.015",
+  "T1205", "T1205.001", "T1205.002", "T1078", "T1078.001", "T1078.002", "T1078.003", "T1078.004",
+  "T1497", "T1679",
+]);
+
+for (const definition of MITRE_DB) {
+  if (!STEALTH_SHARED_IDS.has(definition.id)) continue;
+  definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Stealth"]));
 }
