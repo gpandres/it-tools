@@ -102,6 +102,46 @@ test("auto layout keeps grouped children in their parent coordinate space", () =
   assert.notDeepEqual(result.find(node => node.id === "group")?.position, { x: 100, y: 100 });
 });
 
+test("auto layout sizes each column from its widest node", () => {
+  const result = autoLayout([
+    { id: "wide", position: { x: 900, y: 900 }, width: 640, height: 160 },
+    { id: "narrow", position: { x: 900, y: 900 }, width: 120, height: 100 },
+    { id: "last", position: { x: 900, y: 900 }, width: 240, height: 100 },
+  ], [
+    { source: "wide", target: "narrow" },
+    { source: "narrow", target: "last" },
+  ]);
+  const wide = result.find(node => node.id === "wide")!;
+  const narrow = result.find(node => node.id === "narrow")!;
+  const last = result.find(node => node.id === "last")!;
+  assert.ok(narrow.position.x >= wide.position.x + 640 + 100);
+  assert.ok(last.position.x >= narrow.position.x + 120 + 100);
+});
+
+test("auto layout remains deterministic with parallel links and disconnected nodes", () => {
+  const nodes = [
+    { id: "router", position: { x: 500, y: 500 }, width: 180, height: 120 },
+    { id: "switch", position: { x: 500, y: 500 }, width: 160, height: 110 },
+    { id: "isolated", position: { x: 500, y: 500 }, width: 140, height: 100 },
+  ];
+  const edges = [
+    { source: "router", target: "switch" },
+    { source: "router", target: "switch" },
+  ];
+  const first = autoLayout(nodes, edges);
+  const second = autoLayout(nodes, edges);
+  assert.deepEqual(first.map(node => node.position), second.map(node => node.position));
+});
+
+test("auto layout leaves a single group coordinate space untouched", () => {
+  const nodes = [
+    { id: "group", position: { x: 200, y: 200 }, width: 500, height: 300 },
+    { id: "child", position: { x: 40, y: 40 }, parentId: "group" },
+  ];
+  const result = autoLayout(nodes, []);
+  assert.deepEqual(result.map(node => node.position), nodes.map(node => node.position));
+});
+
 test("validates connection semantics and VLAN lists", () => {
   const issues = validateDiagram({
     nodes: [
