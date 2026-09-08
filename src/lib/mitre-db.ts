@@ -462,6 +462,68 @@ const LATERAL_MOVEMENT_ENTRIES = LATERAL_MOVEMENT_CATALOG.map(([id, name, platfo
   lateralMovementEntry(id, name, platform, parentId),
 );
 
+const collectionEntry = (id: string, name: string, platform: Platform, parentId?: string): MitreDef => ({
+  id,
+  ...(parentId ? { parentId } : {}),
+  tactic: "Collection",
+  name,
+  description: `${name} can be abused to gather data of interest from local systems, users, applications, repositories, or connected devices before exfiltration.`,
+  example: `Investigating unexpected ${name.toLowerCase()} activity and correlating it with file, process, identity, and network telemetry.`,
+  icon: Archive,
+  color: "text-yellow-400",
+  platform,
+});
+
+// Enterprise Collection (TA0009), ATT&CK v19.2. The catalog includes every
+// parent and sub-technique listed by MITRE for this tactic.
+const COLLECTION_CATALOG: Array<[string, string, Platform, string?]> = [
+  ["T1557", "Adversary-in-the-Middle", "Cross-Platform"],
+  ["T1557.001", "Name Resolution Poisoning and SMB Relay", "Windows", "T1557"],
+  ["T1557.002", "ARP Cache Poisoning", "Cross-Platform", "T1557"],
+  ["T1557.003", "DHCP Spoofing", "Cross-Platform", "T1557"],
+  ["T1557.004", "Evil Twin", "Cross-Platform", "T1557"],
+  ["T1560", "Archive Collected Data", "Cross-Platform"],
+  ["T1560.001", "Archive via Utility", "Cross-Platform", "T1560"],
+  ["T1560.002", "Archive via Library", "Cross-Platform", "T1560"],
+  ["T1560.003", "Archive via Custom Method", "Cross-Platform", "T1560"],
+  ["T1123", "Audio Capture", "Cross-Platform"],
+  ["T1119", "Automated Collection", "Cross-Platform"],
+  ["T1185", "Browser Session Hijacking", "Cross-Platform"],
+  ["T1115", "Clipboard Data", "Cross-Platform"],
+  ["T1530", "Data from Cloud Storage", "Cross-Platform"],
+  ["T1602", "Data from Configuration Repository", "Network Devices"],
+  ["T1602.001", "SNMP (MIB Dump)", "Network Devices", "T1602"],
+  ["T1602.002", "Network Device Configuration Dump", "Network Devices", "T1602"],
+  ["T1213", "Data from Information Repositories", "Cross-Platform"],
+  ["T1213.001", "Confluence", "Cross-Platform", "T1213"],
+  ["T1213.002", "SharePoint", "Cross-Platform", "T1213"],
+  ["T1213.003", "Code Repositories", "Cross-Platform", "T1213"],
+  ["T1213.004", "Customer Relationship Management Software", "Cross-Platform", "T1213"],
+  ["T1213.005", "Messaging Applications", "Cross-Platform", "T1213"],
+  ["T1213.006", "Databases", "Cross-Platform", "T1213"],
+  ["T1005", "Data from Local System", "Cross-Platform"],
+  ["T1039", "Data from Network Shared Drive", "Cross-Platform"],
+  ["T1025", "Data from Removable Media", "Cross-Platform"],
+  ["T1074", "Data Staged", "Cross-Platform"],
+  ["T1074.001", "Local Data Staging", "Cross-Platform", "T1074"],
+  ["T1074.002", "Remote Data Staging", "Cross-Platform", "T1074"],
+  ["T1114", "Email Collection", "Cross-Platform"],
+  ["T1114.001", "Local Email Collection", "Windows", "T1114"],
+  ["T1114.002", "Remote Email Collection", "Cross-Platform", "T1114"],
+  ["T1114.003", "Email Forwarding Rule", "Cross-Platform", "T1114"],
+  ["T1056", "Input Capture", "Cross-Platform"],
+  ["T1056.001", "Keylogging", "Cross-Platform", "T1056"],
+  ["T1056.002", "GUI Input Capture", "Cross-Platform", "T1056"],
+  ["T1056.003", "Web Portal Capture", "Cross-Platform", "T1056"],
+  ["T1056.004", "Credential API Hooking", "Cross-Platform", "T1056"],
+  ["T1113", "Screen Capture", "Cross-Platform"],
+  ["T1125", "Video Capture", "Cross-Platform"],
+];
+
+const COLLECTION_ENTRIES = COLLECTION_CATALOG.map(([id, name, platform, parentId]) =>
+  collectionEntry(id, name, platform, parentId),
+);
+
 // The entries below are the remaining Enterprise Persistence objects in v19.2.
 // Names and hierarchy follow MITRE's TA0003 tactic page; descriptions are deliberately
 // concise but operational so the local reference remains usable without a remote feed.
@@ -654,7 +716,7 @@ export const MITRE_DB: MitreDef[] = [
   { id: "T1570", tactic: "Lateral Movement", name: "Lateral Tool Transfer", description: "Adversaries may transfer tools or files between systems in a compromised environment.", example: "Copying a payload between hosts using SMB, SCP or a remote share.", icon: MoveHorizontal, color: "text-indigo-400", platform: "Cross-Platform" },
   { id: "T1546.012", tactic: "Persistence", name: "Image File Execution Options Injection", description: "Adversaries may abuse Image File Execution Options to execute code when a target application starts.", example: "Registering a debugger value for a commonly launched executable.", icon: Anchor, color: "text-purple-400", platform: "Windows" }
   ,{ id: "T1059.013", tactic: "Execution", name: "Container CLI/API", description: "Adversaries may abuse container command-line interfaces and APIs to execute commands or manage workloads.", example: "Using a container runtime or orchestration API to execute a command in a workload.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" }
-  ,{ id: "T1213.006", tactic: "Collection", name: "Data from Information Repositories: Databases", description: "Adversaries may leverage databases to mine valuable information hosted on-premises or in the cloud.", example: "Querying a production database for credentials, customer data or sensitive records.", icon: Archive, color: "text-yellow-600", platform: "Cross-Platform" }
+  ,{ id: "T1213.006", parentId: "T1213", tactic: "Collection", name: "Data from Information Repositories: Databases", description: "Adversaries may leverage databases to mine valuable information hosted on-premises or in the cloud.", example: "Querying a production database for credentials, customer data or sensitive records.", icon: Archive, color: "text-yellow-600", platform: "Cross-Platform" }
   ,{ id: "T1546.018", tactic: "Persistence", name: "Python Startup Hooks", description: "Adversaries may abuse .pth files, sitecustomize.py or usercustomize.py to execute code when Python starts.", example: "Placing an import statement in a site-packages .pth file to execute on interpreter startup.", icon: Anchor, color: "text-purple-400", platform: "Cross-Platform" }
   ,{ id: "T1677", tactic: "Execution", name: "Poisoned Pipeline Execution", description: "Adversaries may manipulate CI/CD processes by injecting malicious code into build workflows or referenced files.", example: "Modifying a workflow or build script to exfiltrate CI secrets or alter a released artifact.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" }
   ,{ id: "T1680", tactic: "Discovery", name: "Local Storage Discovery", description: "Adversaries may enumerate local storage, disks and volumes to profile a system or prepare follow-on activity.", example: "Enumerating disks and mounted volumes before targeting backups or encrypting data.", icon: SearchIcon, color: "text-teal-400", platform: "Cross-Platform" }
@@ -840,6 +902,7 @@ export const MITRE_DB: MitreDef[] = [
   ,...CREDENTIAL_ACCESS_ENTRIES
   ,...DISCOVERY_ENTRIES
   ,...LATERAL_MOVEMENT_ENTRIES
+  ,...COLLECTION_ENTRIES
 ];
 
 // A few Stealth entries already exist because they are also part of another
@@ -919,4 +982,11 @@ const LATERAL_MOVEMENT_SHARED_IDS = new Set(LATERAL_MOVEMENT_CATALOG.map(([id]) 
 for (const definition of MITRE_DB) {
   if (!LATERAL_MOVEMENT_SHARED_IDS.has(definition.id)) continue;
   definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Lateral Movement"]));
+}
+
+const COLLECTION_SHARED_IDS = new Set(COLLECTION_CATALOG.map(([id]) => id));
+
+for (const definition of MITRE_DB) {
+  if (!COLLECTION_SHARED_IDS.has(definition.id)) continue;
+  definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Collection"]));
 }

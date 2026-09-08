@@ -354,6 +354,46 @@ const VECTORS = [
     ],
   },
   {
+    name: "Collection & Data Staging",
+    desc: "A collection exercise that follows sensitive data from endpoints, repositories and shared storage into local and remote staging areas.",
+    windows_phases: [
+      [
+        { desc: "A suspicious process reads clipboard contents and captures an operator's screen during an active session.", mitre: "T1115", event: "Sysmon 1" },
+        { desc: "A process captures screenshots from a workstation outside the approved support workflow.", mitre: "T1113", event: "Sysmon 1" },
+      ],
+      [
+        { desc: "Sensitive documents are enumerated and copied from a local user profile.", mitre: "T1005", event: "4663" },
+        { desc: "Messages are collected from a local mailbox database by an unexpected process.", mitre: "T1114.001", event: "4663" },
+      ],
+      [
+        { desc: "A code repository is queried for source, configuration and deployment data.", mitre: "T1213.003", event: "Cloud Audit" },
+        { desc: "Collected files are staged in a local working directory before transfer.", mitre: "T1074.001", event: "Sysmon 11" },
+      ],
+      [
+        { desc: "Collected files are compressed with a trusted archiving utility.", mitre: "T1560.001", event: "Sysmon 1" },
+        { desc: "Sensitive data is copied from a network share accessed by the compromised account.", mitre: "T1039", event: "5140" },
+      ],
+    ],
+    linux_phases: [
+      [
+        { desc: "A process reads clipboard data and records input from an interactive desktop session.", mitre: "T1115", event: "auditd SYSCALL" },
+        { desc: "A user-session process captures video or screenshots outside the expected desktop workflow.", mitre: "T1113", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "Sensitive files are searched and copied from local home and application directories.", mitre: "T1005", event: "auditd SYSCALL" },
+        { desc: "A local mail store is read by a process that does not normally access it.", mitre: "T1114.001", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "A self-hosted code repository or database is queried for secrets and operational records.", mitre: "T1213.006", event: "auditd EXECVE" },
+        { desc: "Collected files are placed in a hidden local staging directory.", mitre: "T1074.001", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "The staged dataset is archived through a library or custom packer.", mitre: "T1560.002", event: "auditd EXECVE" },
+        { desc: "Data is collected from a mounted network share before exfiltration.", mitre: "T1039", event: "auditd SYSCALL" },
+      ],
+    ],
+  },
+  {
     name: "Credential Access Hunt",
     desc: "A credential-theft investigation spanning password stores, credential dumping, Kerberos abuse, MFA pressure and unsecured files.",
     windows_phases: [
