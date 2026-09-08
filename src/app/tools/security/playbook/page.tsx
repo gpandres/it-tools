@@ -223,8 +223,9 @@ export default function PlaybookPage() {
       <div className="w-full max-w-6xl mx-auto space-y-6">
         
         {/* Top Action Bar */}
-         <div className="flex flex-wrap items-center gap-3 bg-[#0a0a0a] p-4 border border-[#1a1a1a] rounded-lg">
-           <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+         <div className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-4">
+           <div className="flex flex-wrap items-center gap-3">
+           <div className="flex shrink-0 flex-wrap gap-2">
             <Button 
               onClick={() => setMode('build')} 
               variant={mode === 'build' ? 'default' : 'outline'}
@@ -278,30 +279,12 @@ export default function PlaybookPage() {
                 </SelectContent>
               </Select>
               
-               <div className="mx-2 hidden h-4 w-px bg-[#333] sm:block"></div>
-              
-              <Button onClick={exportJSON} variant="outline" size="sm" className="bg-black border-[#1a1a1a]">
-                <Download className="w-4 h-4 mr-2" /> JSON
-              </Button>
-              <Button variant="outline" size="sm" className="bg-black border-[#1a1a1a] relative overflow-hidden">
-                <Upload className="w-4 h-4 mr-2" /> Load
-                <input 
-                  type="file" 
-                  accept=".json"
-                  className="absolute inset-0 opacity-0 cursor-pointer" 
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) importJSON(e.target.files[0]);
-                  }} 
-                />
-              </Button>
-              <Button onClick={exportMarkdown} variant="outline" size="sm" className="bg-black border-[#1a1a1a]">
-                <FileText className="w-4 h-4 mr-2" /> Markdown
-              </Button>
-            </div>
-          )}
-        </div>
+             </div>
+           )}
+           </div>
+         </div>
 
-        {/* Content Area */}
+         {/* Content Area */}
         {mode === 'build' ? (
           buildView === 'list' ? (
             <Builder runbook={runbook} onChange={setRunbook} />
@@ -310,9 +293,32 @@ export default function PlaybookPage() {
           )
         ) : (
           <Runner runbook={runbook} onExit={() => setMode('build')} />
-        )}
+         )}
 
-      </div>
+         {mode === 'build' && (
+           <div className="flex flex-wrap items-center justify-end gap-2 rounded-lg border border-[#1a1a1a] bg-[#080808] p-3">
+             <span className="mr-1 text-[10px] uppercase tracking-widest text-zinc-600">Export / Import</span>
+             <Button onClick={exportJSON} variant="outline" size="sm" className="bg-black border-[#1a1a1a]">
+               <Download className="w-4 h-4 mr-2" /> JSON
+             </Button>
+             <Button variant="outline" size="sm" className="relative overflow-hidden bg-black border-[#1a1a1a]">
+               <Upload className="w-4 h-4 mr-2" /> Load
+               <input
+                 type="file"
+                 accept=".json"
+                 className="absolute inset-0 cursor-pointer opacity-0"
+                 onChange={(e) => {
+                   if (e.target.files && e.target.files[0]) importJSON(e.target.files[0]);
+                 }}
+               />
+             </Button>
+             <Button onClick={exportMarkdown} variant="outline" size="sm" className="bg-black border-[#1a1a1a]">
+               <FileText className="w-4 h-4 mr-2" /> Markdown
+             </Button>
+           </div>
+         )}
+
+       </div>
     </ToolLayout>
   );
 }
