@@ -13,12 +13,14 @@ import {
   EdgeChange,
   BackgroundVariant,
   useReactFlow,
-  ReactFlowProvider
+  ReactFlowProvider,
+  getNodesBounds,
+  getViewportForBounds
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Runbook, RunbookStep } from './types';
 import RunbookNode from './RunbookNode';
-import { Download, Plus } from 'lucide-react';
+import { Download, Plus, X } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { ToolActionButton, ToolActionPanel } from '@/components/tool-action-panel';
 
@@ -35,6 +37,7 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
   const diagramRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
   const [pngBackground, setPngBackground] = useState<'black' | 'white' | 'transparent'>('black');
+  const [showDiagramHelp, setShowDiagramHelp] = useState(true);
   
   // Transform Runbook Steps into ReactFlow Nodes
   const initialNodes: Node[] = useMemo(() => {
@@ -189,19 +192,29 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
 
   const exportPng = async () => {
     if (!diagramRef.current) return;
-    const originalBackground = diagramRef.current.style.backgroundColor;
-    diagramRef.current.style.backgroundColor = pngBackground === 'transparent' ? 'transparent' : pngBackground;
-    let dataUrl: string;
-    try {
-      dataUrl = await toPng(diagramRef.current, {
-        pixelRatio: 3,
-        cacheBust: true,
-        backgroundColor: pngBackground === 'transparent' ? 'transparent' : pngBackground,
-        filter: node => !node.classList?.contains('diagram-export-exclude')
-      });
-    } finally {
-      diagramRef.current.style.backgroundColor = originalBackground;
-    }
+    const flowViewport = diagramRef.current.querySelector<HTMLElement>('.react-flow__viewport');
+    const target = flowViewport || diagramRef.current;
+    const bounds = nodes.length ? getNodesBounds(nodes) : { x: 0, y: 0, width: 1200, height: 800 };
+    const padding = 80;
+    const imageWidth = Math.min(4000, Math.max(1200, Math.ceil(bounds.width + padding * 2)));
+    const imageHeight = Math.min(3000, Math.max(800, Math.ceil(bounds.height + padding * 2)));
+    const viewport = nodes.length
+      ? getViewportForBounds(bounds, imageWidth, imageHeight, 0.1, 2, padding / Math.max(bounds.width, bounds.height))
+      : { x: 0, y: 0, zoom: 1 };
+    const backgroundColor = pngBackground === 'transparent' ? undefined : pngBackground === 'white' ? '#ffffff' : '#000000';
+    const dataUrl = await toPng(target, {
+      width: imageWidth,
+      height: imageHeight,
+      pixelRatio: 1,
+      cacheBust: true,
+      backgroundColor,
+      style: flowViewport ? {
+        width: `${imageWidth}px`,
+        height: `${imageHeight}px`,
+        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
+      } : undefined,
+      filter: node => !node.classList?.contains('diagram-export-exclude')
+    });
     const anchor = document.createElement('a');
     anchor.download = `runbook-diagram-${runbook.id}.png`;
     anchor.href = dataUrl;
@@ -248,12 +261,15 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
         <p className="mt-2 text-[9px] leading-relaxed text-zinc-600">Click to add or drag onto the canvas.</p>
       </div>
 
-      <div className="diagram-export-exclude absolute right-4 top-4 bg-black/80 backdrop-blur p-4 rounded-lg border border-[#1a1a1a] max-w-xs z-10 pointer-events-none">
-        <h4 className="text-[#00ff9c] font-bold text-sm mb-2">Diagram Mode</h4>
+      {showDiagramHelp && <div className="diagram-export-exclude absolute right-4 top-4 z-10 max-w-xs border border-[#1a1a1a] bg-black/80 p-4 backdrop-blur">
+        <div className="mb-2 flex items-center justify-between gap-4">
+          <h4 className="text-sm font-bold text-[#00ff9c]">Diagram Mode</h4>
+          <button type="button" onClick={() => setShowDiagramHelp(false)} aria-label="Close diagram help" title="Close" className="text-zinc-500 transition-colors hover:text-white"><X className="h-3.5 w-3.5" /></button>
+        </div>
         <p className="text-xs text-zinc-400">
           Drag nodes to arrange them. For "Decision" steps, you can drag the green (YES) and red (NO) handles to explicitly link them to other steps.
         </p>
-      </div>
+      </div>}
       </div>
     </div>
   );
