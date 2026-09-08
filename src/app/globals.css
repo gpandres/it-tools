@@ -223,6 +223,39 @@ body::before {
   animation: blink 1s steps(1) infinite;
 }
 
+@keyframes sidebar-pacman-run {
+  0% { transform: translateX(-2px); }
+  100% { transform: translateX(2px); }
+}
+
+.sidebar-pacman {
+  color: var(--amber);
+  animation: sidebar-pacman-run 0.5s steps(2, end) infinite alternate, blink 1.8s steps(2, end) infinite;
+}
+
+.sidebar-dots {
+  color: var(--phosphor-dim);
+  letter-spacing: 2px;
+  animation: sidebar-dots-pulse 1.2s steps(3, end) infinite;
+}
+
+@keyframes sidebar-dots-pulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+@keyframes sidebar-easter-egg {
+  0% { color: var(--amber); transform: translateX(0); }
+  20% { transform: translateX(-2px); }
+  40% { transform: translateX(2px); }
+  60% { transform: translateX(-1px); }
+  100% { color: var(--phosphor); transform: translateX(0); }
+}
+
+.sidebar-easter-egg {
+  animation: sidebar-easter-egg 0.45s steps(2, end) 3;
+}
+
 /* scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

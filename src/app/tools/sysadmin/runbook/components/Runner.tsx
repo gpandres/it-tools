@@ -191,14 +191,14 @@ export default function Runner({ runbook, onExit }: RunnerProps) {
               {currentStep.type === 'checklist' && currentStep.items && (
                 <div className="space-y-3 bg-[#111] border border-[#222] p-4 rounded-lg">
                   {currentStep.items.map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3">
+                    <div key={idx} className="flex items-start gap-3 py-0.5">
                       <Checkbox 
                         id={`check-${idx}`} 
                         checked={!!checklistState[`${currentStep.id}-${idx}`]}
                         onCheckedChange={(c) => setChecklistState({ ...checklistState, [`${currentStep.id}-${idx}`]: !!c })}
                         className="mt-1 shrink-0 border-zinc-500 data-[state=checked]:bg-[#00ff9c] data-[state=checked]:border-[#00ff9c]"
                       />
-                      <Label htmlFor={`check-${idx}`} className="text-sm text-zinc-300 leading-normal cursor-pointer">
+                      <Label htmlFor={`check-${idx}`} className="cursor-pointer pl-1 text-sm leading-relaxed text-zinc-300">
                         {hydrateText(item)}
                       </Label>
                     </div>

@@ -217,6 +217,7 @@ function DiagramFlow() {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
+          proOptions={{ hideAttribution: true }}
           colorMode="dark"
           className="bg-[#050505]"
         >

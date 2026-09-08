@@ -267,10 +267,10 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
 
                     {step.type === 'checklist' && (
                       <div>
-                        <Label className="text-xs text-zinc-400 mb-2 block">Checklist Items</Label>
-                        <div className="space-y-2">
+                         <Label className="mb-3 block text-xs leading-relaxed text-zinc-400">Checklist Items</Label>
+                         <div className="space-y-3">
                           {(step.items || []).map((item, itemIdx) => (
-                            <div key={itemIdx} className="flex gap-2">
+                             <div key={itemIdx} className="flex min-w-0 items-center gap-3">
                               <Input 
                                 value={item}
                                 onChange={(e) => {
@@ -278,7 +278,7 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
                                   newItems[itemIdx] = e.target.value;
                                   updateStep(step.id, { items: newItems });
                                 }}
-                                className="bg-black border-[#1a1a1a] text-xs flex-1"
+                                 className="min-w-0 flex-1 bg-black border-[#1a1a1a] text-xs"
                                 placeholder="Item description..."
                               />
                               <Button variant="ghost" size="icon" onClick={() => {

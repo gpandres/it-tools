@@ -38,10 +38,10 @@ export function ToolLayout({ title, description, children, fullWidth = false }: 
 
   return (
     <div className="flex flex-col min-h-screen bg-black">
-      <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-4 px-4 sm:px-6 py-4 border-b border-[#1a1a1a] bg-[#050505]">
-        <div>
+      <header className="relative sticky top-0 z-30 flex h-[104px] shrink-0 flex-nowrap items-start justify-between gap-4 overflow-visible border-b border-[#1a1a1a] bg-[#050505] px-4 py-4 sm:px-6">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-sm font-bold text-[#ffb000] glow-amber flex items-center gap-2 uppercase tracking-widest">
+            <h1 className="min-w-0 truncate text-sm font-bold text-[#ffb000] glow-amber flex items-center gap-2 uppercase tracking-widest">
               <span className="text-[#00ff9c] text-xs">/</span>
               {title}
             </h1>
@@ -57,13 +57,13 @@ export function ToolLayout({ title, description, children, fullWidth = false }: 
               </button>
             )}
           </div>
-          <p className="text-xs text-zinc-500 mt-1 font-mono">{description}</p>
-          {currentTool && <details className="text-[11px] text-zinc-400 mt-2 max-w-xl">
+          <p className="truncate text-xs text-zinc-500 mt-1 font-mono">{description}</p>
+          {currentTool && <details className="absolute left-4 top-[72px] z-40 mt-0 max-w-[min(36rem,calc(100vw-2rem))] text-[11px] text-zinc-400 open:border open:border-[#242424] open:bg-[#050505] open:px-3 open:py-2 open:shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:left-6">
             <summary className="cursor-pointer">{toolDataFlow(currentTool).label}</summary>
             <p className="mt-2">{toolDataFlow(currentTool).description}</p>
           </details>}
         </div>
-        <div className="w-full md:w-64 shrink-0">
+        <div className="w-48 shrink-0 sm:w-64">
           <CommandMenu />
         </div>
       </header>

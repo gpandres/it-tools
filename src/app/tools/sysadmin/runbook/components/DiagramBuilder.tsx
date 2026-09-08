@@ -170,6 +170,7 @@ export default function DiagramBuilder({ runbook, onChange }: DiagramBuilderProp
         nodeTypes={nodeTypes}
         fitView
         colorMode="dark"
+        proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={2} color="#222" />
         <Controls className="bg-black border border-[#1a1a1a] fill-white" />

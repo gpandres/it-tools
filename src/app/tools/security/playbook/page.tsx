@@ -223,8 +223,8 @@ export default function PlaybookPage() {
       <div className="w-full max-w-6xl mx-auto space-y-6">
         
         {/* Top Action Bar */}
-        <div className="flex justify-between items-center bg-[#0a0a0a] p-4 border border-[#1a1a1a] rounded-lg">
-          <div className="flex gap-2">
+         <div className="flex flex-wrap items-center gap-3 bg-[#0a0a0a] p-4 border border-[#1a1a1a] rounded-lg">
+           <div className="flex min-w-0 flex-1 flex-wrap gap-2">
             <Button 
               onClick={() => setMode('build')} 
               variant={mode === 'build' ? 'default' : 'outline'}
@@ -258,12 +258,12 @@ export default function PlaybookPage() {
             )}
           </div>
 
-          {mode === 'build' && (
-            <div className="flex gap-2 items-center">
+           {mode === 'build' && (
+             <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
               <Button onClick={handleShare} variant="outline" size="sm" className="bg-black border-[#1a1a1a] text-blue-400 hover:bg-blue-900/20 hover:text-blue-300">
                 {shareLink ? "Copied!" : "Share URL"}
               </Button>
-              <div className="h-4 w-px bg-[#333] mx-1"></div>
+               <div className="mx-1 hidden h-4 w-px bg-[#333] sm:block"></div>
               <Select value={runbook.title} onValueChange={(v) => {
                 const tmpl = Object.values(PLAYBOOK_TEMPLATES).find(t => t.title === v);
                 if (tmpl) setRunbook(tmpl);
@@ -278,7 +278,7 @@ export default function PlaybookPage() {
                 </SelectContent>
               </Select>
               
-              <div className="h-4 w-px bg-[#333] mx-2"></div>
+               <div className="mx-2 hidden h-4 w-px bg-[#333] sm:block"></div>
               
               <Button onClick={exportJSON} variant="outline" size="sm" className="bg-black border-[#1a1a1a]">
                 <Download className="w-4 h-4 mr-2" /> JSON
