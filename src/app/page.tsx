@@ -6,6 +6,7 @@ import { CommandMenu } from "@/components/command-menu";
 import { useFavorites } from "@/components/favorites-provider";
 import { toolsRegistry, CATEGORIES } from "@/lib/tools";
 import { searchTools, toolDataFlow, workflows } from "@/lib/tool-discovery";
+import { catalogStructuredData, serializeJsonLd, SITE_URL } from "@/lib/seo";
 
 export default function Home() {
   const [query, setQuery] = useState("");
@@ -23,6 +24,19 @@ export default function Home() {
     return tool ? [tool] : [];
   });
   return <main className="flex-1 p-4 sm:p-8 lg:p-12">
+    <title>IT Tools | andresgp.dev</title>
+    <meta name="description" content="Local-first tools for developers, sysadmins, DevOps and cybersecurity teams." />
+    <meta name="keywords" content="developer tools, sysadmin tools, DevOps tools, cybersecurity tools, network tools, offline tools" />
+    <link rel="canonical" href={SITE_URL} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="IT Tools | Privacy-First Developer Toolbox" />
+    <meta property="og:description" content="Local-first network calculators, cryptography, encoders and security tools for developers and sysadmins." />
+    <meta property="og:url" content={SITE_URL} />
+    <meta property="og:site_name" content="IT Tools by andresgp.dev" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="IT Tools | Privacy-First Developer Toolbox" />
+    <meta name="twitter:description" content="Local-first tools for developers, sysadmins and blue teams." />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(catalogStructuredData(toolsRegistry)) }} />
     <div className="max-w-7xl mx-auto space-y-10">
       <header className="py-6 sm:py-10 border-b border-[#1a1a1a]">
         <p className="text-xs text-[#00ff9c] tracking-widest mb-4">/ OPERATIONS TOOLKIT</p>

@@ -7,6 +7,7 @@ import { Star } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { toolsRegistry } from "@/lib/tools";
 import { relatedToolsFor, toolDataFlow } from "@/lib/tool-discovery";
+import { serializeJsonLd, toolCanonicalUrl, toolStructuredData, toolTitle } from "@/lib/seo";
 import Link from "next/link";
 
 interface ToolLayoutProps {
@@ -21,6 +22,8 @@ export function ToolLayout({ title, description, children, fullWidth = false }: 
   const { addFavorite, removeFavorite, isFavorite, isLoaded } = useFavorites();
 
   const currentTool = toolsRegistry.find(t => t.path === pathname);
+  const seoTool = currentTool;
+  const seoDescription = currentTool?.description ?? description;
   
   const relatedTools = React.useMemo(() => {
     if (!currentTool) return [];
@@ -38,6 +41,21 @@ export function ToolLayout({ title, description, children, fullWidth = false }: 
 
   return (
     <div className="flex flex-col min-h-screen bg-black">
+      {seoTool && <>
+        <title>{toolTitle(seoTool)}</title>
+        <meta name="description" content={seoDescription} />
+        <meta name="keywords" content={[...seoTool.keywords, seoTool.category, "IT tools"].join(", ")} />
+        <link rel="canonical" href={toolCanonicalUrl(seoTool)} />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={toolTitle(seoTool)} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:url" content={toolCanonicalUrl(seoTool)} />
+        <meta property="og:site_name" content="IT Tools by andresgp.dev" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={toolTitle(seoTool)} />
+        <meta name="twitter:description" content={seoDescription} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(toolStructuredData(seoTool, seoDescription)) }} />
+      </>}
       <header className="relative sticky top-0 z-30 flex h-[104px] shrink-0 flex-nowrap items-start justify-between gap-4 overflow-visible border-b border-[#1a1a1a] bg-[#050505] px-4 py-4 sm:px-6">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">

@@ -14,28 +14,8 @@ const jetbrainsMono = localFont({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://tools.andresgp.dev"),
-  title: {
-    default: "IT Tools | andresgp.dev",
-    template: "%s | IT Tools",
-  },
-  description: "Local-first tools for developers, sysadmins and blue teams. Network calculators, incident workflows and utilities with clear data-flow labels.",
-  keywords: ["developer tools", "sysadmin tools", "cybersecurity", "blue team", "pcap analyzer", "log parser", "subnet calculator", "jwt decoder", "hash generator", "regex tester", "offline tools"],
   authors: [{ name: "Andres", url: "https://andresgp.dev" }],
   creator: "Andres",
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://tools.andresgp.dev",
-    title: "IT Tools | Privacy-First Developer Toolbox",
-    description: "Local-first network calculators, cryptography, encoders and security tools for developers and sysadmins.",
-    siteName: "IT Tools by andresgp.dev",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "IT Tools | Privacy-First Developer Toolbox",
-    description: "Local-first tools for developers, sysadmins and blue teams.",
-    creator: "@gpandres02", // Replace with real handle if applicable
-  },
   robots: {
     index: true,
     follow: true,
