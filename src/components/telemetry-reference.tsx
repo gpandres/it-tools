@@ -148,7 +148,7 @@ export function TelemetryReference({
         </aside>
 
         <main className="space-y-4 lg:col-span-9">
-          <div className="flex items-end justify-between gap-4"><h2 className={`${styles.result} font-mono text-sm`}>Found {filteredItems.length} {itemLabel.toLowerCase()}{filteredItems.length === 1 ? "" : "s"}</h2><span className="text-right text-[10px] font-mono uppercase tracking-widest text-zinc-600">Local reference{duplicateCount > 0 ? ` · ${duplicateCount} duplicate${duplicateCount === 1 ? "" : "s"} suppressed` : ""}</span></div>
+          <div className="flex items-end justify-between gap-4"><h2 aria-label={`Found ${filteredItems.length} ${itemLabel.toLowerCase()}${filteredItems.length === 1 ? "" : "s"}`} className={`${styles.result} font-mono text-sm`}>Found {filteredItems.length}{" "}{itemLabel.toLowerCase()}{filteredItems.length === 1 ? "" : "s"}</h2><span className="text-right text-[10px] font-mono uppercase tracking-widest text-zinc-600">Local reference{duplicateCount > 0 ? ` · ${duplicateCount} duplicate${duplicateCount === 1 ? "" : "s"} suppressed` : ""}</span></div>
           {filteredItems.length === 0 ? (
             <div className="flex flex-col items-center border border-[#1a1a1a] bg-[#050505] p-8 text-center"><Search className="mx-auto mb-3 h-8 w-8 text-zinc-600" /><p className="font-mono text-sm text-zinc-500">{emptyMessage}</p></div>
           ) : (
@@ -160,7 +160,7 @@ export function TelemetryReference({
                     <div className={`rounded bg-[#1a1a1a] p-3 ${item.color} transition-transform group-hover:scale-110`}><Icon className="h-6 w-6" /></div>
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-                        <h3 className="min-w-0 break-words text-lg font-bold text-zinc-200"><span className={`${item.color} mr-2 font-mono`}>{item.id}</span>{item.name}</h3>
+                        <h3 aria-label={`${item.id} ${item.name}`} className="min-w-0 break-words text-lg font-bold text-zinc-200"><span className={`${item.color} mr-2 font-mono`}>{item.id}</span>{" "}{item.name}</h3>
                         <span className="w-fit shrink-0 border border-[#1a1a1a] bg-black px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-zinc-400">{item.type}</span>
                         <button type="button" onClick={() => copyId(item.id)} className="flex w-fit items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-zinc-600 hover:text-zinc-200" aria-label={`Copy ${item.id}`}>{copiedId === item.id ? <><Check className="h-3 w-3 text-[#00ff9c]" /> Copied</> : <><Copy className="h-3 w-3" /> Copy ID</>}</button>
                       </div>
