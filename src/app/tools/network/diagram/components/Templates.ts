@@ -38,5 +38,37 @@ export const TEMPLATES = {
       { id: "e-dist1-srv1", source: "dist1", sourceHandle: "bottom-source", target: "srv1", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet" } },
       { id: "e-dist1-srv2", source: "dist1", sourceHandle: "bottom-source", target: "srv2", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet" } }
     ]
+  },
+  "DMZ": {
+    nodes: [
+      { id: "dmz-internet", type: "networkNode", position: { x: 430, y: 40 }, data: { label: "Internet", type: "cloud", ip: "0.0.0.0/0", zone: "internet", status: "active" } },
+      { id: "dmz-fw", type: "networkNode", position: { x: 430, y: 190 }, data: { label: "Perimeter Firewall", type: "firewall", ip: "203.0.113.1/30", role: "edge firewall", zone: "wan", status: "active" } },
+      { id: "dmz-lb", type: "networkNode", position: { x: 180, y: 360 }, data: { label: "Public Load Balancer", type: "load-balancer", ip: "198.51.100.10/24", zone: "dmz", status: "active" } },
+      { id: "dmz-web", type: "networkNode", position: { x: 430, y: 360 }, data: { label: "Web Server", type: "server", ip: "198.51.100.20/24", vlan: "110", zone: "dmz", status: "active" } },
+      { id: "dmz-ids", type: "networkNode", position: { x: 680, y: 360 }, data: { label: "DMZ IDS", type: "ids-ips", ip: "198.51.100.30/24", vlan: "110", zone: "dmz", status: "active" } },
+      { id: "dmz-core", type: "networkNode", position: { x: 430, y: 530 }, data: { label: "Internal Core", type: "switch", ip: "10.10.0.1/24", vlan: "10", zone: "lan", status: "active" } }
+    ],
+    edges: [
+      { id: "e-dmz-internet-fw", source: "dmz-internet", sourceHandle: "bottom-source", target: "dmz-fw", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "fiber", bandwidth: "1 Gbps", vlanMode: "routed" } },
+      { id: "e-dmz-fw-lb", source: "dmz-fw", sourceHandle: "bottom-source", target: "dmz-lb", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "fiber", vlanMode: "routed" } },
+      { id: "e-dmz-fw-web", source: "dmz-fw", sourceHandle: "bottom-source", target: "dmz-web", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet", vlanMode: "access", vlans: "110" } },
+      { id: "e-dmz-fw-ids", source: "dmz-fw", sourceHandle: "bottom-source", target: "dmz-ids", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet", vlanMode: "access", vlans: "110" } },
+      { id: "e-dmz-fw-core", source: "dmz-fw", sourceHandle: "bottom-source", target: "dmz-core", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "fiber", vlanMode: "trunk", vlans: "10,110" } }
+    ]
+  },
+  "VLAN Segmentation": {
+    nodes: [
+      { id: "vlan-router", type: "networkNode", position: { x: 430, y: 60 }, data: { label: "Inter-VLAN Router", type: "router", ip: "10.0.0.1/24", role: "gateway", zone: "lan", status: "active" } },
+      { id: "vlan-switch", type: "networkNode", position: { x: 430, y: 240 }, data: { label: "Distribution Switch", type: "switch", ip: "10.0.0.2/24", role: "distribution", zone: "lan", status: "active" } },
+      { id: "vlan-users", type: "networkNode", position: { x: 160, y: 450 }, data: { label: "User Access", type: "pc", ip: "10.10.10.10/24", vlan: "10", zone: "lan", status: "active" } },
+      { id: "vlan-servers", type: "networkNode", position: { x: 430, y: 450 }, data: { label: "Server Segment", type: "server", ip: "10.10.20.10/24", vlan: "20", zone: "server", status: "active" } },
+      { id: "vlan-management", type: "networkNode", position: { x: 700, y: 450 }, data: { label: "Management", type: "server", ip: "10.10.99.10/24", vlan: "99", zone: "management", status: "active" } }
+    ],
+    edges: [
+      { id: "e-vlan-router-switch", source: "vlan-router", sourceHandle: "bottom-source", target: "vlan-switch", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "fiber", vlanMode: "trunk", vlans: "10,20,99" } },
+      { id: "e-vlan-switch-users", source: "vlan-switch", sourceHandle: "bottom-source", target: "vlan-users", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet", vlanMode: "access", vlans: "10" } },
+      { id: "e-vlan-switch-servers", source: "vlan-switch", sourceHandle: "bottom-source", target: "vlan-servers", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet", vlanMode: "access", vlans: "20" } },
+      { id: "e-vlan-switch-management", source: "vlan-switch", sourceHandle: "bottom-source", target: "vlan-management", targetHandle: "top-target", type: "networkEdge", data: { connectionType: "ethernet", vlanMode: "access", vlans: "99" } }
+    ]
   }
 };

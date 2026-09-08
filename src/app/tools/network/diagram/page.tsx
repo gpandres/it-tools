@@ -1,31 +1,55 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { ReactFlow, Controls, Background, applyNodeChanges, applyEdgeChanges, addEdge, BackgroundVariant, ReactFlowProvider, useReactFlow, getNodesBounds, getViewportForBounds } from '@xyflow/react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { ReactFlow, Controls, Background, applyNodeChanges, applyEdgeChanges, addEdge, BackgroundVariant, ReactFlowProvider, useReactFlow, getNodesBounds, getViewportForBounds, type Connection, type EdgeChange, type NodeChange } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { toPng } from 'html-to-image';
 
 import { ToolLayout } from "@/components/tool-layout";
-import NetworkNode from './nodes/NetworkNode';
-import NetworkEdge from './edges/NetworkEdge';
+import NetworkNodeComponent from './nodes/NetworkNode';
+import NetworkEdgeComponent from './edges/NetworkEdge';
 import Sidebar from './components/Sidebar';
 import { TEMPLATES } from './components/Templates';
 import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
-import { parseDiagram } from '@/lib/diagram-validation';
+import { parseDiagram, validateDiagram } from '@/lib/diagram-validation';
 import { useNotification } from '@/components/notification-provider';
+import type { NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, DiagramSnapshot } from './types';
 
-const nodeTypes = { networkNode: NetworkNode };
-const edgeTypes = { networkEdge: NetworkEdge };
+const nodeTypes = { networkNode: NetworkNodeComponent };
+const edgeTypes = { networkEdge: NetworkEdgeComponent };
 
 function DiagramFlow() {
-  const [nodes, setNodes] = useState<any[]>(TEMPLATES["Small Office"].nodes);
-  const [edges, setEdges] = useState<any[]>(TEMPLATES["Small Office"].edges);
-  const [selectedNode, setSelectedNode] = useState<any | null>(null);
-  const [selectedEdge, setSelectedEdge] = useState<any | null>(null);
+  const [nodes, setNodes] = useState<NetworkNode[]>(() => cloneNodes(TEMPLATES["Small Office"].nodes as NetworkNode[]));
+  const [edges, setEdges] = useState<NetworkEdge[]>(() => cloneEdges(TEMPLATES["Small Office"].edges as NetworkEdge[]));
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [history, setHistory] = useState<DiagramSnapshot[]>([]);
+  const [future, setFuture] = useState<DiagramSnapshot[]>([]);
   const { notify } = useNotification();
   
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const nodesRef = useRef<NetworkNode[]>(nodes);
+  const edgesRef = useRef<NetworkEdge[]>(edges);
   const { screenToFlowPosition, fitView } = useReactFlow();
+
+  const selectedNode = useMemo(() => nodes.find(node => node.id === selectedNodeId) as NetworkNode | undefined ?? null, [nodes, selectedNodeId]);
+  const selectedEdge = useMemo(() => edges.find(edge => edge.id === selectedEdgeId) as NetworkEdge | undefined ?? null, [edges, selectedEdgeId]);
+  const validationIssues = useMemo(() => validateDiagram({ nodes, edges }), [nodes, edges]);
+
+  const recordHistory = useCallback(() => {
+    setHistory(current => [...current.slice(-29), { nodes: cloneNodes(nodesRef.current), edges: cloneEdges(edgesRef.current) }]);
+    setFuture([]);
+  }, []);
+
+  const replaceDiagram = useCallback((nextNodes: NetworkNode[], nextEdges: NetworkEdge[], remember = true) => {
+    if (remember) recordHistory();
+    const safeNodes = cloneNodes(nextNodes);
+    const safeEdges = cloneEdges(nextEdges);
+    nodesRef.current = safeNodes;
+    edgesRef.current = safeEdges;
+    setNodes(safeNodes);
+    setEdges(safeEdges);
+  }, [recordHistory]);
 
   // Load from local storage on mount
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -36,15 +60,14 @@ function DiagramFlow() {
         const parsed = parseDiagram(JSON.parse(saved));
         if (parsed && parsed.nodes.length > 0) {
           const { nodes: savedNodes, edges: savedEdges } = parsed;
-          setNodes(savedNodes);
-          setEdges(savedEdges);
+          replaceDiagram(savedNodes as NetworkNode[], savedEdges as NetworkEdge[], false);
           setTimeout(() => fitView(), 100);
         }
       } catch (e) {
         console.error("Failed to parse saved diagram", e);
       }
     }
-  }, [fitView]);
+  }, [fitView, replaceDiagram]);
 
   // Save to local storage on change
   useEffect(() => {
@@ -55,19 +78,51 @@ function DiagramFlow() {
   }, [nodes, edges]);
 
   const onNodesChange = useCallback(
-    (changes: any) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    (changes: NodeChange<NetworkNode>[]) => setNodes((nds) => {
+      const nextNodes = applyNodeChanges(changes, nds);
+      nodesRef.current = nextNodes;
+      return nextNodes;
+    }),
     []
   );
 
   const onEdgesChange = useCallback(
-    (changes: any) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    []
+    (changes: EdgeChange<NetworkEdge>[]) => {
+      if (changes.some(change => change.type === 'remove')) recordHistory();
+      setEdges((eds) => {
+        const nextEdges = applyEdgeChanges(changes, eds);
+        edgesRef.current = nextEdges;
+        return nextEdges;
+      });
+    },
+    [recordHistory]
   );
 
   const onConnect = useCallback(
-    (params: any) => setEdges((eds) => addEdge({ ...params, type: 'networkEdge', data: { connectionType: 'ethernet' } }, eds)),
-    []
+    (params: Connection) => {
+      const isDuplicate = edgesRef.current.some(edge => edge.source === params.source && edge.target === params.target && edge.sourceHandle === params.sourceHandle && edge.targetHandle === params.targetHandle);
+      if (isDuplicate) {
+        notify('This exact connection already exists. Use different ports for a second link.', 'error');
+        return;
+      }
+      recordHistory();
+      const nextEdges = addEdge({ ...params, type: 'networkEdge', data: { connectionType: 'ethernet', vlanMode: 'unknown' } }, edgesRef.current);
+      edgesRef.current = nextEdges;
+      setEdges(nextEdges);
+    },
+    [notify, recordHistory]
   );
+
+  const addNode = useCallback((type: NetworkNodeType, label: string, position?: { x: number; y: number }) => {
+    const rect = reactFlowWrapper.current?.getBoundingClientRect();
+    const center = rect ? screenToFlowPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }) : { x: 200, y: 200 };
+    const offset = (nodesRef.current.length % 6) * 24;
+    const newNode: NetworkNode = { id: `node_${Date.now()}_${nodesRef.current.length}`, type: 'networkNode', position: position ?? { x: center.x + offset, y: center.y + offset }, data: { label, type, ip: '', vlan: '', status: 'active' } };
+    recordHistory();
+    const nextNodes = [...nodesRef.current, newNode];
+    nodesRef.current = nextNodes;
+    setNodes(nextNodes);
+  }, [recordHistory, screenToFlowPosition]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -81,56 +136,110 @@ function DiagramFlow() {
       const typeData = event.dataTransfer.getData('application/reactflow');
       if (!typeData) return;
 
-      const { type, label } = JSON.parse(typeData);
+      const { type, label } = JSON.parse(typeData) as { type: NetworkNodeType; label: string };
 
       const position = screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
       });
 
-      const newNode = {
-        id: `node_${Date.now()}`,
-        type: 'networkNode',
-        position,
-        data: { label, type, ip: '', vlan: '' },
-      };
-
-      setNodes((nds) => nds.concat(newNode));
+      addNode(type, label, position);
     },
-    [screenToFlowPosition]
+    [addNode, screenToFlowPosition]
   );
 
-  const onSelectionChange = useCallback(({ nodes, edges }: any) => {
-    setSelectedNode(nodes.length === 1 ? nodes[0] : null);
-    setSelectedEdge(edges.length === 1 ? edges[0] : null);
+  const onSelectionChange = useCallback(({ nodes: selectedNodes, edges: selectedEdges }: { nodes: NetworkNode[]; edges: NetworkEdge[] }) => {
+    setSelectedNodeId(selectedNodes.length === 1 ? selectedNodes[0].id : null);
+    setSelectedEdgeId(selectedEdges.length === 1 ? selectedEdges[0].id : null);
   }, []);
 
-  const updateNodeData = (nodeId: string, newData: any) => {
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id === nodeId) {
-          node.data = { ...node.data, ...newData };
-        }
-        return node;
-      })
-    );
-  };
+  const updateNodeData = useCallback((nodeId: string, newData: Partial<NetworkNodeData>) => {
+    recordHistory();
+    const nextNodes = nodesRef.current.map(node => node.id === nodeId ? { ...node, data: { ...node.data, ...newData } } : node);
+    nodesRef.current = nextNodes;
+    setNodes(nextNodes);
+  }, [recordHistory]);
 
-  const updateEdgeData = (edgeId: string, newData: any) => {
-    setEdges((eds) =>
-      eds.map((edge) => {
-        if (edge.id === edgeId) {
-          edge.data = { ...edge.data, ...newData };
-        }
-        return edge;
-      })
-    );
-  };
+  const updateEdgeData = useCallback((edgeId: string, newData: Partial<NetworkEdge['data']>) => {
+    recordHistory();
+    const nextEdges = edgesRef.current.map(edge => edge.id === edgeId ? { ...edge, data: { connectionType: edge.data?.connectionType ?? 'ethernet', ...edge.data, ...newData } } : edge) as NetworkEdge[];
+    edgesRef.current = nextEdges;
+    setEdges(nextEdges);
+  }, [recordHistory]);
 
-  const loadTemplate = (templateName: keyof typeof TEMPLATES) => {
-    const template = TEMPLATES[templateName];
-    setNodes(template.nodes);
-    setEdges(template.edges);
+  const deleteSelected = useCallback(() => {
+    if (selectedNodeId) {
+      recordHistory();
+      const nextNodes = nodesRef.current.filter(node => node.id !== selectedNodeId);
+      const nextEdges = edgesRef.current.filter(edge => edge.source !== selectedNodeId && edge.target !== selectedNodeId);
+      replaceDiagram(nextNodes, nextEdges, false);
+      setSelectedNodeId(null);
+      return;
+    }
+    if (selectedEdgeId) {
+      recordHistory();
+      replaceDiagram(nodesRef.current, edgesRef.current.filter(edge => edge.id !== selectedEdgeId), false);
+      setSelectedEdgeId(null);
+    }
+  }, [recordHistory, replaceDiagram, selectedEdgeId, selectedNodeId]);
+
+  const duplicateSelected = useCallback(() => {
+    if (!selectedNode) return;
+    recordHistory();
+    const copy = { ...selectedNode, id: `node_${Date.now()}_${nodesRef.current.length}`, position: { x: selectedNode.position.x + 48, y: selectedNode.position.y + 48 }, selected: false, data: { ...selectedNode.data, label: `${selectedNode.data.label} copy` } };
+    const nextNodes = [...nodesRef.current, copy];
+    nodesRef.current = nextNodes;
+    setNodes(nextNodes);
+    setSelectedNodeId(copy.id);
+  }, [recordHistory, selectedNode]);
+
+  const undo = useCallback(() => {
+    const previous = history.at(-1);
+    if (!previous) return;
+    setFuture(current => [{ nodes: cloneNodes(nodesRef.current), edges: cloneEdges(edgesRef.current) }, ...current].slice(0, 30));
+    setHistory(current => current.slice(0, -1));
+    replaceDiagram(previous.nodes, previous.edges, false);
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
+  }, [history, replaceDiagram]);
+
+  const redo = useCallback(() => {
+    const next = future[0];
+    if (!next) return;
+    setHistory(current => [...current, { nodes: cloneNodes(nodesRef.current), edges: cloneEdges(edgesRef.current) }].slice(-30));
+    setFuture(current => current.slice(1));
+    replaceDiagram(next.nodes, next.edges, false);
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
+  }, [future, replaceDiagram]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.matches('input, textarea, select, [contenteditable="true"]')) return;
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) redo(); else undo();
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+        event.preventDefault();
+        redo();
+      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        deleteSelected();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [deleteSelected, redo, undo]);
+
+  const onNodeDragStart = useCallback(() => recordHistory(), [recordHistory]);
+
+  const loadTemplate = (templateName: string) => {
+    const template = TEMPLATES[templateName as keyof typeof TEMPLATES];
+    if (!template) return;
+    replaceDiagram(template.nodes as NetworkNode[], template.edges as NetworkEdge[]);
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
     setTimeout(() => fitView({ padding: 0.2 }), 100);
   };
 
@@ -154,8 +263,9 @@ function DiagramFlow() {
         if (content.length > 2_000_000) throw new Error("Diagram file is too large");
         const parsed = parseDiagram(JSON.parse(content));
         if (parsed) {
-          setNodes(parsed.nodes);
-          setEdges(parsed.edges);
+          replaceDiagram(parsed.nodes as NetworkNode[], parsed.edges as NetworkEdge[]);
+          setSelectedNodeId(null);
+          setSelectedEdgeId(null);
           setTimeout(() => fitView({ padding: 0.2 }), 100);
         } else {
           notify("Invalid diagram JSON format.", "error");
@@ -163,12 +273,16 @@ function DiagramFlow() {
       } catch (err) {
         notify("Failed to parse the diagram JSON file.", "error");
       }
-    };
+    }
     reader.onerror = () => notify("Could not read the diagram JSON file.", "error");
     reader.readAsText(file);
   };
 
   const exportImage = (bgColor: 'black' | 'white' | 'transparent') => {
+    if (nodes.length === 0) {
+      notify('Add at least one node before exporting an image.', 'error');
+      return;
+    }
     const nodesBounds = getNodesBounds(nodes);
     
     // Default image width/height (will scale based on bounds)
@@ -206,6 +320,15 @@ function DiagramFlow() {
         selectedEdge={selectedEdge}
         updateNodeData={updateNodeData}
         updateEdgeData={updateEdgeData}
+        onAddNode={addNode}
+        duplicateSelected={duplicateSelected}
+        deleteSelected={deleteSelected}
+        undo={undo}
+        redo={redo}
+        canUndo={history.length > 0}
+        canRedo={future.length > 0}
+        validationIssues={validationIssues}
+        validate={() => notify(validationIssues.length === 0 ? 'No topology issues detected.' : `${validationIssues.length} topology issue${validationIssues.length === 1 ? '' : 's'} found.`, validationIssues.some(issue => issue.severity === 'error') ? 'error' : 'info')}
         exportDiagram={exportDiagram}
         importDiagram={importDiagram}
         loadTemplate={loadTemplate}
@@ -218,6 +341,7 @@ function DiagramFlow() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeDragStart={onNodeDragStart}
           onDrop={onDrop}
           onDragOver={onDragOver}
           onSelectionChange={onSelectionChange}
@@ -248,4 +372,12 @@ export default function NetworkDiagramPage() {
       </div>
     </ToolLayout>
   );
+}
+
+function cloneNodes(nodes: NetworkNode[]): NetworkNode[] {
+  return nodes.map(node => ({ ...node, position: { ...node.position }, data: { ...node.data } }));
+}
+
+function cloneEdges(edges: NetworkEdge[]): NetworkEdge[] {
+  return edges.map(edge => ({ ...edge, data: edge.data ? { ...edge.data } : edge.data }));
 }

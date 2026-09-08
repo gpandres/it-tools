@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { calculateSubnet, calculateVlsm, isIpInNetwork, ipToInt } from "../src/lib/network.ts";
 import { expandIPv6 } from "../src/lib/ipv6.ts";
 import { parseAclRules } from "../src/lib/acl.ts";
+import { parseDiagram, validateDiagram } from "../src/lib/diagram-validation.ts";
 
 test("rejects malformed IPv4 values instead of truncating them", () => {
   assert.throws(() => ipToInt("999.1.1.1"));
@@ -44,4 +45,34 @@ test("allocates a conventional subnet for a one-host VLSM request", () => {
   const result = calculateVlsm("192.168.1.0", 24, [{ name: "router", hosts: 1 }]);
   assert.equal(result[0]?.cidr, 30);
   assert.equal(result[0]?.allocatedHosts, 2);
+});
+
+test("rejects duplicate diagram node and edge identifiers", () => {
+  const duplicatedNodes = {
+    nodes: [{ id: "router", position: { x: 0, y: 0 } }, { id: "router", position: { x: 100, y: 0 } }],
+    edges: [],
+  };
+  assert.equal(parseDiagram(duplicatedNodes), null);
+
+  const duplicatedEdges = {
+    nodes: [{ id: "router", position: { x: 0, y: 0 } }, { id: "switch", position: { x: 100, y: 0 } }],
+    edges: [
+      { id: "link-1", source: "router", target: "switch" },
+      { id: "link-2", source: "router", target: "switch" },
+    ],
+  };
+  assert.equal(parseDiagram(duplicatedEdges), null);
+});
+
+test("reports actionable diagram topology issues", () => {
+  const issues = validateDiagram({
+    nodes: [
+      { id: "router", position: { x: 0, y: 0 }, data: { label: "Router", ip: "10.0.0.1/24", vlan: "10" } },
+      { id: "server", position: { x: 100, y: 0 }, data: { label: "Server", ip: "10.0.0.1/24", vlan: "5000" } },
+    ],
+    edges: [],
+  });
+  assert.deepEqual(issues.map(issue => issue.title), [
+    "Isolated node", "Isolated node", "Duplicate IP address", "Invalid VLAN",
+  ]);
 });
