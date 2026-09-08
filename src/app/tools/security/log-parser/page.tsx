@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useRef } from "react";
 import { Play, Filter, AlertCircle, Terminal, Search, Trash2, Upload, FileText } from "lucide-react";
+import { useNotification } from "@/components/notification-provider";
 
 type LogType = "nginx_combined" | "auth_log" | "custom";
 
@@ -15,6 +16,8 @@ interface ParsedLog {
   fields: Record<string, string>;
   isError: boolean;
 }
+
+const MAX_LOG_INPUT_LENGTH = 5_000_000;
 
 const PREDEFINED_REGEX = {
   // 127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
@@ -48,13 +51,17 @@ export default function LogParser() {
   const [filterIp, setFilterIp] = useState("");
   const [showOnlyErrors, setShowOnlyErrors] = useState(false);
   
-  const [parsedData, setParsedData] = useState<{ columns: string[], rows: ParsedLog[] } | null>(null);
+  const [parsedData, setParsedData] = useState<{ columns: string[], rows: ParsedLog[], unmatched: number } | null>(null);
   
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { notify } = useNotification();
 
   const parseLogs = () => {
-    if (!rawLogs.trim()) return;
+    if (!rawLogs.trim()) {
+      notify("Paste or load log data before running the parser.", "error");
+      return;
+    }
 
     let regexStr = "";
     let columns: string[] = [];
@@ -63,6 +70,10 @@ export default function LogParser() {
     if (logType === "custom") {
       regexStr = customRegex;
       columns = customCols.split(",").map(s => s.trim());
+      if (!regexStr || columns.length === 0 || columns.some(column => !column) || new Set(columns).size !== columns.length) {
+        notify("Custom regex and unique column names are required.", "error");
+        return;
+      }
     } else {
       const conf = PREDEFINED_REGEX[logType];
       regexStr = conf.regex;
@@ -71,10 +82,15 @@ export default function LogParser() {
     }
 
     try {
+      if (regexStr.length > 2000) {
+        notify("Regex patterns are limited to 2,000 characters.", "error");
+        return;
+      }
       const regex = new RegExp(regexStr);
-      const lines = rawLogs.split("\n").filter(l => l.trim() !== "");
+      const lines = rawLogs.split(/\r?\n/).filter(l => l.trim() !== "");
       
       const rows: ParsedLog[] = [];
+      let unmatched = 0;
       
       for (const line of lines) {
         const match = line.match(regex);
@@ -89,13 +105,14 @@ export default function LogParser() {
             fields,
             isError: isErrorFn(fields)
           });
-        }
+        } else unmatched += 1;
       }
       
-      setParsedData({ columns, rows });
-    } catch (e) {
-      console.error("Invalid Regex", e);
-      alert("Invalid Regular Expression");
+      setParsedData({ columns, rows, unmatched });
+      if (!rows.length) notify("No lines matched the selected format.", "error");
+    } catch {
+      console.error("Invalid Regex");
+      notify("Invalid regular expression.", "error");
     }
   };
 
@@ -117,11 +134,19 @@ export default function LogParser() {
   }, [parsedData, showOnlyErrors, filterIp]);
 
   const handleFileUpload = (file: File) => {
+    if (file.size > MAX_LOG_INPUT_LENGTH) {
+      notify("Log files are limited to 5 MB in the browser.", "error");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      setRawLogs((prev) => (prev ? prev + "\n" + text : text));
+      setRawLogs((prev) => {
+        const next = prev ? `${prev}\n${text}` : text;
+        return next.slice(0, MAX_LOG_INPUT_LENGTH);
+      });
     };
+    reader.onerror = () => notify("Could not read the log file.", "error");
     reader.readAsText(file);
   };
 
@@ -197,7 +222,7 @@ export default function LogParser() {
               )}
               <Textarea
                 value={rawLogs}
-                onChange={(e) => setRawLogs(e.target.value)}
+                onChange={(e) => setRawLogs(e.target.value.slice(0, MAX_LOG_INPUT_LENGTH))}
                 placeholder={'127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326\nPaste your logs here, or drag & drop a .log file...'}
                 className="w-full h-[300px] p-4 font-mono text-xs bg-black border-none rounded-none focus-visible:ring-1 focus-visible:ring-[#00ff9c]/50 resize-y custom-scrollbar text-zinc-300 break-pre whitespace-pre"
                 spellCheck={false}
@@ -366,7 +391,7 @@ export default function LogParser() {
           </div>
           {parsedData && (
             <footer className="shrink-0 px-4 py-2 bg-[#050505] border-t border-[#1a1a1a] flex justify-between items-center text-[10px] font-mono text-zinc-500">
-              <span>Showing {filteredRows.length} of {parsedData.rows.length} parsed logs</span>
+              <span>Showing {filteredRows.length} of {parsedData.rows.length} parsed logs{parsedData.unmatched ? ` · ${parsedData.unmatched} unmatched` : ""}</span>
               <span>100% Offline Engine</span>
             </footer>
           )}
