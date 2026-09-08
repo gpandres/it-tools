@@ -16,7 +16,6 @@ const TACTICS: Tactic[] = [
   "Privilege Escalation",
   "Stealth",
   "Defense Impairment",
-  "Defense Evasion",
   "Credential Access",
   "Discovery",
   "Lateral Movement",
