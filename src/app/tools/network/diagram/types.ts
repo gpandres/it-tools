@@ -23,6 +23,7 @@ export type NetworkNodeData = {
   zone?: NetworkZone | string;
   status?: NetworkStatus;
   notes?: string;
+  interfaces?: string;
 };
 
 export type NetworkEdgeData = {

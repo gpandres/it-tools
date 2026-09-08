@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { ReactFlow, Controls, Background, applyNodeChanges, applyEdgeChanges, addEdge, BackgroundVariant, ReactFlowProvider, useReactFlow, getNodesBounds, getViewportForBounds, type Connection, type EdgeChange, type NodeChange } from '@xyflow/react';
+import { ReactFlow, Controls, MiniMap, Panel, Background, applyNodeChanges, applyEdgeChanges, addEdge, BackgroundVariant, ReactFlowProvider, useReactFlow, getNodesBounds, getViewportForBounds, type Connection, type EdgeChange, type NodeChange } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { toPng } from 'html-to-image';
+import { toPng, toSvg } from 'html-to-image';
 
 import { ToolLayout } from "@/components/tool-layout";
 import NetworkNodeComponent from './nodes/NetworkNode';
@@ -12,6 +12,7 @@ import Sidebar from './components/Sidebar';
 import { TEMPLATES } from './components/Templates';
 import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
 import { parseDiagram, validateDiagram } from '@/lib/diagram-validation';
+import { autoLayout } from '@/lib/diagram-layout';
 import { useNotification } from '@/components/notification-provider';
 import type { NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, DiagramSnapshot } from './types';
 
@@ -313,6 +314,63 @@ function DiagramFlow() {
     }).catch(() => notify("Could not export the diagram image.", "error"));
   };
 
+  const exportSvg = () => {
+    if (nodes.length === 0) {
+      notify('Add at least one node before exporting an SVG.', 'error');
+      return;
+    }
+
+    const nodesBounds = getNodesBounds(nodes);
+    const imageWidth = 1920;
+    const imageHeight = 1080;
+    const viewport = getViewportForBounds(nodesBounds, imageWidth, imageHeight, 0.5, 2, 0.1);
+    const element = document.querySelector('.react-flow__viewport') as HTMLElement | null;
+    if (!element) {
+      notify('The diagram canvas is not ready for export.', 'error');
+      return;
+    }
+
+    toSvg(element, {
+      backgroundColor: '#0a0a0a',
+      width: imageWidth,
+      height: imageHeight,
+      style: {
+        width: `${imageWidth}px`,
+        height: `${imageHeight}px`,
+        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+      },
+    }).then((dataUrl) => {
+      const anchor = document.createElement('a');
+      anchor.download = `network-diagram-${Date.now()}.svg`;
+      anchor.href = dataUrl;
+      anchor.click();
+    }).catch(() => notify('Could not export the diagram as SVG.', 'error'));
+  };
+
+  const exportInventory = () => {
+    const headers = ['record_type', 'id', 'name', 'type', 'source', 'target', 'ip_cidr', 'vlan', 'zone', 'status', 'role', 'vendor', 'model', 'source_port', 'target_port', 'bandwidth', 'vlan_mode', 'allowed_vlans', 'hostname_or_label'];
+    const rows: string[][] = [headers];
+    nodes.forEach(node => rows.push(['node', node.id, node.data.label, node.data.type, '', '', node.data.ip || '', node.data.vlan || '', node.data.zone || '', node.data.status || '', node.data.role || '', node.data.vendor || '', node.data.model || '', '', '', '', '', '', node.data.hostname || '']));
+    edges.forEach(edge => rows.push(['edge', edge.id, edge.data?.label || '', edge.data?.connectionType || '', edge.source, edge.target, '', '', '', '', '', '', '', edge.data?.sourcePort || '', edge.data?.targetPort || '', edge.data?.bandwidth || '', edge.data?.vlanMode || '', edge.data?.vlans || '', edge.data?.label || '']));
+
+    const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\r\n');
+    const anchor = document.createElement('a');
+    anchor.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    anchor.download = `network-inventory-${Date.now()}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(anchor.href);
+  };
+
+  const runAutoLayout = () => {
+    recordHistory();
+    const nextNodes = autoLayout(nodesRef.current, edgesRef.current);
+    nodesRef.current = nextNodes;
+    setNodes(nextNodes);
+    setTimeout(() => fitView({ padding: 0.2 }), 100);
+  };
+
+  const fitDiagram = () => fitView({ padding: 0.2 });
+
   return (
     <div className="flex w-full h-[800px] border border-[#1a1a1a] rounded-lg overflow-hidden bg-[#0a0a0a]">
       <Sidebar 
@@ -327,9 +385,13 @@ function DiagramFlow() {
         redo={redo}
         canUndo={history.length > 0}
         canRedo={future.length > 0}
+        autoLayout={runAutoLayout}
+        fitView={fitDiagram}
         validationIssues={validationIssues}
         validate={() => notify(validationIssues.length === 0 ? 'No topology issues detected.' : `${validationIssues.length} topology issue${validationIssues.length === 1 ? '' : 's'} found.`, validationIssues.some(issue => issue.severity === 'error') ? 'error' : 'info')}
         exportDiagram={exportDiagram}
+        exportSvg={exportSvg}
+        exportInventory={exportInventory}
         importDiagram={importDiagram}
         loadTemplate={loadTemplate}
         exportImage={exportImage}
@@ -353,6 +415,16 @@ function DiagramFlow() {
         >
           <Background color="#1a1a1a" variant={BackgroundVariant.Dots} gap={20} size={2} />
           <Controls style={{ backgroundColor: '#050505', border: '1px solid #1a1a1a' }} />
+          <MiniMap
+            pannable
+            zoomable
+            nodeColor={node => (node.data as { status?: string } | undefined)?.status === 'offline' ? '#ef4444' : '#00ff9c'}
+            maskColor="rgba(0, 0, 0, 0.72)"
+            style={{ backgroundColor: '#050505', border: '1px solid #1a1a1a' }}
+          />
+          <Panel position="bottom-left" className="!m-3 !rounded border border-[#1a1a1a] !bg-[#050505]/95 px-2.5 py-1.5 font-mono text-[10px] text-zinc-500">
+            <span className="text-[#00ff9c]">{nodes.length}</span> nodes · <span className="text-[#38bdf8]">{edges.length}</span> links · {validationIssues.length === 0 ? <span className="text-[#72e6b4]">topology ok</span> : <span className="text-amber-300">{validationIssues.length} issue{validationIssues.length === 1 ? '' : 's'}</span>}
+          </Panel>
         </ReactFlow>
       </div>
     </div>

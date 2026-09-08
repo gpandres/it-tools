@@ -4,6 +4,7 @@ import { calculateSubnet, calculateVlsm, isIpInNetwork, ipToInt } from "../src/l
 import { expandIPv6 } from "../src/lib/ipv6.ts";
 import { parseAclRules } from "../src/lib/acl.ts";
 import { parseDiagram, validateDiagram } from "../src/lib/diagram-validation.ts";
+import { autoLayout } from "../src/lib/diagram-layout.ts";
 
 test("rejects malformed IPv4 values instead of truncating them", () => {
   assert.throws(() => ipToInt("999.1.1.1"));
@@ -75,4 +76,17 @@ test("reports actionable diagram topology issues", () => {
   assert.deepEqual(issues.map(issue => issue.title), [
     "Isolated node", "Isolated node", "Duplicate IP address", "Invalid VLAN",
   ]);
+});
+
+test("auto layout terminates for cyclic network topologies", () => {
+  const nodes = [
+    { id: "a", position: { x: 900, y: 900 } },
+    { id: "b", position: { x: 900, y: 900 } },
+    { id: "c", position: { x: 900, y: 900 } },
+  ];
+  const edges = [{ source: "a", target: "b" }, { source: "b", target: "c" }, { source: "c", target: "a" }];
+  const result = autoLayout(nodes, edges);
+  assert.equal(result.length, nodes.length);
+  assert.ok(result.every(node => Number.isFinite(node.position.x) && Number.isFinite(node.position.y)));
+  assert.ok(result.some(node => node.position.x !== 900 || node.position.y !== 900));
 });

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToolActionButton } from "@/components/tool-action-panel";
-import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Download, FileJson, Globe2, HardDriveDownload, KeyRound, Laptop, Network, Redo2, Router, Search, Server, ServerCog, Shield, ShieldCheck, Sparkles, Undo2, Upload, Wifi, X, Zap } from 'lucide-react';
+import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Download, FileJson, Globe2, HardDriveDownload, KeyRound, Laptop, LayoutDashboard, Maximize2, Network, Redo2, Router, Search, Server, ServerCog, Shield, ShieldCheck, Sparkles, Undo2, Upload, Wifi, X, Zap } from 'lucide-react';
 import type { DiagramIssue } from '@/lib/diagram-validation';
 import type { NetworkConnectionType, NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, NetworkStatus, NetworkZone } from '../types';
 
@@ -49,15 +49,19 @@ type SidebarProps = {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  autoLayout: () => void;
+  fitView: () => void;
   validationIssues: DiagramIssue[];
   validate: () => void;
   exportDiagram: () => void;
+  exportSvg: () => void;
+  exportInventory: () => void;
   importDiagram: (file: File) => void;
   loadTemplate: (templateName: string) => void;
   exportImage: (bgColor: 'black' | 'white' | 'transparent') => void;
 };
 
-export default function Sidebar({ selectedNode, selectedEdge, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, validationIssues, validate, exportDiagram, importDiagram, loadTemplate, exportImage }: SidebarProps) {
+export default function Sidebar({ selectedNode, selectedEdge, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, autoLayout, fitView, validationIssues, validate, exportDiagram, exportSvg, exportInventory, importDiagram, loadTemplate, exportImage }: SidebarProps) {
   const [query, setQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<string[]>(['Network', 'Security', 'Compute', 'Services']);
   const filteredItems = useMemo(() => NODE_TYPES.filter(item => `${item.label} ${item.category}`.toLowerCase().includes(query.toLowerCase().trim())), [query]);
@@ -76,6 +80,8 @@ export default function Sidebar({ selectedNode, selectedEdge, updateNodeData, up
         <div className="flex items-center gap-1">
           <ToolActionButton type="button" onClick={undo} disabled={!canUndo} aria-label="Undo" title="Undo (Ctrl+Z)"><Undo2 /></ToolActionButton>
           <ToolActionButton type="button" onClick={redo} disabled={!canRedo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)"><Redo2 /></ToolActionButton>
+          <ToolActionButton type="button" onClick={autoLayout} aria-label="Auto layout" title="Auto layout"><LayoutDashboard /></ToolActionButton>
+          <ToolActionButton type="button" onClick={fitView} aria-label="Fit view" title="Fit view"><Maximize2 /></ToolActionButton>
           {(selectedNode || selectedEdge) && <ToolActionButton type="button" onClick={duplicateSelected} aria-label="Duplicate selection" title="Duplicate selection"><Sparkles /></ToolActionButton>}
           {(selectedNode || selectedEdge) && <ToolActionButton type="button" onClick={deleteSelected} tone="danger" aria-label="Delete selection" title="Delete selection (Delete)"><X /></ToolActionButton>}
         </div>
@@ -105,6 +111,7 @@ export default function Sidebar({ selectedNode, selectedEdge, updateNodeData, up
             <div className="grid grid-cols-2 gap-2"><Field label="Role"><Input value={selectedNode.data.role || ''} onChange={event => updateNodeData(selectedNode.id, { role: event.target.value })} placeholder="gateway" className="bg-black font-mono text-xs" /></Field><Field label="Vendor / model"><Input value={`${selectedNode.data.vendor || ''}${selectedNode.data.vendor && selectedNode.data.model ? ' / ' : ''}${selectedNode.data.model || ''}`} onChange={event => { const [vendor, ...model] = event.target.value.split('/'); updateNodeData(selectedNode.id, { vendor: vendor.trim(), model: model.join('/').trim() }); }} placeholder="Cisco / C9300" className="bg-black font-mono text-xs" /></Field></div>
             <div className="grid grid-cols-2 gap-2"><Field label="Zone"><select value={selectedNode.data.zone || ''} onChange={event => updateNodeData(selectedNode.id, { zone: event.target.value as NetworkZone })} className="h-8 w-full rounded-lg border border-[#1a1a1a] bg-black px-2 text-xs capitalize text-zinc-300"><option value="">Unassigned</option>{ZONES.map(zone => <option key={zone} value={zone}>{zone}</option>)}</select></Field><Field label="Status"><select value={selectedNode.data.status || 'active'} onChange={event => updateNodeData(selectedNode.id, { status: event.target.value as NetworkStatus })} className="h-8 w-full rounded-lg border border-[#1a1a1a] bg-black px-2 text-xs capitalize text-zinc-300">{STATUSES.map(status => <option key={status} value={status}>{status}</option>)}</select></Field></div>
             <Field label="Notes"><textarea value={selectedNode.data.notes || ''} onChange={event => updateNodeData(selectedNode.id, { notes: event.target.value })} placeholder="Purpose, owner, or change notes..." className="min-h-16 w-full resize-y rounded-lg border border-[#1a1a1a] bg-black px-2.5 py-2 font-mono text-xs text-zinc-300 outline-none focus:border-[#00ff9c]" /></Field>
+            <Field label="Interfaces (one per line)"><textarea value={selectedNode.data.interfaces || ''} onChange={event => updateNodeData(selectedNode.id, { interfaces: event.target.value })} placeholder="Gi1/0/1 — uplink\nGi1/0/2 — users" className="min-h-20 w-full resize-y rounded-lg border border-[#1a1a1a] bg-black px-2.5 py-2 font-mono text-xs text-zinc-300 outline-none focus:border-[#00ff9c]" /></Field>
           </div>
         </section>}
 
@@ -115,6 +122,7 @@ export default function Sidebar({ selectedNode, selectedEdge, updateNodeData, up
             <div className="grid grid-cols-2 gap-2"><Field label="Source port"><Input value={selectedEdge.data?.sourcePort || ''} onChange={event => updateEdgeData(selectedEdge.id, { sourcePort: event.target.value })} placeholder="Gi1/0/1" className="bg-black font-mono text-xs" /></Field><Field label="Target port"><Input value={selectedEdge.data?.targetPort || ''} onChange={event => updateEdgeData(selectedEdge.id, { targetPort: event.target.value })} placeholder="Gi1/0/24" className="bg-black font-mono text-xs" /></Field></div>
             <div className="grid grid-cols-2 gap-2"><Field label="Bandwidth"><Input value={selectedEdge.data?.bandwidth || ''} onChange={event => updateEdgeData(selectedEdge.id, { bandwidth: event.target.value })} placeholder="10 Gbps" className="bg-black font-mono text-xs" /></Field><Field label="VLAN mode"><select value={selectedEdge.data?.vlanMode || 'unknown'} onChange={event => updateEdgeData(selectedEdge.id, { vlanMode: event.target.value as NonNullable<NetworkEdge['data']>['vlanMode'] })} className="h-8 w-full rounded-lg border border-[#1a1a1a] bg-black px-2 text-xs text-zinc-300"><option value="unknown">Unknown</option><option value="access">Access</option><option value="trunk">Trunk</option><option value="routed">Routed</option></select></Field></div>
             <Field label="Label"><Input value={selectedEdge.data?.label || ''} onChange={event => updateEdgeData(selectedEdge.id, { label: event.target.value })} placeholder="uplink, 10G, trunk 10-20" className="bg-black font-mono text-xs" /></Field>
+            <Field label="Allowed VLANs"><Input value={selectedEdge.data?.vlans || ''} onChange={event => updateEdgeData(selectedEdge.id, { vlans: event.target.value })} placeholder="10,20,99" className="bg-black font-mono text-xs" /></Field>
           </div>
         </section>}
 
@@ -122,7 +130,7 @@ export default function Sidebar({ selectedNode, selectedEdge, updateNodeData, up
 
         <section className="border-b border-[#1a1a1a] py-4"><div className="mb-3 flex items-center justify-between"><h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Validation</h3><button type="button" onClick={validate} className="text-[10px] font-bold uppercase text-[#00ff9c] hover:text-white">Run checks</button></div>{validationIssues.length === 0 ? <div className="flex items-center gap-2 text-[10px] text-[#72e6b4]"><CheckCircle2 className="h-3.5 w-3.5" />No issues detected</div> : <div className="space-y-2">{validationIssues.slice(0, 6).map(issue => <div key={issue.id} className={`flex gap-2 text-[10px] ${issue.severity === 'error' ? 'text-red-300' : 'text-amber-300'}`}><AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" /><span><strong>{issue.title}:</strong> {issue.detail}</span></div>)}{validationIssues.length > 6 && <p className="text-[9px] text-zinc-600">+{validationIssues.length - 6} more issues</p>}</div>}</section>
 
-        <section className="py-4"><h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Export / import</h3><div className="grid grid-cols-2 gap-2"><Button onClick={() => exportImage('black')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG dark</Button><Button onClick={() => exportImage('white')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG light</Button><Button onClick={() => exportImage('transparent')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG alpha</Button><Button onClick={exportDiagram} variant="outline" size="sm" className="bg-black text-[10px] text-purple-300"><FileJson className="mr-1 h-3 w-3" />JSON</Button><Button variant="outline" size="sm" className="relative col-span-2 w-full bg-black text-[10px]"><Upload className="mr-1 h-3 w-3" />Load JSON<input type="file" accept=".json" className="absolute inset-0 cursor-pointer opacity-0" onChange={event => { const file = event.target.files?.[0]; if (file) importDiagram(file); event.currentTarget.value = ''; }} /></Button></div></section>
+        <section className="py-4"><h3 className="mb-3 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Export / import</h3><div className="grid grid-cols-2 gap-2"><Button onClick={() => exportImage('black')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG dark</Button><Button onClick={() => exportImage('white')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG light</Button><Button onClick={() => exportImage('transparent')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG alpha</Button><Button onClick={exportSvg} variant="outline" size="sm" className="bg-black text-[10px] text-[#38bdf8]"><Download className="mr-1 h-3 w-3" />SVG</Button><Button onClick={exportInventory} variant="outline" size="sm" className="bg-black text-[10px] text-amber-300"><FileJson className="mr-1 h-3 w-3" />CSV inventory</Button><Button onClick={exportDiagram} variant="outline" size="sm" className="bg-black text-[10px] text-purple-300"><FileJson className="mr-1 h-3 w-3" />JSON</Button><Button variant="outline" size="sm" className="relative col-span-2 w-full bg-black text-[10px]"><Upload className="mr-1 h-3 w-3" />Load JSON<input type="file" accept=".json" className="absolute inset-0 cursor-pointer opacity-0" onChange={event => { const file = event.target.files?.[0]; if (file) importDiagram(file); event.currentTarget.value = ''; }} /></Button></div></section>
       </div>
   </aside>
   );

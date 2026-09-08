@@ -1,5 +1,6 @@
-import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, useReactFlow } from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/react';
 import { Lock } from 'lucide-react';
+import type { NetworkEdge } from '../types';
 
 export default function NetworkEdge({
   id,
@@ -12,8 +13,8 @@ export default function NetworkEdge({
   style = {},
   markerEnd,
   data,
-  selected
-}: any) {
+  selected,
+}: EdgeProps<NetworkEdge>) {
   const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
@@ -22,8 +23,6 @@ export default function NetworkEdge({
     targetY,
     targetPosition,
   });
-
-  const { setEdges } = useReactFlow();
 
   const connType = data?.connectionType || 'ethernet';
   
@@ -57,6 +56,12 @@ export default function NetworkEdge({
     strokeWidth += 1;
   }
 
+  const metadataLabel = data?.label || [
+    data?.sourcePort && data?.targetPort ? `${data.sourcePort} → ${data.targetPort}` : '',
+    data?.bandwidth || '',
+    data?.vlanMode && data.vlanMode !== 'unknown' ? data.vlanMode : '',
+  ].filter(Boolean).join(' · ');
+
   return (
     <>
       <BaseEdge 
@@ -65,7 +70,7 @@ export default function NetworkEdge({
         style={{ ...style, stroke: strokeColor, strokeWidth, strokeDasharray, transition: 'all 0.3s' }} 
       />
       
-      {isVpn && (
+      {(isVpn || metadataLabel) && (
         <EdgeLabelRenderer>
           <div
             style={{
@@ -75,25 +80,9 @@ export default function NetworkEdge({
             }}
             className="nodrag nopan"
           >
-            <div className="bg-[#b026ff]/20 p-1 rounded-full backdrop-blur-sm border border-[#b026ff]/50">
-               <Lock className="w-3 h-3 text-[#b026ff]" />
-            </div>
-          </div>
-        </EdgeLabelRenderer>
-      )}
-
-      {data?.label && !isVpn && (
-        <EdgeLabelRenderer>
-          <div
-            style={{
-              position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              pointerEvents: 'all',
-            }}
-            className="nodrag nopan"
-          >
-            <div className="bg-black/80 px-2 py-0.5 rounded text-[10px] font-mono text-zinc-300 border border-zinc-800">
-               {data.label}
+            <div className={`flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] backdrop-blur-sm ${isVpn ? 'border-[#b026ff]/50 bg-[#b026ff]/20 text-[#d8a8ff]' : 'border-zinc-800 bg-black/80 text-zinc-300'}`}>
+              {isVpn && <Lock className="h-3 w-3 shrink-0 text-[#b026ff]" />}
+              {metadataLabel && <span>{metadataLabel}</span>}
             </div>
           </div>
         </EdgeLabelRenderer>

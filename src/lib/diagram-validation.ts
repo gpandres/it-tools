@@ -85,6 +85,19 @@ export function validateDiagram(diagram: DiagramData): DiagramIssue[] {
     if (edge.source === edge.target) {
       issues.push({ id: `edge-loop-${edge.id}`, severity: 'warning', title: 'Self-connection', detail: 'A link cannot normally connect a device to itself.' });
     }
+    const data = edge.data && typeof edge.data === 'object' ? edge.data as Record<string, unknown> : {};
+    const connectionType = readNodeString(data, 'connectionType');
+    const vlanMode = readNodeString(data, 'vlanMode');
+    const vlans = readNodeString(data, 'vlans').trim();
+    if (vlanMode === 'trunk' && !vlans) {
+      issues.push({ id: `trunk-vlans-${edge.id}`, severity: 'warning', title: 'Trunk without VLANs', detail: 'List the allowed VLANs or mark the link as unknown.' });
+    }
+    if (vlanMode === 'access' && !vlans) {
+      issues.push({ id: `access-vlan-${edge.id}`, severity: 'warning', title: 'Access link without VLAN', detail: 'Set the access VLAN for this connection.' });
+    }
+    if (!connectionType) {
+      issues.push({ id: `link-type-${edge.id}`, severity: 'warning', title: 'Connection type missing', detail: 'Choose ethernet, fiber, wireless, or VPN.' });
+    }
   }
 
   return issues;
