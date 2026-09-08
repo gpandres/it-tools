@@ -13,7 +13,7 @@ function RaidCalculatorContent() {
   const [raidLevel, setRaidLevel] = useState("5");
 
   const count = Math.max(1, parseInt(driveCount) || 1);
-  const size = parseFloat(driveSize) || 0;
+  const size = Math.max(0, parseFloat(driveSize) || 0);
 
   const getRaidSpecs = (n: number, s: number, level: RaidLevel) => {
     let usable = 0;
@@ -80,7 +80,7 @@ function RaidCalculatorContent() {
         break;
     }
 
-    const isValid = n >= minDrives && (level === "1" || level === "10" ? n % 2 === 0 : true);
+    const isValid = s > 0 && n >= minDrives && (level === "1" || level === "10" ? n % 2 === 0 : true);
 
     return { usable, faultTolerance, minDrives, readSpeed, writeSpeed, description, driveTypes, isValid };
   };
@@ -152,11 +152,13 @@ function RaidCalculatorContent() {
 
         {/* Warning if invalid */}
         {!specs.isValid && (
-          <div className="border border-red-500/50 bg-red-500/10 p-4 flex gap-3 text-red-500">
+        <div className="border border-red-500/50 bg-red-500/10 p-4 flex gap-3 text-red-500">
             <AlertTriangle className="w-5 h-5 shrink-0" />
             <div className="text-sm font-mono leading-tight">
-              RAID {raidLevel} requires a minimum of {specs.minDrives} drives
-              {(raidLevel === "1" || raidLevel === "10") ? " and an even number of drives" : ""}.
+              {size <= 0
+                ? "Capacity per drive must be greater than zero."
+                : <>RAID {raidLevel} requires a minimum of {specs.minDrives} drives
+                  {(raidLevel === "1" || raidLevel === "10") ? " and an even number of drives" : ""}.</>}
             </div>
           </div>
         )}

@@ -8,10 +8,8 @@ function RpoRtoCalculatorContent() {
   const [rpoHours, setRpoHours] = useState("24");
   const [rtoHours, setRtoHours] = useState("4");
 
-  const rpo = parseFloat(rpoHours) || 0;
-  const rto = parseFloat(rtoHours) || 0;
-
-  const totalDowntime = rpo + rto;
+  const rpo = Math.max(0, parseFloat(rpoHours) || 0);
+  const rto = Math.max(0, parseFloat(rtoHours) || 0);
 
   // Calculate dynamic widths (clamped for UI stability to prevent labels from colliding)
   const minSegment = 22; // 22% minimum width

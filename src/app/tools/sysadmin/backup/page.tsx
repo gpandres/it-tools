@@ -3,6 +3,7 @@
 import { useState, Suspense, useMemo } from "react";
 import { ToolLayout } from "@/components/tool-layout";
 import { Database, Clock, HardDrive, Info } from "lucide-react";
+import { calculateBackupMetrics } from "@/lib/backup-calculations";
 
 function BackupCalculatorContent() {
   const [dataSize, setDataSize] = useState("5");
@@ -11,20 +12,15 @@ function BackupCalculatorContent() {
   const [transferSpeed, setTransferSpeed] = useState("1");
   const [speedUnit, setSpeedUnit] = useState("Gbps");
   const [retention, setRetention] = useState("30");
+  const [efficiency, setEfficiency] = useState("80");
+  const [storageOverhead, setStorageOverhead] = useState("20");
 
-  const size = parseFloat(dataSize) || 0;
-  const rate = (parseFloat(changeRate) || 0) / 100;
-  const speed = parseFloat(transferSpeed) || 0;
-  const retDays = parseInt(retention) || 0;
-
-  // Convert size to MB
-  const sizeInMB = sizeUnit === "TB" ? size * 1024 * 1024 : size * 1024;
-  
-  // Convert speed to MB/s
-  let speedInMBps = 0;
-  if (speedUnit === "Gbps") speedInMBps = (speed * 1000) / 8; // 1 Gbps = 125 MB/s
-  else if (speedUnit === "MB/s") speedInMBps = speed;
-  else if (speedUnit === "Gbps") speedInMBps = speed * 125; 
+  const size = Math.max(0, parseFloat(dataSize) || 0);
+  const rate = Math.min(100, Math.max(0, parseFloat(changeRate) || 0)) / 100;
+  const speed = Math.max(0, parseFloat(transferSpeed) || 0);
+  const retDays = Math.max(0, parseInt(retention, 10) || 0);
+  const effectiveEfficiency = Math.min(100, Math.max(1, parseFloat(efficiency) || 1)) / 100;
+  const overhead = Math.max(0, parseFloat(storageOverhead) || 0) / 100;
 
   const getFormattedTime = (seconds: number) => {
     if (seconds <= 0 || !isFinite(seconds)) return "0s";
@@ -42,22 +38,24 @@ function BackupCalculatorContent() {
   };
 
   const calc = useMemo(() => {
-    const fullBackupMB = sizeInMB;
-    const incrementalMB = sizeInMB * rate;
-    
-    const fullTimeSec = speedInMBps > 0 ? fullBackupMB / speedInMBps : 0;
-    const incTimeSec = speedInMBps > 0 ? incrementalMB / speedInMBps : 0;
-
-    const storageNeededMB = fullBackupMB + (incrementalMB * retDays);
-    const storageNeededTB = storageNeededMB / (1024 * 1024);
-
+    const metrics = calculateBackupMetrics({
+      size,
+      sizeUnit: sizeUnit as "GB" | "TB",
+      changeRatePercent: rate * 100,
+      transferSpeed: speed,
+      speedUnit: speedUnit as "Gbps" | "MB/s",
+      retentionDays: retDays,
+      efficiencyPercent: effectiveEfficiency * 100,
+      overheadPercent: overhead * 100
+    });
     return {
-      fullTime: getFormattedTime(fullTimeSec),
-      incTime: getFormattedTime(incTimeSec),
-      storageTB: storageNeededTB.toFixed(2),
-      incSizeGB: (incrementalMB / 1024).toFixed(1)
+      fullTime: getFormattedTime(metrics.fullTimeSeconds),
+      incTime: getFormattedTime(metrics.incrementalTimeSeconds),
+      storageTB: metrics.storageNeededTB.toFixed(2),
+      recommendedStorageTB: metrics.recommendedStorageTB.toFixed(2),
+      incSizeGB: (metrics.incrementalMB / 1024).toFixed(1)
     };
-  }, [sizeInMB, rate, speedInMBps, retDays]);
+  }, [size, sizeUnit, rate, speed, speedUnit, retDays, effectiveEfficiency, overhead]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-6xl">
@@ -132,6 +130,20 @@ function BackupCalculatorContent() {
             </div>
 
             <div className="space-y-2">
+              <div className="flex justify-between items-end">
+                <label className="text-xs font-mono text-zinc-400">Effective Throughput</label>
+                <span className="text-[#00ff9c] font-mono font-bold">{efficiency}%</span>
+              </div>
+              <input
+                type="range" min="1" max="100" step="1"
+                value={efficiency}
+                onChange={(e) => setEfficiency(e.target.value)}
+                className="w-full accent-[#00ff9c]"
+              />
+              <p className="text-[10px] text-zinc-600 font-mono">Accounts for protocol overhead, storage speed and congestion.</p>
+            </div>
+
+            <div className="space-y-2">
               <label className="text-xs font-mono text-zinc-400">Retention Period (Days)</label>
               <input 
                 type="number" min="1" step="1"
@@ -141,6 +153,20 @@ function BackupCalculatorContent() {
                 placeholder="e.g. 30"
               />
               <p className="text-[10px] text-zinc-600 font-mono mt-1">Number of daily incrementals to keep alongside the Full Backup.</p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-end">
+                <label className="text-xs font-mono text-zinc-400">Storage Overhead</label>
+                <span className="text-amber-400 font-mono font-bold">{storageOverhead}%</span>
+              </div>
+              <input
+                type="range" min="0" max="50" step="5"
+                value={storageOverhead}
+                onChange={(e) => setStorageOverhead(e.target.value)}
+                className="w-full accent-amber-400"
+              />
+              <p className="text-[10px] text-zinc-600 font-mono">Reserved capacity for filesystem, metadata and operational headroom.</p>
             </div>
           </div>
         </div>
@@ -175,10 +201,18 @@ function BackupCalculatorContent() {
           </span>
         </div>
 
+        <div className="border border-amber-500/30 bg-amber-500/5 p-6 flex flex-col items-center justify-center">
+          <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Recommended Capacity</span>
+          <span className="text-3xl font-mono text-amber-300 tracking-tighter">
+            {calc.recommendedStorageTB} <span className="text-xl text-amber-500/70">TB</span>
+          </span>
+          <span className="text-xs text-zinc-600 font-mono mt-2 text-center">Includes {storageOverhead}% operational overhead.</span>
+        </div>
+
         <div className="border border-[#1a1a1a] bg-[#0a0a0a] p-4 flex gap-3 text-zinc-400 mt-auto">
           <Info className="w-5 h-5 shrink-0 text-zinc-500" />
           <p className="text-sm font-mono leading-relaxed opacity-80">
-            <strong>Note:</strong> Transfer speeds are theoretical maximums. In the real world, protocol overhead (SMB/NFS/iSCSI), disk IOPS, and network congestion usually reduce effective throughput by 10% to 20%. Consider padding your storage requirements by 20% for filesystem overhead.
+            <strong>Note:</strong> The effective throughput and recommended capacity values account for the assumptions selected above. Validate them against deduplication, compression, backup type and the retention policy used by your platform.
           </p>
         </div>
 
