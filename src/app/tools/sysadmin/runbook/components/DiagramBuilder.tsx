@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { 
   ReactFlow, 
   Controls, 
@@ -16,6 +16,9 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Runbook, RunbookStep } from './types';
 import RunbookNode from './RunbookNode';
+import { Button } from '@/components/ui/button';
+import { Download, Plus } from 'lucide-react';
+import { toPng } from 'html-to-image';
 
 interface DiagramBuilderProps {
   runbook: Runbook;
@@ -27,6 +30,8 @@ const nodeTypes = {
 };
 
 export default function DiagramBuilder({ runbook, onChange }: DiagramBuilderProps) {
+  const diagramRef = useRef<HTMLDivElement>(null);
+  const [newStepType, setNewStepType] = useState<RunbookStep['type']>('information');
   
   // Transform Runbook Steps into ReactFlow Nodes
   const initialNodes: Node[] = useMemo(() => {
@@ -159,9 +164,47 @@ export default function DiagramBuilder({ runbook, onChange }: DiagramBuilderProp
     [runbook, onChange]
   );
 
+  const addStep = () => {
+    const stepNumber = runbook.steps.length + 1;
+    const newStep: RunbookStep = {
+      id: `step-${Date.now()}`,
+      type: newStepType,
+      title: `New ${newStepType} step`,
+      description: '',
+      items: newStepType === 'checklist' ? [''] : undefined,
+      uiPosition: { x: 80 + (stepNumber % 3) * 300, y: Math.floor((stepNumber - 1) / 3) * 220 }
+    };
+    onChange({ ...runbook, steps: [...runbook.steps, newStep] });
+  };
+
+  const exportPng = async () => {
+    if (!diagramRef.current) return;
+    const dataUrl = await toPng(diagramRef.current, {
+      pixelRatio: 3,
+      cacheBust: true,
+      backgroundColor: '#0a0a0a',
+      filter: node => !node.classList?.contains('diagram-export-exclude')
+    });
+    const anchor = document.createElement('a');
+    anchor.download = `runbook-diagram-${runbook.id}.png`;
+    anchor.href = dataUrl;
+    anchor.click();
+  };
+
   return (
-    <div className="w-full h-[800px] border border-[#1a1a1a] rounded-lg overflow-hidden bg-[#0a0a0a]">
-      <ReactFlow
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border border-[#1a1a1a] bg-[#0a0a0a] p-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Add step</span>
+          <select value={newStepType} onChange={event => setNewStepType(event.target.value as RunbookStep['type'])} className="h-9 border border-[#242424] bg-black px-2 text-xs text-zinc-300 outline-none focus:border-[#00ff9c]">
+            {(['checklist', 'command', 'information', 'decision', 'warning', 'verification'] as const).map(type => <option key={type} value={type}>{type}</option>)}
+          </select>
+          <Button type="button" size="sm" onClick={addStep} className="bg-[#00ff9c] text-black hover:bg-[#00cc7a]"><Plus className="mr-2 h-3.5 w-3.5" /> Add step</Button>
+        </div>
+        <Button type="button" size="sm" variant="outline" onClick={exportPng} className="border-[#242424] bg-black text-zinc-300 hover:border-[#00ff9c] hover:text-[#00ff9c]"><Download className="mr-2 h-3.5 w-3.5" /> Export PNG</Button>
+      </div>
+      <div ref={diagramRef} id="runbook-diagram" className="h-[800px] w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]">
+        <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
@@ -173,14 +216,15 @@ export default function DiagramBuilder({ runbook, onChange }: DiagramBuilderProp
         proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={2} color="#222" />
-        <Controls className="bg-black border border-[#1a1a1a] fill-white" />
-      </ReactFlow>
+        <Controls className="diagram-export-exclude bg-black border border-[#1a1a1a] fill-white" />
+        </ReactFlow>
       
-      <div className="absolute top-4 right-4 bg-black/80 backdrop-blur p-4 rounded-lg border border-[#1a1a1a] max-w-xs z-10 pointer-events-none">
+      <div className="diagram-export-exclude absolute top-4 right-4 bg-black/80 backdrop-blur p-4 rounded-lg border border-[#1a1a1a] max-w-xs z-10 pointer-events-none">
         <h4 className="text-[#00ff9c] font-bold text-sm mb-2">Diagram Mode</h4>
         <p className="text-xs text-zinc-400">
           Drag nodes to arrange them. For "Decision" steps, you can drag the green (YES) and red (NO) handles to explicitly link them to other steps.
         </p>
+      </div>
       </div>
     </div>
   );

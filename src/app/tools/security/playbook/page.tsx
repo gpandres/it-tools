@@ -12,6 +12,8 @@ import { Runbook } from '@/app/tools/sysadmin/runbook/components/types';
 import LZString from 'lz-string';
 import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
 import { parseRunbook } from '@/lib/runbook-validation';
+import { toJpeg } from 'html-to-image';
+import { downloadRunbookPdf } from '@/lib/runbook-pdf';
 
 const PLAYBOOK_TEMPLATES: Record<string, Runbook> = {
   "Empty Playbook": {
@@ -207,6 +209,16 @@ export default function PlaybookPage() {
     dlAnchorElem.click();
   };
 
+  const exportPdf = async () => {
+    const diagram = document.getElementById('runbook-diagram');
+    const diagramImage = diagram ? await toJpeg(diagram, { pixelRatio: 2, cacheBust: true, backgroundColor: '#0a0a0a' }) : undefined;
+    downloadRunbookPdf(runbook, diagramImage ? {
+      dataUrl: diagramImage,
+      width: diagram?.clientWidth || 1200,
+      height: diagram?.clientHeight || 800
+    } : undefined);
+  };
+
   const handleShare = () => {
     const compressed = LZString.compressToBase64(JSON.stringify(runbook));
     const url = `${window.location.origin}${window.location.pathname}?s=${compressed}`;
@@ -314,6 +326,9 @@ export default function PlaybookPage() {
              </Button>
              <Button onClick={exportMarkdown} variant="outline" size="sm" className="bg-black border-[#1a1a1a]">
                <FileText className="w-4 h-4 mr-2" /> Markdown
+             </Button>
+             <Button onClick={exportPdf} variant="outline" size="sm" className="bg-black border-[#1a1a1a] text-[#ffb000] hover:border-[#ffb000]">
+               <FileText className="w-4 h-4 mr-2" /> PDF
              </Button>
            </div>
          )}
