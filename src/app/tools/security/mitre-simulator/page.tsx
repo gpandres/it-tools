@@ -1299,7 +1299,7 @@ function MitreSimulator() {
                       {isHardMode ? (
                         <div className="relative flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold text-zinc-500 flex items-center gap-1"><Shield className="w-3 h-3"/> Mitre ID</label>
-                          <input type="text" placeholder="" value={mapping[step.id].textMitre} onChange={(e) => handleTextChange(step.id, "textMitre", e.target.value)} className={`w-full bg-black border p-3 text-xs font-mono text-[#00ff9c] focus:outline-none transition-colors ${validation.isChecked && !res?.mitre ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a] focus:border-[#00ff9c]'}`} />
+                          <input type="text" autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="" value={mapping[step.id].textMitre} onChange={(e) => handleTextChange(step.id, "textMitre", e.target.value)} className={`w-full bg-black border p-3 text-xs font-mono text-[#00ff9c] focus:outline-none transition-colors ${validation.isChecked && !res?.mitre ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a] focus:border-[#00ff9c]'}`} />
                         </div>
                       ) : (
                         <div onDragOver={handleDragOver} onDrop={(e) => handleDropToSlot(e, step.id, "mitre")} className={`min-h-[60px] border-2 border-dashed flex flex-col items-center justify-center p-2 transition-colors ${mapping[step.id]?.mitre ? 'border-transparent bg-transparent p-0' : 'border-zinc-800 bg-black/50'} ${validation.isChecked && !res?.mitre ? 'border-red-500/50 bg-red-500/10' : ''}`}>
@@ -1323,7 +1323,7 @@ function MitreSimulator() {
                       {isHardMode ? (
                         <div className="relative flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold text-zinc-500 flex items-center gap-1"><Terminal className="w-3 h-3"/> Event / Telemetry</label>
-                          <input type="text" placeholder="" value={mapping[step.id].textEvent} onChange={(e) => handleTextChange(step.id, "textEvent", e.target.value)} className={`w-full bg-black border p-3 text-xs font-mono ${scenario.platform === 'Windows' ? 'text-blue-400 focus:border-blue-400' : 'text-orange-400 focus:border-orange-400'} focus:outline-none transition-colors ${validation.isChecked && !res?.event ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a]'}`} />
+                          <input type="text" autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="" value={mapping[step.id].textEvent} onChange={(e) => handleTextChange(step.id, "textEvent", e.target.value)} className={`w-full bg-black border p-3 text-xs font-mono ${scenario.platform === 'Windows' ? 'text-blue-400 focus:border-blue-400' : 'text-orange-400 focus:border-orange-400'} focus:outline-none transition-colors ${validation.isChecked && !res?.event ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a]'}`} />
                         </div>
                       ) : (
                         <div onDragOver={handleDragOver} onDrop={(e) => handleDropToSlot(e, step.id, "event")} className={`min-h-[60px] border-2 border-dashed flex flex-col items-center justify-center p-2 transition-colors ${mapping[step.id]?.event ? 'border-transparent bg-transparent p-0' : 'border-zinc-800 bg-black/50'} ${validation.isChecked && !res?.event ? 'border-red-500/50 bg-red-500/10' : ''}`}>
@@ -1387,10 +1387,10 @@ function MitreSimulator() {
                       <div key={step.id} className="border border-[#1a1a1a] bg-black/40 p-3 text-[10px] font-mono">
                         <p className="text-zinc-300 truncate">{step.description}</p>
                         <p className={result?.mitre ? 'text-[#00ff9c] mt-2' : 'text-red-400 mt-2'}>
-                          {result?.mitre ? 'MITRE OK' : `Expected MITRE: ${step.requiredMitreId}${mitre ? ` — ${mitre.name}` : ''}`}
+                          {result?.mitre ? 'MITRE OK' : isHardMode ? 'MITRE WRONG' : `Expected MITRE: ${step.requiredMitreId}${mitre ? ` — ${mitre.name}` : ''}`}
                         </p>
                         <p className={result?.event ? 'text-[#00ff9c] mt-1' : 'text-red-400 mt-1'}>
-                          {result?.event ? 'EVENT OK' : `Expected telemetry: ${step.requiredEventId}`}
+                          {result?.event ? 'EVENT OK' : isHardMode ? 'EVENT WRONG' : `Expected telemetry: ${step.requiredEventId}`}
                         </p>
                       </div>
                     );

@@ -66,6 +66,7 @@ export default function MitreLookup() {
   const tacticRefs = useRef<Record<string, HTMLElement | null>>({});
   const [expandedTechnique, setExpandedTechnique] = useState<string | null>(null);
   const [modalTechnique, setModalTechnique] = useState<MitreDef | null>(null);
+  const [referenceLimit, setReferenceLimit] = useState(5);
 
   const focusTactic = (tactic: Tactic) => {
     setFilterTactic(tactic);
@@ -94,6 +95,20 @@ export default function MitreLookup() {
       !search.trim() || `${def.id} ${def.name} ${def.description}`.toLowerCase().includes(search.toLowerCase())
     )),
   })), [search]);
+
+  const tacticCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: 0 };
+    for (const tactic of TACTICS) {
+      if (tactic === "All") continue;
+      counts[tactic] = MITRE_DB.filter(def => !hasLocalParent(def) && hasMitreTactic(def, tactic)).length;
+    }
+    counts.All = MITRE_DB.filter(def => !hasLocalParent(def)).length;
+    return counts;
+  }, []);
+
+  const visibleReferenceTechniques = filterTactic === "All"
+    ? filteredMitre.slice(0, referenceLimit)
+    : filteredMitre;
 
   return (
     <ToolLayout
@@ -133,7 +148,8 @@ export default function MitreLookup() {
                       : "bg-black border-[#1a1a1a] text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
                     }`}
                   >
-                    {tactic === "All" ? "All Tactics" : tactic}
+                    <span>{tactic === "All" ? "All Tactics" : tactic}</span>
+                    <span className="ml-auto min-w-5 rounded border border-[#1a1a1a] px-1.5 py-0.5 text-center text-[9px] font-mono text-zinc-500">{tacticCounts[tactic]}</span>
                   </button>
                 ))}
               </div>
@@ -215,7 +231,7 @@ export default function MitreLookup() {
                 )}
               </div>
             ) : (
-              filteredMitre.map((def) => {
+            visibleReferenceTechniques.map((def) => {
                 const Icon = def.icon;
                 const subtechniques = MITRE_DB.filter(child => parentIdFor(child) === def.id);
                 return (
@@ -268,6 +284,11 @@ export default function MitreLookup() {
                   </div>
                 );
               })
+            )}
+            {filterTactic === "All" && visibleReferenceTechniques.length < filteredMitre.length && (
+              <button onClick={() => setReferenceLimit(limit => limit + 5)} className="w-full border border-[#00ff9c]/30 bg-[#00ff9c]/5 px-4 py-3 text-xs font-bold uppercase tracking-widest text-[#00ff9c] transition-colors hover:border-[#00ff9c] hover:bg-[#00ff9c]/10">
+                Show more ({Math.min(5, filteredMitre.length - visibleReferenceTechniques.length)} techniques)
+              </button>
             )}
           </div>}
         </div>
