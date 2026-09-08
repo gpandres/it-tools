@@ -14,8 +14,9 @@ function MtuToolContent() {
   const [hasGre, setHasGre] = useState("false");
   const [hasIpsec, setHasIpsec] = useState("false"); // Approx 50-70 bytes, we'll use 56 bytes avg for ESP/Tunnel
 
-  const baseMtu = parseInt(baseMtuStr, 10);
-  const isValidMtu = !isNaN(baseMtu) && baseMtu > 0;
+  const parsedMtu = Number(baseMtuStr);
+  const baseMtu = Number.isInteger(parsedMtu) ? parsedMtu : 0;
+  const isValidMtu = baseMtu >= 68 && baseMtu <= 9216;
 
   let encapOverhead = 0;
   if (hasVlan === "true") encapOverhead += 4;
@@ -23,11 +24,13 @@ function MtuToolContent() {
   if (hasGre === "true") encapOverhead += 24; // 20 IP + 4 GRE
   if (hasIpsec === "true") encapOverhead += 56; // Typical ESP + New IP header
 
-  const effectiveMtu = isValidMtu ? baseMtu - encapOverhead : 0;
+  const effectiveMtu = isValidMtu ? Math.max(0, baseMtu - encapOverhead) : 0;
   
   const ipHeader = ipVer === "ipv6" ? 40 : 20;
   const tcpHeader = 20;
   const mss = effectiveMtu > (ipHeader + tcpHeader) ? effectiveMtu - ipHeader - tcpHeader : 0;
+  const minimumIpMtu = ipVer === "ipv6" ? 1280 : 68;
+  const hasInsufficientIpMtu = isValidMtu && effectiveMtu < minimumIpMtu;
 
   return (
     <ToolLayout
@@ -46,9 +49,12 @@ function MtuToolContent() {
                   type="number"
                   value={baseMtuStr}
                   onChange={(e) => setBaseMtuStr(e.target.value)}
+                  min="68"
+                  max="9216"
+                  step="1"
                   className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
                 />
-                <p className="text-xs text-zinc-500 mt-2">Standard Ethernet is 1500. Jumbo frames up to 9000.</p>
+                <p className="text-xs text-zinc-500 mt-2">Valid range: 68–9216 bytes. Standard Ethernet is 1500; jumbo frames are commonly up to 9000.</p>
               </div>
 
               <div>
@@ -103,6 +109,14 @@ function MtuToolContent() {
           </div>
         </div>
 
+        {(!isValidMtu || hasInsufficientIpMtu) && (
+          <div className="p-3 border border-amber-500/40 bg-amber-500/5 text-amber-300 text-xs font-mono">
+            {!isValidMtu
+              ? "Enter an integer MTU between 68 and 9216 bytes."
+              : `Effective MTU is below the ${ipVer === "ipv6" ? "IPv6" : "IPv4"} minimum of ${minimumIpMtu} bytes for this configuration.`}
+          </div>
+        )}
+
         {/* Results Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-6 border border-[#1a1a1a] bg-[#050505] flex flex-col items-center justify-center text-center">
@@ -126,7 +140,7 @@ function MtuToolContent() {
             {encapOverhead > 0 && (
               <div 
                 className="bg-zinc-600 flex items-center justify-center border-r border-black" 
-                style={{ width: `${(encapOverhead / baseMtu) * 100}%`, minWidth: '40px' }}
+                style={{ width: `${Math.min(100, (encapOverhead / Math.max(baseMtu, 1)) * 100)}%`, minWidth: '40px' }}
                 title={`Encap: ${encapOverhead} Bytes`}
               >
                 ENC
@@ -134,21 +148,21 @@ function MtuToolContent() {
             )}
             <div 
               className="bg-blue-500 flex items-center justify-center border-r border-black"
-              style={{ width: `${(ipHeader / baseMtu) * 100}%`, minWidth: '40px' }}
+              style={{ width: `${Math.min(100, (ipHeader / Math.max(baseMtu, 1)) * 100)}%`, minWidth: '40px' }}
               title={`IP Header: ${ipHeader} Bytes`}
             >
               IP
             </div>
             <div 
               className="bg-purple-500 flex items-center justify-center border-r border-black"
-              style={{ width: `${(tcpHeader / baseMtu) * 100}%`, minWidth: '40px' }}
+              style={{ width: `${Math.min(100, (tcpHeader / Math.max(baseMtu, 1)) * 100)}%`, minWidth: '40px' }}
               title="TCP Header: 20 Bytes"
             >
               TCP
             </div>
             <div 
               className="bg-[#00ff9c] flex items-center justify-center"
-              style={{ width: `${(mss / baseMtu) * 100}%` }}
+              style={{ width: `${Math.min(100, (mss / Math.max(baseMtu, 1)) * 100)}%` }}
               title={`TCP Payload (MSS): ${mss} Bytes`}
             >
               PAYLOAD (MSS: {mss})

@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
 import { Check, Copy } from "lucide-react";
+import { validateIp } from "@/lib/network";
 
 function NatGeneratorContent() {
   const [natType, setNatType] = useState("dnat");
@@ -22,6 +23,35 @@ function NatGeneratorContent() {
 
   const [copied, setCopied] = useState("");
 
+  const isValidPort = (value: string) => {
+    if (!/^\d+$/.test(value.trim())) return false;
+    const port = Number(value);
+    return Number.isInteger(port) && port >= 1 && port <= 65535;
+  };
+
+  const isValidNetwork = (value: string) => {
+    const input = value.trim();
+    if (input.toLowerCase() === "any") return true;
+    const parts = input.split("/");
+    if (parts.length === 1) return validateIp(parts[0]);
+    if (parts.length !== 2 || !validateIp(parts[0]) || !/^(?:0|[1-9]\d*)$/.test(parts[1])) return false;
+    const cidr = Number(parts[1]);
+    return Number.isInteger(cidr) && cidr >= 0 && cidr <= 32;
+  };
+
+  const safePublicIp = validateIp(publicIp.trim()) ? publicIp.trim() : "PUBLIC_IP";
+  const safePrivateIp = validateIp(privateIp.trim()) ? privateIp.trim() : "PRIVATE_IP";
+  const safeSnatIp = validateIp(snatIp.trim()) ? snatIp.trim() : "SNAT_IP";
+  const safePublicPort = isValidPort(publicPort) ? publicPort.trim() : "PUBLIC_PORT";
+  const safePrivatePort = isValidPort(privatePort) ? privatePort.trim() : "PRIVATE_PORT";
+  const safeSourceNetwork = isValidNetwork(srcNetwork) ? srcNetwork.trim() : "SOURCE_NETWORK";
+  const safeInterface = /^[A-Za-z0-9_.:-]+$/.test(outIface.trim()) ? outIface.trim() : "INTERFACE_NAME";
+  const hasInvalidDnatInput = safePublicIp === "PUBLIC_IP" || safePrivateIp === "PRIVATE_IP" ||
+    safePublicPort === "PUBLIC_PORT" || safePrivatePort === "PRIVATE_PORT";
+  const hasInvalidSnatInput = safeSourceNetwork === "SOURCE_NETWORK" || safeInterface === "INTERFACE_NAME" ||
+    (snatType === "src-nat" && safeSnatIp === "SNAT_IP");
+  const hasInvalidInput = natType === "dnat" ? hasInvalidDnatInput : hasInvalidSnatInput;
+
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopied(id);
@@ -30,11 +60,11 @@ function NatGeneratorContent() {
 
   const generateMikrotik = () => {
     if (natType === "dnat") {
-      return `/ip firewall nat\nadd chain=dstnat action=dst-nat to-addresses=${privateIp} to-ports=${privatePort} protocol=${protocol} dst-address=${publicIp} dst-port=${publicPort} comment="Port Forward ${publicPort} -> ${privateIp}"`;
+      return `/ip firewall nat\nadd chain=dstnat action=dst-nat to-addresses=${safePrivateIp} to-ports=${safePrivatePort} protocol=${protocol} dst-address=${safePublicIp} dst-port=${safePublicPort} comment="Port Forward ${safePublicPort} -> ${safePrivateIp}"`;
     } else {
-      let cmd = `/ip firewall nat\nadd chain=srcnat action=${snatType === "masquerade" ? "masquerade" : "src-nat"} src-address=${srcNetwork} out-interface=${outIface}`;
+      let cmd = `/ip firewall nat\nadd chain=srcnat action=${snatType === "masquerade" ? "masquerade" : "src-nat"} src-address=${safeSourceNetwork} out-interface=${safeInterface}`;
       if (snatType === "src-nat") {
-        cmd += ` to-addresses=${snatIp}`;
+        cmd += ` to-addresses=${safeSnatIp}`;
       }
       return cmd;
     }
@@ -42,24 +72,24 @@ function NatGeneratorContent() {
 
   const generateFortigate = () => {
     if (natType === "dnat") {
-      return `config firewall vip\n    edit "VIP_${publicPort}_to_${privateIp}"\n        set extip ${publicIp}\n        set mappedip "${privateIp}"\n        set extintf "any"\n        set portforward enable\n        set protocol ${protocol}\n        set extport ${publicPort}\n        set mappedport ${privatePort}\n    next\nend\n\nconfig firewall policy\n    edit 0\n        set srcintf "any"\n        set dstintf "any"\n        set srcaddr "all"\n        set dstaddr "VIP_${publicPort}_to_${privateIp}"\n        set action accept\n        set schedule "always"\n        set service "ALL"\n    next\nend`;
+      return `config firewall vip\n    edit "VIP_${safePublicPort}_to_${safePrivateIp}"\n        set extip ${safePublicIp}\n        set mappedip "${safePrivateIp}"\n        set extintf "any"\n        set portforward enable\n        set protocol ${protocol}\n        set extport ${safePublicPort}\n        set mappedport ${safePrivatePort}\n    next\nend\n\nconfig firewall policy\n    edit 0\n        set srcintf "any"\n        set dstintf "any"\n        set srcaddr "all"\n        set dstaddr "VIP_${safePublicPort}_to_${safePrivateIp}"\n        set action accept\n        set schedule "always"\n        set service "ALL"\n    next\nend`;
     } else {
       let pool = "";
       if (snatType === "src-nat") {
-        pool = `config firewall ippool\n    edit "SNAT_Pool"\n        set type overload\n        set startip ${snatIp}\n        set endip ${snatIp}\n    next\nend\n\n`;
+        pool = `config firewall ippool\n    edit "SNAT_Pool"\n        set type overload\n        set startip ${safeSnatIp}\n        set endip ${safeSnatIp}\n    next\nend\n\n`;
       }
-      return `${pool}config firewall policy\n    edit 0\n        set srcintf "any"\n        set dstintf "${outIface}"\n        set srcaddr "${srcNetwork === "any" ? "all" : srcNetwork}"\n        set dstaddr "all"\n        set action accept\n        set schedule "always"\n        set service "ALL"\n        set nat enable\n${snatType === "src-nat" ? `        set ippool enable\n        set poolname "SNAT_Pool"` : ""}\n    next\nend`;
+      return `${pool}config firewall policy\n    edit 0\n        set srcintf "any"\n        set dstintf "${safeInterface}"\n        set srcaddr "${safeSourceNetwork.toLowerCase() === "any" ? "all" : safeSourceNetwork}"\n        set dstaddr "all"\n        set action accept\n        set schedule "always"\n        set service "ALL"\n        set nat enable\n${snatType === "src-nat" ? `        set ippool enable\n        set poolname "SNAT_Pool"` : ""}\n    next\nend`;
     }
   };
 
   const generateIptables = () => {
     if (natType === "dnat") {
-      return `iptables -t nat -A PREROUTING -d ${publicIp} -p ${protocol} --dport ${publicPort} -j DNAT --to-destination ${privateIp}:${privatePort}\niptables -A FORWARD -p ${protocol} -d ${privateIp} --dport ${privatePort} -j ACCEPT`;
+      return `iptables -t nat -A PREROUTING -d ${safePublicIp} -p ${protocol} --dport ${safePublicPort} -j DNAT --to-destination ${safePrivateIp}:${safePrivatePort}\niptables -A FORWARD -p ${protocol} -d ${safePrivateIp} --dport ${safePrivatePort} -j ACCEPT`;
     } else {
       if (snatType === "masquerade") {
-        return `iptables -t nat -A POSTROUTING -s ${srcNetwork} -o ${outIface} -j MASQUERADE`;
+        return `iptables -t nat -A POSTROUTING -s ${safeSourceNetwork} -o ${safeInterface} -j MASQUERADE`;
       } else {
-        return `iptables -t nat -A POSTROUTING -s ${srcNetwork} -o ${outIface} -j SNAT --to-source ${snatIp}`;
+        return `iptables -t nat -A POSTROUTING -s ${safeSourceNetwork} -o ${safeInterface} -j SNAT --to-source ${safeSnatIp}`;
       }
     }
   };
@@ -76,6 +106,12 @@ function NatGeneratorContent() {
           <span className={`font-bold tracking-wider ${natType === "snat" ? "text-[#00ff9c]" : "text-zinc-500"}`}>SNAT / Masquerade</span>
         </label>
       </div>
+
+      {hasInvalidInput && (
+        <div className="border border-amber-500/40 bg-amber-500/5 p-3 text-amber-300 text-xs font-mono">
+          The preview uses placeholders until every IP, port, network and interface value is valid. Review the generated rule before applying it.
+        </div>
+      )}
 
       <div className="border border-[#1a1a1a] bg-[#050505] p-6 space-y-6">
         {natType === "dnat" ? (

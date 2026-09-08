@@ -11,8 +11,13 @@ function VlanToolContent() {
   const [activeTab, setActiveTab] = useState<"cisco" | "mikrotik" | "fortigate">("cisco");
   const [portMode, setPortMode] = useState<"access" | "trunk">("access");
 
-  const vlanId = parseInt(vlanIdStr, 10);
-  const isValidVlan = !isNaN(vlanId) && vlanId >= 1 && vlanId <= 4094;
+  const parsedVlanId = Number(vlanIdStr);
+  const vlanId = Number.isInteger(parsedVlanId) ? parsedVlanId : 0;
+  const parsedNativeVlan = Number(nativeVlan);
+  const nativeVlanId = Number.isInteger(parsedNativeVlan) ? parsedNativeVlan : 0;
+  const isValidVlan = vlanId >= 1 && vlanId <= 4094;
+  const isValidNativeVlan = nativeVlanId >= 1 && nativeVlanId <= 4094;
+  const safeInterface = /^[A-Za-z0-9_.:/-]+$/.test(iface.trim()) ? iface.trim() : "INTERFACE_NAME";
 
   const getVlanInfo = (id: number) => {
     if (id === 1) return { type: "Default / Native", desc: "Default VLAN on most switches (Often untagged). Cannot be deleted." };
@@ -26,18 +31,17 @@ function VlanToolContent() {
 
   const generateCisco = () => {
     if (portMode === "access") {
-      return `interface ${iface}
+      return `interface ${safeInterface}
  switchport mode access
- switchport access vlan ${vlanId}
+ switchport access vlan ${isValidVlan ? vlanId : "VLAN_ID"}
  spanning-tree portfast
  no shutdown
 exit`;
     } else {
-      return `interface ${iface}
- switchport trunk encapsulation dot1q
+      return `interface ${safeInterface}
  switchport mode trunk
- switchport trunk allowed vlan ${vlanId}
- switchport trunk native vlan ${nativeVlan}
+ switchport trunk allowed vlan ${isValidVlan ? vlanId : "VLAN_ID"}
+ switchport trunk native vlan ${isValidNativeVlan ? nativeVlanId : "NATIVE_VLAN_ID"}
  no shutdown
 exit`;
     }
@@ -46,21 +50,21 @@ exit`;
   const generateMikrotik = () => {
     if (portMode === "access") {
       return `/interface bridge port
-add bridge=bridge interface=${iface} pvid=${vlanId}
+add bridge=bridge interface=${safeInterface} pvid=${isValidVlan ? vlanId : "VLAN_ID"}
 /interface bridge vlan
-add bridge=bridge tagged=bridge untagged=${iface} vlan-ids=${vlanId}`;
+add bridge=bridge tagged=bridge untagged=${safeInterface} vlan-ids=${isValidVlan ? vlanId : "VLAN_ID"}`;
     } else {
       return `/interface bridge port
-add bridge=bridge interface=${iface}
+add bridge=bridge interface=${safeInterface}
 /interface bridge vlan
-add bridge=bridge tagged=bridge,${iface} vlan-ids=${vlanId}`;
+add bridge=bridge tagged=bridge,${safeInterface} vlan-ids=${isValidVlan ? vlanId : "VLAN_ID"}`;
     }
   };
 
   const generateFortigate = () => {
     if (portMode === "access") {
       return `config system interface
-    edit "${iface}"
+    edit "${safeInterface}"
         set vlanforward enable
     next
 end
@@ -68,18 +72,18 @@ end
 config switch-controller managed-switch
     edit "S123456789"
         config ports
-            edit "${iface}"
-                set vlan "${vlanId}"
+            edit "${safeInterface}"
+                set vlan "${isValidVlan ? vlanId : "VLAN_ID"}"
             next
         end
     next
 end`;
     } else {
       return `config system interface
-    edit "${iface}.${vlanId}"
+    edit "${safeInterface}.${isValidVlan ? vlanId : "VLAN_ID"}"
         set vdom "root"
-        set interface "${iface}"
-        set vlanid ${vlanId}
+        set interface "${safeInterface}"
+        set vlanid ${isValidVlan ? vlanId : "VLAN_ID"}
     next
 end`;
     }
@@ -134,6 +138,12 @@ end`;
             )}
           </div>
         </div>
+
+        {(!isValidVlan || (portMode === "trunk" && !isValidNativeVlan) || safeInterface === "INTERFACE_NAME") && (
+          <div className="p-3 border border-amber-500/40 bg-amber-500/5 text-amber-300 font-mono text-xs">
+            The preview uses placeholders until the VLAN IDs and interface name are valid. VLAN IDs must be integers from 1 to 4094.
+          </div>
+        )}
 
         {/* VLAN Info Banner */}
         {vlanInfo && (
