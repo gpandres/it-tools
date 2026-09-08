@@ -352,6 +352,74 @@ const CREDENTIAL_ACCESS_ENTRIES = CREDENTIAL_ACCESS_CATALOG.map(([id, name, plat
   credentialAccessEntry(id, name, platform, parentId),
 );
 
+const discoveryEntry = (id: string, name: string, platform: Platform, parentId?: string): MitreDef => ({
+  id,
+  ...(parentId ? { parentId } : {}),
+  tactic: "Discovery",
+  name,
+  description: `${name} can be used to learn about hosts, users, services, software, networks, cloud resources, or other characteristics of the environment.`,
+  example: `Investigating unexpected ${name.toLowerCase()} activity and correlating it with process, identity, and network telemetry.`,
+  icon: SearchIcon,
+  color: "text-teal-400",
+  platform,
+});
+
+const DISCOVERY_CATALOG: Array<[string, string, Platform, string?]> = [
+  ["T1087", "Account Discovery", "Cross-Platform"],
+  ["T1087.001", "Local Account", "Cross-Platform", "T1087"],
+  ["T1087.002", "Domain Account", "Windows", "T1087"],
+  ["T1087.003", "Email Account", "Cross-Platform", "T1087"],
+  ["T1087.004", "Cloud Account", "Cross-Platform", "T1087"],
+  ["T1010", "Application Window Discovery", "Windows"],
+  ["T1217", "Browser Information Discovery", "Cross-Platform"],
+  ["T1580", "Cloud Infrastructure Discovery", "Cross-Platform"],
+  ["T1538", "Cloud Service Dashboard", "Cross-Platform"],
+  ["T1526", "Cloud Service Discovery", "Cross-Platform"],
+  ["T1619", "Cloud Storage Object Discovery", "Cross-Platform"],
+  ["T1613", "Container and Resource Discovery", "Cross-Platform"],
+  ["T1622", "Debugger Evasion", "Cross-Platform"],
+  ["T1652", "Device Driver Discovery", "Cross-Platform"],
+  ["T1482", "Domain Trust Discovery", "Windows"],
+  ["T1083", "File and Directory Discovery", "Cross-Platform"],
+  ["T1615", "Group Policy Discovery", "Windows"],
+  ["T1680", "Local Storage Discovery", "Cross-Platform"],
+  ["T1654", "Log Enumeration", "Cross-Platform"],
+  ["T1046", "Network Service Discovery", "Cross-Platform"],
+  ["T1135", "Network Share Discovery", "Cross-Platform"],
+  ["T1040", "Network Sniffing", "Cross-Platform"],
+  ["T1201", "Password Policy Discovery", "Cross-Platform"],
+  ["T1120", "Peripheral Device Discovery", "Cross-Platform"],
+  ["T1069", "Permission Groups Discovery", "Cross-Platform"],
+  ["T1069.001", "Local Groups", "Cross-Platform", "T1069"],
+  ["T1069.002", "Domain Groups", "Windows", "T1069"],
+  ["T1069.003", "Cloud Groups", "Cross-Platform", "T1069"],
+  ["T1057", "Process Discovery", "Cross-Platform"],
+  ["T1012", "Query Registry", "Windows"],
+  ["T1018", "Remote System Discovery", "Cross-Platform"],
+  ["T1518", "Software Discovery", "Cross-Platform"],
+  ["T1518.001", "Security Software Discovery", "Cross-Platform", "T1518"],
+  ["T1518.002", "Backup Software Discovery", "Cross-Platform", "T1518"],
+  ["T1082", "System Information Discovery", "Cross-Platform"],
+  ["T1614", "System Location Discovery", "Cross-Platform"],
+  ["T1614.001", "System Language Discovery", "Cross-Platform", "T1614"],
+  ["T1016", "System Network Configuration Discovery", "Cross-Platform"],
+  ["T1016.001", "Internet Connection Discovery", "Cross-Platform", "T1016"],
+  ["T1016.002", "Wi-Fi Discovery", "Cross-Platform", "T1016"],
+  ["T1049", "System Network Connections Discovery", "Cross-Platform"],
+  ["T1033", "System Owner/User Discovery", "Cross-Platform"],
+  ["T1007", "System Service Discovery", "Cross-Platform"],
+  ["T1124", "System Time Discovery", "Cross-Platform"],
+  ["T1673", "Virtual Machine Discovery", "Cross-Platform"],
+  ["T1497", "Virtualization/Sandbox Evasion", "Cross-Platform"],
+  ["T1497.001", "System Checks", "Cross-Platform", "T1497"],
+  ["T1497.002", "User Activity Based Checks", "Cross-Platform", "T1497"],
+  ["T1497.003", "Time Based Checks", "Cross-Platform", "T1497"],
+];
+
+const DISCOVERY_ENTRIES = DISCOVERY_CATALOG.map(([id, name, platform, parentId]) =>
+  discoveryEntry(id, name, platform, parentId),
+);
+
 // The entries below are the remaining Enterprise Persistence objects in v19.2.
 // Names and hierarchy follow MITRE's TA0003 tactic page; descriptions are deliberately
 // concise but operational so the local reference remains usable without a remote feed.
@@ -494,7 +562,7 @@ export const MITRE_DB: MitreDef[] = [
   // Discovery
   { id: "T1016", tactic: "Discovery", name: "System Network Configuration Discovery", description: "Adversaries may look for details about the network configuration and settings.", example: "Running ipconfig /all or ip a to understand the local network.", icon: SearchIcon, color: "text-teal-400", platform: "Cross-Platform" },
   { id: "T1083", tactic: "Discovery", name: "File and Directory Discovery", description: "Adversaries may enumerate files and directories or search specific locations.", example: "Searching for documents containing the word 'confidential'.", icon: SearchIcon, color: "text-teal-400", platform: "Cross-Platform" },
-  { id: "T1069.002", tactic: "Discovery", name: "Domain Groups", description: "Adversaries may attempt to find domain-level groups and permission settings.", example: "Querying LDAP to find all members of the Domain Admins group.", icon: SearchIcon, color: "text-teal-400", platform: "Windows" },
+  { id: "T1069.002", parentId: "T1069", tactic: "Discovery", name: "Domain Groups", description: "Adversaries may attempt to find domain-level groups and permission settings.", example: "Querying LDAP to find all members of the Domain Admins group.", icon: SearchIcon, color: "text-teal-400", platform: "Windows" },
 
   // Lateral Movement
   { id: "T1021.001", tactic: "Lateral Movement", name: "Remote Desktop Protocol", description: "Adversaries may use Valid Accounts to log into a service specifically designed to accept remote connections via RDP.", example: "Using RDP to connect to a domain controller using stolen credentials.", icon: MoveHorizontal, color: "text-indigo-400", platform: "Windows" },
@@ -548,7 +616,7 @@ export const MITRE_DB: MitreDef[] = [
   ,{ id: "T1546.018", tactic: "Persistence", name: "Python Startup Hooks", description: "Adversaries may abuse .pth files, sitecustomize.py or usercustomize.py to execute code when Python starts.", example: "Placing an import statement in a site-packages .pth file to execute on interpreter startup.", icon: Anchor, color: "text-purple-400", platform: "Cross-Platform" }
   ,{ id: "T1677", tactic: "Execution", name: "Poisoned Pipeline Execution", description: "Adversaries may manipulate CI/CD processes by injecting malicious code into build workflows or referenced files.", example: "Modifying a workflow or build script to exfiltrate CI secrets or alter a released artifact.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" }
   ,{ id: "T1680", tactic: "Discovery", name: "Local Storage Discovery", description: "Adversaries may enumerate local storage, disks and volumes to profile a system or prepare follow-on activity.", example: "Enumerating disks and mounted volumes before targeting backups or encrypting data.", icon: SearchIcon, color: "text-teal-400", platform: "Cross-Platform" }
-  ,{ id: "T1518.002", tactic: "Discovery", name: "Backup Software Discovery", description: "Adversaries may identify installed backup software and configurations to shape destruction or recovery-inhibition activity.", example: "Enumerating Veeam, Acronis or system backup services before ransomware deployment.", icon: SearchIcon, color: "text-teal-400", platform: "Cross-Platform" }
+  ,{ id: "T1518.002", parentId: "T1518", tactic: "Discovery", name: "Backup Software Discovery", description: "Adversaries may identify installed backup software and configurations to shape destruction or recovery-inhibition activity.", example: "Enumerating Veeam, Acronis or system backup services before ransomware deployment.", icon: SearchIcon, color: "text-teal-400", platform: "Cross-Platform" }
   ,{ id: "T1679", tactic: "Stealth", name: "Selective Exclusion", description: "Adversaries may exclude specific files, directories or system components from encryption or tampering to evade detection or preserve operations.", example: "Skipping security-tool paths and executable files during a destructive file operation.", icon: ShieldOff, color: "text-red-300", platform: "Windows" }
   ,{ id: "T1681", tactic: "Reconnaissance", name: "Search Threat Vendor Data", description: "Adversaries may search threat-intelligence sources for information about campaigns, victims and defensive responses.", example: "Using closed or open threat reports to refine targeting and change operational behavior.", icon: SearchIcon, color: "text-sky-400", platform: "PRE" }
   ,{ id: "T1036.012", parentId: "T1036", tactic: "Stealth", name: "Browser Fingerprint", description: "Adversaries may spoof browser and system attributes to blend malicious traffic with legitimate user activity.", example: "A script sends a browser-like User-Agent inconsistent with its process lineage.", icon: ShieldOff, color: "text-red-300", platform: "Cross-Platform" }
@@ -728,6 +796,7 @@ export const MITRE_DB: MitreDef[] = [
   ,...STEALTH_ENTRIES
   ,...DEFENSE_IMPAIRMENT_ENTRIES
   ,...CREDENTIAL_ACCESS_ENTRIES
+  ,...DISCOVERY_ENTRIES
 ];
 
 // A few Stealth entries already exist because they are also part of another
@@ -791,4 +860,13 @@ const CREDENTIAL_ACCESS_SHARED_IDS = new Set([
 for (const definition of MITRE_DB) {
   if (!CREDENTIAL_ACCESS_SHARED_IDS.has(definition.id)) continue;
   definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Credential Access"]));
+}
+
+const DISCOVERY_SHARED_IDS = new Set([
+  "T1040", "T1622", "T1497", "T1497.001", "T1497.002", "T1497.003",
+]);
+
+for (const definition of MITRE_DB) {
+  if (!DISCOVERY_SHARED_IDS.has(definition.id)) continue;
+  definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Discovery"]));
 }

@@ -314,6 +314,46 @@ const VECTORS = [
     ]
   },
   {
+    name: "Discovery & Environment Mapping",
+    desc: "An enumeration exercise covering identity, endpoint, network, services, cloud and container discovery before lateral movement.",
+    windows_phases: [
+      [
+        { desc: "The operator enumerates local and domain accounts to identify privileged targets.", mitre: "T1087.002", event: "4798" },
+        { desc: "Local and domain group membership is queried for escalation paths.", mitre: "T1069.002", event: "4799" },
+      ],
+      [
+        { desc: "Running processes, installed security products and services are inventoried.", mitre: "T1057", event: "Sysmon 1" },
+        { desc: "The host's operating system, patch level and hardware are collected.", mitre: "T1082", event: "4688" },
+      ],
+      [
+        { desc: "Network configuration, connections and nearby shares are enumerated.", mitre: "T1016", event: "5156" },
+        { desc: "Remote systems and exposed services are probed for lateral movement.", mitre: "T1018", event: "5156" },
+      ],
+      [
+        { desc: "Cloud services and storage objects are listed using a management identity.", mitre: "T1526", event: "Cloud Audit" },
+        { desc: "Domain trusts and Group Policy settings are collected.", mitre: "T1482", event: "4662" },
+      ],
+    ],
+    linux_phases: [
+      [
+        { desc: "Local users, groups and the current account context are enumerated.", mitre: "T1087.001", event: "auditd EXECVE" },
+        { desc: "Processes, services and installed software are listed from the host.", mitre: "T1007", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "Interfaces, routes, connections and neighboring systems are collected.", mitre: "T1016", event: "auditd EXECVE" },
+        { desc: "Listening ports and network services are scanned before pivoting.", mitre: "T1046", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "Mounted disks and local storage capacity are enumerated before targeting data.", mitre: "T1680", event: "auditd EXECVE" },
+        { desc: "System logs are enumerated for usernames, hosts and security tooling.", mitre: "T1654", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "Container images, pods, nodes and cluster resources are listed.", mitre: "T1613", event: "auditd EXECVE" },
+        { desc: "Cloud infrastructure and storage objects are queried through APIs.", mitre: "T1580", event: "Cloud Audit" },
+      ],
+    ],
+  },
+  {
     name: "Credential Access Hunt",
     desc: "A credential-theft investigation spanning password stores, credential dumping, Kerberos abuse, MFA pressure and unsecured files.",
     windows_phases: [
