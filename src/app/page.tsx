@@ -26,7 +26,7 @@ export default function Home() {
     <div className="max-w-7xl mx-auto space-y-10">
       <header className="py-6 sm:py-10 border-b border-[#1a1a1a]">
         <p className="text-xs text-[#00ff9c] tracking-widest mb-4">/ OPERATIONS TOOLKIT</p>
-        <h1 className="text-3xl sm:text-5xl font-bold text-[#ffb000] tracking-tight">IT_TOOLS<span className="text-[#00ff9c]">_</span></h1>
+        <h1 className="text-3xl sm:text-5xl font-bold text-[#ffb000] tracking-tight">IT_TOOLS<span className="cursor-blink text-[#00ff9c]">_</span></h1>
         <p className="mt-5 max-w-2xl text-zinc-300">Your everyday workspace for networks, infrastructure and incident response.</p>
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">Local processing by default. No tracking. Tools that use network services are labelled before you open them.</p>
         <div className="mt-6 flex flex-wrap items-center gap-4 text-xs">

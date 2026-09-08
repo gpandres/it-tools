@@ -2,9 +2,9 @@
 
 import { useState, useMemo, useRef } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { Search, ExternalLink, Grid3X3 } from "lucide-react";
+import { Search, ExternalLink, Grid3X3, XCircle, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { MITRE_DB, Tactic } from "@/lib/mitre-db";
+import { hasMitreTactic, MITRE_DB, MITRE_VERSION, Tactic, MitreDef } from "@/lib/mitre-db";
 
 const TACTICS: Tactic[] = [
   "All",
@@ -51,11 +51,22 @@ function mitreHref(id: string): string {
     : `https://attack.mitre.org/techniques/${technique}/`;
 }
 
+function parentIdFor(def: MitreDef): string | undefined {
+  return def.parentId ?? (def.id.includes(".") ? def.id.split(".")[0] : undefined);
+}
+
+function hasLocalParent(def: MitreDef): boolean {
+  const parentId = parentIdFor(def);
+  return Boolean(parentId && MITRE_DB.some(parent => parent.id === parentId));
+}
+
 export default function MitreLookup() {
   const [search, setSearch] = useState("");
   const [filterTactic, setFilterTactic] = useState<Tactic>("All");
   const [view, setView] = useState<"reference" | "matrix">("reference");
   const tacticRefs = useRef<Record<string, HTMLElement | null>>({});
+  const [expandedTechnique, setExpandedTechnique] = useState<string | null>(null);
+  const [modalTechnique, setModalTechnique] = useState<MitreDef | null>(null);
 
   const focusTactic = (tactic: Tactic) => {
     setFilterTactic(tactic);
@@ -66,7 +77,8 @@ export default function MitreLookup() {
 
   const filteredMitre = useMemo(() => {
     return MITRE_DB.filter(def => {
-      if (filterTactic !== "All" && def.tactic !== filterTactic) return false;
+      if (hasLocalParent(def)) return false;
+      if (filterTactic !== "All" && !hasMitreTactic(def, filterTactic)) return false;
       if (!search.trim()) return true;
       
       const term = search.toLowerCase();
@@ -79,7 +91,7 @@ export default function MitreLookup() {
 
   const matrixColumns = useMemo(() => TACTICS.filter((tactic): tactic is Exclude<Tactic, "All"> => tactic !== "All").map((tactic) => ({
     tactic,
-    techniques: MITRE_DB.filter((def) => def.tactic === tactic && (
+    techniques: MITRE_DB.filter((def) => hasMitreTactic(def, tactic) && !hasLocalParent(def) && (
       !search.trim() || `${def.id} ${def.name} ${def.description}`.toLowerCase().includes(search.toLowerCase())
     )),
   })), [search]);
@@ -87,7 +99,7 @@ export default function MitreLookup() {
   return (
     <ToolLayout
       title="MITRE ATT&CK Reference"
-      description="Quickly search and reference common MITRE ATT&CK tactics, techniques, and procedures (TTPs)."
+      description={`Quickly search and reference MITRE ATT&CK tactics, techniques, and procedures (TTPs). Enterprise v${MITRE_VERSION}.`}
       fullWidth={view === "matrix"}
     >
       <div className={`grid grid-cols-1 gap-6 ${view === "matrix" ? "w-full max-w-none mitre-matrix" : "lg:grid-cols-12 max-w-6xl"} mx-auto`}>
@@ -175,10 +187,10 @@ export default function MitreLookup() {
                     </button>
                     <div className="p-2 space-y-2">
                       {techniques.map((def) => (
-                        <a key={def.id} href={mitreHref(def.id)} target="_blank" rel="noopener noreferrer" className="block min-w-0 overflow-hidden break-words border border-zinc-800 p-2 hover:border-[#00ff9c]/60 hover:bg-[#00ff9c]/5">
+                        <button key={def.id} onClick={() => setModalTechnique(def)} className="text-left w-full min-w-0 overflow-hidden break-words border border-zinc-800 p-2 hover:border-[#00ff9c]/60 hover:bg-[#00ff9c]/5">
                           <span className="block text-[10px] font-mono text-[#00ff9c] whitespace-normal [overflow-wrap:anywhere]">{def.id}</span>
                           <span className="block text-[11px] text-zinc-300 leading-tight whitespace-normal [overflow-wrap:anywhere]">{def.name}</span>
-                        </a>
+                        </button>
                       ))}
                       {techniques.length === 0 && <p className="p-2 text-[10px] text-zinc-700 italic">Not curated locally yet.</p>}
                     </div>
@@ -206,8 +218,9 @@ export default function MitreLookup() {
             ) : (
               filteredMitre.map((def) => {
                 const Icon = def.icon;
+                const subtechniques = MITRE_DB.filter(child => parentIdFor(child) === def.id);
                 return (
-                  <div key={def.id} className="group border border-[#1a1a1a] bg-[#050505] p-5 hover:border-[#00ff9c]/30 transition-colors">
+                  <div key={def.id} onClick={() => setModalTechnique(def)} className="group border border-[#1a1a1a] bg-[#050505] p-4 hover:border-[#00ff9c]/30 transition-colors cursor-pointer">
                     <div className="flex items-start gap-4">
                       <div className={`p-3 bg-[#1a1a1a] rounded ${def.color} group-hover:scale-110 transition-transform`}>
                         <Icon className="w-6 h-6" />
@@ -237,7 +250,7 @@ export default function MitreLookup() {
                         </div>
                       </div>
                       
-                      <a 
+                      <a onClick={(event) => event.stopPropagation()}
                         href={mitreHref(def.id)}
                         target="_blank" 
                         rel="noopener noreferrer"
@@ -247,6 +260,12 @@ export default function MitreLookup() {
                         <ExternalLink className="w-5 h-5" />
                       </a>
                     </div>
+                    {subtechniques.length > 0 && <>
+                      <button onClick={(event) => { event.stopPropagation(); setExpandedTechnique(expandedTechnique === def.id ? null : def.id); }} aria-expanded={expandedTechnique === def.id} className="mt-3 flex w-full items-center gap-2 border-t border-[#1a1a1a] pt-3 text-left text-[10px] font-bold uppercase tracking-widest text-[#00ff9c] hover:text-white"><ChevronDown className={`h-3 w-3 transition-transform ${expandedTechnique === def.id ? 'rotate-180' : ''}`} /> {expandedTechnique === def.id ? 'Hide' : 'Show'} sub-techniques ({subtechniques.length})</button>
+                      {expandedTechnique === def.id && <div className="mt-3 space-y-2 border-t border-[#1a1a1a] pt-3">
+                        {subtechniques.map(child => <button key={child.id} onClick={(event) => { event.stopPropagation(); setModalTechnique(child); }} className="w-full border border-zinc-800 bg-black p-3 text-left hover:border-[#00ff9c]/50"><span className="font-mono text-[10px] text-[#00ff9c]">{child.id}</span><span className="ml-2 text-xs text-zinc-300">{child.name}</span><span className="mt-1 block text-[11px] leading-relaxed text-zinc-500">{child.description}</span></button>)}
+                      </div>}
+                    </>}
                   </div>
                 );
               })
@@ -254,6 +273,21 @@ export default function MitreLookup() {
           </div>}
         </div>
       </div>
+      {modalTechnique && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" onClick={() => setModalTechnique(null)}>
+          <div className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto border border-[#00ff9c]/30 bg-[#050505] p-6" onClick={event => event.stopPropagation()}>
+            <button className="absolute right-4 top-4 text-zinc-500 hover:text-white" onClick={() => setModalTechnique(null)} aria-label="Close technique details"><XCircle className="w-5 h-5" /></button>
+            <p className="font-mono text-sm text-[#00ff9c]">{modalTechnique.id}</p>
+            <h2 className="mt-1 pr-8 text-xl font-bold text-zinc-200">{modalTechnique.name}</h2>
+            <p className="mt-2 text-xs uppercase tracking-widest text-zinc-500">{modalTechnique.tactic} · {modalTechnique.platform} · ATT&CK v{MITRE_VERSION}</p>
+            <p className="mt-5 text-sm leading-relaxed text-zinc-300">{modalTechnique.description}</p>
+            <div className="mt-4 border border-[#1a1a1a] bg-black p-3 text-xs text-zinc-400"><span className="font-bold text-[#ffb000]">Example: </span>{modalTechnique.example}</div>
+            <h3 className="mt-5 text-xs font-bold uppercase tracking-widest text-[#00ff9c]">Sub-techniques</h3>
+            {MITRE_DB.filter(child => parentIdFor(child) === modalTechnique.id).length === 0 ? <p className="mt-2 text-xs text-zinc-600">No local sub-techniques recorded for this parent.</p> : <div className="mt-2 space-y-2">{MITRE_DB.filter(child => parentIdFor(child) === modalTechnique.id).map(child => <button key={child.id} onClick={() => setModalTechnique(child)} className="w-full border border-[#1a1a1a] bg-black p-3 text-left hover:border-[#00ff9c]/50"><span className="font-mono text-xs text-[#00ff9c]">{child.id}</span><span className="mt-1 block text-xs text-zinc-300">{child.name}</span><span className="mt-2 block text-[11px] leading-relaxed text-zinc-500">{child.description}</span><span className="mt-2 block text-[10px] text-[#ffb000]">Example: {child.example}</span></button>)}</div>}
+            <a href={mitreHref(modalTechnique.id)} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 text-xs text-zinc-500 hover:text-[#00ff9c]">Open official MITRE page <ExternalLink className="w-3 h-3" /></a>
+          </div>
+        </div>
+      )}
     </ToolLayout>
   );
 }

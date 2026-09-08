@@ -1,0 +1,25 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { AlertTriangle, CheckCircle2, Copy, ShieldAlert } from "lucide-react";
+import { ToolLayout } from "@/components/tool-layout";
+import { scanSecrets, type SecretFinding } from "@/lib/secrets-scanner";
+
+const severityStyles = { high: "border-red-500/40 bg-red-500/10 text-red-300", medium: "border-amber-500/40 bg-amber-500/10 text-amber-300", low: "border-blue-500/40 bg-blue-500/10 text-blue-300" };
+
+export default function SecretsScannerPage() {
+  const [input, setInput] = useState(""); const [copied, setCopied] = useState(false);
+  const findings = useMemo(() => scanSecrets(input), [input]);
+  const report = useMemo(() => findings.map(f => `L${f.line} | ${f.severity.toUpperCase()} | ${f.detector} | ${f.maskedValue} | entropy ${f.entropy ?? "n/a"}\n  ${f.remediation}`).join("\n"), [findings]);
+  const copyReport = async () => { try { await navigator.clipboard.writeText(report || "No secrets detected by the local ruleset."); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { /* clipboard unavailable */ } };
+  return <ToolLayout title="Secrets Scanner" description="Detect provider tokens, private keys and high-entropy assignments locally, with redacted findings and line context.">
+    <div className="mb-4 border border-amber-500/30 bg-amber-500/5 p-3 text-xs leading-relaxed text-amber-200">Local heuristic scanner: findings are potential secrets, not proof that a credential is live. Never paste production secrets into a shared screen. Rotate a credential if exposure is possible.</div>
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.95fr)]">
+      <section className="border border-[#1a1a1a] bg-[#050505]"><header className="border-b border-[#1a1a1a] px-4 py-3"><h2 className="text-xs font-bold uppercase tracking-widest text-[#ffb000]">Source / configuration</h2><p className="mt-1 text-[11px] text-zinc-500">Supports source text, .env, YAML, JSON, logs and pasted diffs. Add <code>gitleaks:allow</code> or <code>secret-scanner:ignore</code> to an intentional test line.</p></header><textarea value={input} onChange={e => setInput(e.target.value.slice(0, 1_000_000))} spellCheck={false} placeholder={'AWS_ACCESS_KEY_ID=AKIA...\nGITHUB_TOKEN=ghp_...\nPRIVATE_KEY=...'} className="min-h-[560px] w-full resize-y bg-black p-4 font-mono text-xs leading-relaxed text-zinc-200 outline-none placeholder:text-zinc-700 focus:border-[#00ff9c]" aria-label="Secret scanner input" /><div className="border-t border-[#1a1a1a] px-4 py-2 text-[10px] text-zinc-600">{input.length.toLocaleString()} / 1,000,000 characters · analysis stays in this browser</div></section>
+      <section className="border border-[#1a1a1a] bg-[#050505]"><header className="flex items-center justify-between border-b border-[#1a1a1a] px-4 py-3"><div><h2 className="text-xs font-bold uppercase tracking-widest text-[#ffb000]">Findings</h2><p className="mt-1 text-[11px] text-zinc-500">{input ? `${findings.length} potential secret${findings.length === 1 ? "" : "s"}` : "Paste content to scan"}</p></div>{input && (findings.length ? <ShieldAlert className="h-5 w-5 text-red-400" aria-label="Potential secrets detected" /> : <CheckCircle2 className="h-5 w-5 text-[#00ff9c]" aria-label="No potential secrets detected" />)}</header>
+        <div className="space-y-3 p-4">{!input && <p className="py-8 text-center text-xs text-zinc-600">No input loaded.</p>}{input && findings.length === 0 && <p className="border border-[#00ff9c]/30 bg-[#00ff9c]/5 p-4 text-xs text-[#00ff9c]">No known patterns or sufficiently random assignments matched. This does not prove the content is secret-free.</p>}{findings.map((finding: SecretFinding) => <article key={finding.id} className={`border p-4 ${severityStyles[finding.severity]}`}><div className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wider"><span>{finding.severity}</span><span className="text-zinc-500">L{finding.line}</span><span className="break-all">{finding.detector}</span></div><code className="mt-2 block break-all text-[11px] text-zinc-200">{finding.maskedValue} {finding.entropy !== null && `(entropy ${finding.entropy})`}</code><p className="mt-2 break-all text-[11px] opacity-60">{finding.context}</p><p className="mt-2 text-[11px] leading-relaxed opacity-85"><strong>Remediation:</strong> {finding.remediation}</p></div></div></article>)}</div>
+        <div className="border-t border-[#1a1a1a] p-4"><button type="button" onClick={copyReport} disabled={!input} className="flex items-center gap-2 border border-[#242424] px-3 py-2 text-xs text-zinc-400 hover:border-[#00ff9c] hover:text-[#00ff9c] disabled:cursor-not-allowed disabled:opacity-40"><Copy className="h-3.5 w-3.5" />{copied ? "Redacted report copied" : "Copy redacted report"}</button></div>
+      </section>
+    </div>
+  </ToolLayout>;
+}

@@ -46,6 +46,10 @@ CLAUDE.md
 *.tsbuildinfo
 next-env.d.ts
 
+# local browser QA cache
+/.agent-browser/
+/.tmp-npm-cache/
+
 
 /tests
 /docs

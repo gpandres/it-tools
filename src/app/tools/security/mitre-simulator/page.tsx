@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSearchParams } from "next/navigation";
-import { MITRE_DB, MitreDef } from "@/lib/mitre-db";
+import { MITRE_DB, MITRE_VERSION, MitreDef } from "@/lib/mitre-db";
 import { WIN_EVENTS_DB, WinEventDef } from "@/lib/windows-events-db";
 import { LINUX_EVENTS_DB, LinuxEventDef } from "@/lib/linux-events-db";
 
@@ -36,8 +36,107 @@ type ModalData =
 const T = (id: string, label: string): Tile => ({ id, type: "mitre", label });
 const E = (id: string, label: string): Tile => ({ id, type: "event", label });
 
+function encodeScenario(value: unknown) {
+  const bytes = new TextEncoder().encode(JSON.stringify(value));
+  let binary = "";
+  bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeScenario(value: string) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function localSubtechniques(def: MitreDef): MitreDef[] {
+  return MITRE_DB.filter(item => item.parentId === def.id || (!item.parentId && item.id.startsWith(`${def.id}.`)));
+}
+
 // --- Procedural Generation Engine ---
 const VECTORS = [
+  {
+    name: "Persistence & Identity Abuse",
+    desc: "A persistence-focused investigation spanning autostart, services, cloud identity and authentication hooks.",
+    windows_phases: [
+      [
+        { desc: "The payload adds a Registry Run Key so it starts when the user logs on.", mitre: "T1547.001", event: "Sysmon 13" },
+        { desc: "The attacker creates a new local account for fallback access.", mitre: "T1136.001", event: "4720" },
+      ],
+      [
+        { desc: "A malicious Windows service is created to run the payload as a background process.", mitre: "T1543.003", event: "7045" },
+        { desc: "An Office template is modified to load attacker-controlled code when Word starts.", mitre: "T1137.001", event: "Sysmon 11" },
+      ],
+      [
+        { desc: "The attacker adds a second cloud role to an account they control.", mitre: "T1098.003", event: "CloudTrail IAM" },
+        { desc: "A conditional-access policy is weakened to preserve access after credential rotation.", mitre: "T1556.009", event: "Cloud Audit" },
+      ],
+      [
+        { desc: "The attacker modifies a service registry value to change the persistent executable.", mitre: "T1112", event: "Sysmon 13" },
+        { desc: "The attacker adds a PowerShell profile hook that runs at every interactive shell start.", mitre: "T1546.013", event: "4688" },
+      ]
+    ],
+    linux_phases: [
+      [
+        { desc: "A malicious systemd service is installed and enabled for persistence.", mitre: "T1543.002", event: "auditd SYSCALL" },
+        { desc: "An attacker-controlled SSH key is appended to a user's authorized_keys file.", mitre: "T1098.004", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "A shell profile is modified so every login sources an attacker-controlled command.", mitre: "T1546.004", event: "auditd SYSCALL" },
+        { desc: "A systemd timer launches a payload after the host boots.", mitre: "T1053.006", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "A malicious PAM module is registered in the authentication path.", mitre: "T1556.003", event: "auditd SYSCALL" },
+        { desc: "A container service is modified so a backdoored workload is started automatically.", mitre: "T1543.005", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "A udev rule is added to run a command when a device is connected.", mitre: "T1546.017", event: "auditd SYSCALL" },
+        { desc: "A cloud account is created for continued access to the tenant.", mitre: "T1136.003", event: "Cloud Audit" },
+      ]
+    ]
+  },
+  {
+    name: "Execution & Runtime Abuse",
+    desc: "A hands-on execution chain covering native APIs, service and scheduled execution, trusted developer utilities and container administration.",
+    windows_phases: [
+      [
+        { desc: "A signed developer utility loads an attacker-controlled build task to proxy code execution.", mitre: "T1127.001", event: "4688" },
+        { desc: "A malicious DLL is loaded through a trusted application during startup.", mitre: "T1574.001", event: "Sysmon 7" },
+      ],
+      [
+        { desc: "The operator invokes a Windows service to launch the payload under its configured account.", mitre: "T1569.002", event: "7045" },
+        { desc: "A BITS job transfers a payload and invokes it when the transfer completes.", mitre: "T1197", event: "Sysmon 1" },
+      ],
+      [
+        { desc: "The payload calls native operating-system APIs to create a process without spawning a shell.", mitre: "T1106", event: "Sysmon 1" },
+        { desc: "A scheduled task launches a script at a defined time to continue execution.", mitre: "T1053.005", event: "4698" },
+      ],
+      [
+        { desc: "An attacker uses WMI to execute a command on a Windows host.", mitre: "T1047", event: "4688" },
+        { desc: "A cloud administration command runs a script inside a managed virtual machine.", mitre: "T1651", event: "4688" },
+      ]
+    ],
+    linux_phases: [
+      [
+        { desc: "A malicious shared library is loaded by a legitimate process through the dynamic linker.", mitre: "T1574.006", event: "auditd EXECVE" },
+        { desc: "A container orchestration job starts a workload containing an attacker-controlled command.", mitre: "T1053.007", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "The operator starts a malicious systemd service through systemctl.", mitre: "T1569.003", event: "auditd EXECVE" },
+        { desc: "A systemd timer schedules a payload to run after a defined interval.", mitre: "T1053.006", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "The payload invokes native system APIs to create a process and avoid a visible shell.", mitre: "T1106", event: "auditd EXECVE" },
+        { desc: "The attacker uses a container administration API to execute a command in a running workload.", mitre: "T1609", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "A cloud automation service runs an attacker-controlled script in a managed Linux VM.", mitre: "T1651", event: "auditd EXECVE" },
+        { desc: "The attacker deploys a privileged container to execute a payload on a cluster node.", mitre: "T1610", event: "auditd EXECVE" },
+      ]
+    ]
+  },
   {
     name: "Phishing & Ransomware",
     desc: "A client-side compromise starting with a phishing email and ending in massive data encryption.",
@@ -173,6 +272,80 @@ const VECTORS = [
         { desc: "The malware adds an entry to /etc/crontab to run a reverse shell.", mitre: "T1053.003", event: "auditd SYSCALL" },
       ]
     ]
+  },
+  {
+    name: "Initial Access Entry Points",
+    desc: "A multi-vector intrusion begins with targeting, delivery and abuse of an exposed access path.",
+    windows_phases: [
+      [
+        { desc: "The attacker sends a targeted message through a third-party collaboration service.", mitre: "T1566.003", event: "4688" },
+        { desc: "The attacker sends a voice lure that convinces the victim to provide access.", mitre: "T1566.004", event: "4688" },
+      ],
+      [
+        { desc: "The attacker authenticates to an externally exposed remote service with stolen credentials.", mitre: "T1133", event: "4624" },
+        { desc: "The attacker uses a compromised cloud account to enter the organization tenant.", mitre: "T1078.004", event: "4624" },
+      ],
+      [
+        { desc: "A trusted supplier connection is used to reach the intended victim environment.", mitre: "T1199", event: "5140" },
+        { desc: "A compromised software dependency is delivered to a downstream application.", mitre: "T1195.001", event: "4688" },
+      ],
+      [
+        { desc: "The attacker exploits a weakness in an Internet-facing application.", mitre: "T1190", event: "Sysmon 3" },
+        { desc: "The attacker connects a prepared device to the target network from nearby.", mitre: "T1200", event: "4624" },
+      ]
+    ],
+    linux_phases: [
+      [
+        { desc: "The attacker sends a targeted message through a third-party collaboration service.", mitre: "T1566.003", event: "auth.log" },
+        { desc: "The attacker uses a voice lure to convince the victim to provide access.", mitre: "T1566.004", event: "auth.log" },
+      ],
+      [
+        { desc: "The attacker authenticates to an externally exposed SSH or VPN service.", mitre: "T1133", event: "auth.log" },
+        { desc: "A trusted supplier connection is used to reach the intended victim environment.", mitre: "T1199", event: "auditd USER_LOGIN" },
+      ],
+      [
+        { desc: "A compromised software dependency is delivered to a downstream application.", mitre: "T1195.001", event: "auditd EXECVE" },
+        { desc: "The attacker uses a compromised local account to enter an exposed service.", mitre: "T1078.003", event: "auth.log" },
+      ],
+      [
+        { desc: "The attacker exploits a weakness in an Internet-facing application.", mitre: "T1190", event: "auditd EXECVE" },
+        { desc: "The attacker connects a prepared device to the target wireless network.", mitre: "T1669", event: "auth.log" },
+      ]
+    ]
+  },
+  {
+    name: "DevSecOps Supply Chain",
+    desc: "A compromised dependency poisons a CI/CD pipeline, persists through Python hooks and reaches a database.",
+    windows_phases: [
+      [
+        { desc: "A developer installs a malicious package from a public registry.", mitre: "T1204.005", event: "4688" },
+        { desc: "An attacker alters a workflow referenced by a pull request to run with CI permissions.", mitre: "T1677", event: "Sysmon 11" },
+      ],
+      [
+        { desc: "The poisoned pipeline executes a container command against a build workload.", mitre: "T1059.013", event: "Sysmon 1" },
+      ],
+      [
+        { desc: "The package plants a Python startup hook for persistence on a build host.", mitre: "T1546.018", event: "Sysmon 11" },
+      ],
+      [
+        { desc: "The compromised job queries a production database for sensitive records.", mitre: "T1213.006", event: "Sysmon 3" },
+      ]
+    ],
+    linux_phases: [
+      [
+        { desc: "A developer installs a malicious package from a public registry.", mitre: "T1204.005", event: "auditd EXECVE" },
+        { desc: "An attacker modifies a CI workflow or referenced build script.", mitre: "T1677", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "The poisoned pipeline executes a container CLI command in a build job.", mitre: "T1059.013", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "The package places a .pth startup hook on the build host.", mitre: "T1546.018", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "The compromised job queries a production database for sensitive records.", mitre: "T1213.006", event: "auditd EXECVE" },
+      ]
+    ]
   }
 ];
 
@@ -199,10 +372,10 @@ const generateProceduralScenario = (): Scenario => {
   });
 
   // Decoys tailored to OS
-  const decoysMitreWin = ["T1566", "T1059.001", "T1003.001", "T1505.003", "T1486", "T1070.001", "T1021.001", "T1543.003", "T1055"];
+  const decoysMitreWin = ["T1566", "T1059.001", "T1003.001", "T1505.003", "T1486", "T1070.001", "T1021.001", "T1543.003", "T1055", "T1677", "T1059.013", "T1213.006", "T1686.003"];
   const decoysEventWin = ["Sysmon 1", "Sysmon 3", "Sysmon 10", "Sysmon 11", "Sysmon 22", "4624", "4688", "5140", "1102", "7045", "4698"];
   
-  const decoysMitreLin = ["T1566", "T1059.004", "T1003.008", "T1505.003", "T1486", "T1070.003", "T1021.004", "T1543.002", "T1548.003"];
+  const decoysMitreLin = ["T1566", "T1059.004", "T1003.008", "T1505.003", "T1486", "T1070.003", "T1021.004", "T1543.002", "T1548.003", "T1546.018", "T1059.013", "T1213.006", "T1680"];
   const decoysEventLin = ["auditd EXECVE", "auditd USER_LOGIN", "auditd USER_CMD", "auditd SYSCALL", "auth.log", "syslog", "bash_history"];
   
   const decoysMitre = isWindows ? decoysMitreWin : decoysMitreLin;
@@ -239,7 +412,8 @@ function MitreSimulator() {
   const sharedScenarioBase64 = searchParams.get("s");
 
   const [scenario, setScenario] = useState<Scenario | null>(null);
-  const [isHardMode, setIsHardMode] = useState(false);
+  const [simulatorMode, setSimulatorMode] = useState<"standard" | "hard">("standard");
+  const isHardMode = simulatorMode === "hard";
   const [showHints, setShowHints] = useState(true);
   
   // Custom Scenario Builder State
@@ -264,14 +438,14 @@ function MitreSimulator() {
     isChecked: false,
     results: {}
   });
+  const [score, setScore] = useState<number | null>(null);
+  const [attempts, setAttempts] = useState(0);
 
   useEffect(() => {
     if (sharedScenarioBase64) {
       try {
-        const decodedStr = atob(sharedScenarioBase64);
-        if (decodedStr.length > 5000) throw new Error("Payload too large");
-        
-        const decoded = JSON.parse(decodedStr);
+        if (sharedScenarioBase64.length > 12000) throw new Error("Payload too large");
+        const decoded = decodeScenario(sharedScenarioBase64);
         if (decoded && typeof decoded === "object" && typeof decoded.title === "string" && Array.isArray(decoded.steps)) {
           
           // Strict Validation
@@ -281,6 +455,7 @@ function MitreSimulator() {
           if (decoded.platform !== "Windows" && decoded.platform !== "Linux") {
              throw new Error("Invalid platform");
           }
+          if (decoded.steps.length < 1 || decoded.steps.length > 12) throw new Error("Invalid step count");
 
           const customPool: Tile[] = [];
           for (const s of decoded.steps) {
@@ -337,14 +512,16 @@ function MitreSimulator() {
     });
     setMapping(initialMapping);
     setValidation({ isChecked: false, results: {} });
+    setScore(null);
+    setAttempts(0);
   };
 
   function handleGenerateProcedural() {
     loadScenario(generateProceduralScenario());
   }
 
-  const toggleHardMode = () => {
-    setIsHardMode(!isHardMode);
+  const changeSimulatorMode = (mode: "standard" | "hard") => {
+    setSimulatorMode(mode);
     if (scenario) loadScenario(scenario);
   };
 
@@ -405,7 +582,7 @@ function MitreSimulator() {
         platform: builderPlatform,
         steps: steps
       };
-      const b64 = btoa(JSON.stringify(sc));
+      const b64 = encodeScenario(sc);
       const url = `${window.location.origin}${window.location.pathname}?s=${b64}`;
       setShareLink(url);
     } catch (err: any) {
@@ -476,7 +653,7 @@ function MitreSimulator() {
       let isMitreCorrect = false;
       let isEventCorrect = false;
       if (isHardMode) {
-        isMitreCorrect = state.textMitre.trim().toLowerCase() === step.requiredMitreId.toLowerCase();
+        isMitreCorrect = state.textMitre.trim().toUpperCase() === step.requiredMitreId.toUpperCase();
         isEventCorrect = state.textEvent.trim().toLowerCase() === step.requiredEventId.toLowerCase();
       } else {
         isMitreCorrect = state.mitre?.id.toLowerCase() === step.requiredMitreId.toLowerCase();
@@ -484,8 +661,16 @@ function MitreSimulator() {
       }
       results[step.id] = { mitre: isMitreCorrect, event: isEventCorrect };
     });
+    const correct = Object.values(results).reduce((total, result) => total + Number(result.mitre) + Number(result.event), 0);
+    setScore(Math.round((correct / (scenario.steps.length * 2)) * 100));
+    setAttempts(current => current + 1);
     setValidation({ isChecked: true, results });
   };
+
+  const missedSteps = validation.isChecked && scenario ? scenario.steps.filter(step => {
+    const result = validation.results[step.id];
+    return !result?.mitre || !result?.event;
+  }) : [];
 
   // --- Modal Openers ---
   const openInfoModalMitre = (mitreId: string) => {
@@ -523,16 +708,24 @@ function MitreSimulator() {
             {sharedScenarioBase64 && <span className="bg-purple-500/20 text-purple-400 border border-purple-500/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest">Custom Seed</span>}
           </div>
           <p className="text-zinc-400 text-xs max-w-2xl leading-relaxed mt-2"><strong className="text-zinc-300">Environment: {scenario.platform || "Unknown"}</strong> — {scenario.description}</p>
+          <p className="mt-2 text-[10px] font-mono uppercase tracking-widest text-zinc-600">MITRE ATT&CK Enterprise v{MITRE_VERSION}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+            <span>{scenario.steps.length} phases</span>
+            {score !== null && <span className={score === 100 ? "text-[#00ff9c]" : score >= 50 ? "text-amber-400" : "text-red-400"}>Score {score}%</span>}
+            {attempts > 0 && <span className="text-zinc-600">Attempt {attempts}</span>}
+            {validation.isChecked && <span className="text-zinc-600">{Object.values(validation.results).filter(result => result.mitre && result.event).length}/{scenario.steps.length} phases complete</span>}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-4 shrink-0">
           <Button onClick={() => setIsBuilderOpen(!isBuilderOpen)} variant="outline" className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 font-mono text-xs h-9">
             <Plus className="w-3 h-3 mr-2" /> Custom Scenario
           </Button>
-          <div className="flex items-center space-x-2 border-l border-[#1a1a1a] pl-4">
-            <Switch id="hard-mode" checked={isHardMode} onCheckedChange={toggleHardMode} />
-            <Label htmlFor="hard-mode" className={`font-bold font-mono text-xs uppercase tracking-widest flex items-center gap-1 ${isHardMode ? 'text-red-500' : 'text-zinc-500'}`}>
-              <Skull className="w-3 h-3" /> Hard Mode
-            </Label>
+          <div className="flex items-center gap-2 border-l border-[#1a1a1a] pl-4">
+            <Label htmlFor="simulator-mode" className={`font-bold font-mono text-xs uppercase tracking-widest flex items-center gap-1 ${isHardMode ? 'text-red-500' : 'text-zinc-500'}`}><Skull className="w-3 h-3" /> Mode</Label>
+            <select id="simulator-mode" value={simulatorMode} onChange={(event) => changeSimulatorMode(event.target.value as "standard" | "hard")} className="h-9 border border-[#1a1a1a] bg-black px-2 text-[10px] font-mono uppercase tracking-widest text-zinc-300 outline-none focus:border-[#00ff9c]">
+              <option value="standard">Training</option>
+              <option value="hard">Hard</option>
+            </select>
           </div>
           <Button onClick={handleGenerateProcedural} variant="outline" className="border-[#00ff9c]/50 text-[#00ff9c] hover:bg-[#00ff9c]/10 h-9 font-mono text-xs ml-2">
             <Shuffle className="w-3 h-3 mr-2" /> Random Incident
@@ -635,6 +828,7 @@ function MitreSimulator() {
                   {infoModalData.data.id}
                 </h3>
                 <p className="text-zinc-400 text-xs uppercase tracking-widest">{infoModalData.data.name}</p>
+                {infoModalData.type === 'mitre' && <p className="text-[10px] font-mono text-zinc-600 mt-1">ATT&CK Enterprise v{MITRE_VERSION}</p>}
               </div>
             </div>
 
@@ -665,9 +859,9 @@ function MitreSimulator() {
               </div>
 
               {infoModalData.type === 'mitre' && (
-                <div>
-                  <h4 className="text-[10px] uppercase font-bold text-zinc-500 mb-1">Example in the Wild</h4>
-                  <p className="text-sm text-[#00ff9c] leading-relaxed bg-[#00ff9c]/10 border border-[#00ff9c]/30 p-3 italic">"{(infoModalData.data as MitreDef).example}"</p>
+                <div className="space-y-4">
+                  <div><h4 className="text-[10px] uppercase font-bold text-zinc-500 mb-1">Example in the Wild</h4><p className="text-sm text-[#00ff9c] leading-relaxed bg-[#00ff9c]/10 border border-[#00ff9c]/30 p-3 italic">"{(infoModalData.data as MitreDef).example}"</p></div>
+                  <div><h4 className="text-[10px] uppercase font-bold text-zinc-500 mb-1">Sub-techniques</h4>{localSubtechniques(infoModalData.data as MitreDef).length === 0 ? <p className="text-xs text-zinc-600">No local sub-techniques recorded.</p> : <div className="space-y-2">{localSubtechniques(infoModalData.data as MitreDef).map(child => <button key={child.id} onClick={() => setInfoModalData({ type: 'mitre', data: child })} className="w-full border border-[#1a1a1a] bg-black p-3 text-left hover:border-[#00ff9c]/50"><span className="font-mono text-[10px] text-[#00ff9c]">{child.id}</span><span className="block text-xs text-zinc-300">{child.name}</span><span className="mt-2 block text-[11px] leading-relaxed text-zinc-500">{child.description}</span><span className="mt-2 block text-[10px] text-[#ffb000]">Example: {child.example}</span></button>)}</div>}</div>
                 </div>
               )}
 
@@ -746,9 +940,9 @@ function MitreSimulator() {
                       
                       {/* MITRE Area */}
                       {isHardMode ? (
-                        <div className="flex flex-col gap-2">
+                        <div className="relative flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold text-zinc-500 flex items-center gap-1"><Shield className="w-3 h-3"/> Mitre ID</label>
-                          <input type="text" placeholder="e.g. T1566" value={mapping[step.id].textMitre} onChange={(e) => handleTextChange(step.id, "textMitre", e.target.value)} className={`w-full bg-black border p-3 text-xs font-mono text-[#00ff9c] focus:outline-none transition-colors ${validation.isChecked && !res?.mitre ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a] focus:border-[#00ff9c]'}`} />
+                          <input type="text" placeholder="" value={mapping[step.id].textMitre} onChange={(e) => handleTextChange(step.id, "textMitre", e.target.value)} className={`w-full bg-black border p-3 text-xs font-mono text-[#00ff9c] focus:outline-none transition-colors ${validation.isChecked && !res?.mitre ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a] focus:border-[#00ff9c]'}`} />
                         </div>
                       ) : (
                         <div onDragOver={handleDragOver} onDrop={(e) => handleDropToSlot(e, step.id, "mitre")} className={`min-h-[60px] border-2 border-dashed flex flex-col items-center justify-center p-2 transition-colors ${mapping[step.id]?.mitre ? 'border-transparent bg-transparent p-0' : 'border-zinc-800 bg-black/50'} ${validation.isChecked && !res?.mitre ? 'border-red-500/50 bg-red-500/10' : ''}`}>
@@ -770,19 +964,19 @@ function MitreSimulator() {
 
                       {/* Event Area */}
                       {isHardMode ? (
-                        <div className="flex flex-col gap-2">
+                        <div className="relative flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold text-zinc-500 flex items-center gap-1"><Terminal className="w-3 h-3"/> Event / Telemetry</label>
-                          <input type="text" placeholder="e.g. Sysmon 1, auditd, auth.log" value={mapping[step.id].textEvent} onChange={(e) => handleTextChange(step.id, "textEvent", e.target.value)} className={`w-full bg-black border p-3 text-xs font-mono text-blue-400 focus:outline-none transition-colors ${validation.isChecked && !res?.event ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a] focus:border-blue-400'}`} />
+                          <input type="text" placeholder="" value={mapping[step.id].textEvent} onChange={(e) => handleTextChange(step.id, "textEvent", e.target.value)} className={`w-full bg-black border p-3 text-xs font-mono ${scenario.platform === 'Windows' ? 'text-blue-400 focus:border-blue-400' : 'text-orange-400 focus:border-orange-400'} focus:outline-none transition-colors ${validation.isChecked && !res?.event ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a]'}`} />
                         </div>
                       ) : (
                         <div onDragOver={handleDragOver} onDrop={(e) => handleDropToSlot(e, step.id, "event")} className={`min-h-[60px] border-2 border-dashed flex flex-col items-center justify-center p-2 transition-colors ${mapping[step.id]?.event ? 'border-transparent bg-transparent p-0' : 'border-zinc-800 bg-black/50'} ${validation.isChecked && !res?.event ? 'border-red-500/50 bg-red-500/10' : ''}`}>
                           {mapping[step.id]?.event ? (
-                            <div draggable onDragStart={(e) => handleDragStart(e, mapping[step.id].event!, "step", step.id, "event")} className={`w-full bg-[#1a1a1a] border border-blue-400/50 p-3 flex items-center justify-between cursor-grab active:cursor-grabbing hover:bg-[#2a2a2a]`}>
+                            <div draggable onDragStart={(e) => handleDragStart(e, mapping[step.id].event!, "step", step.id, "event")} className={`w-full bg-[#1a1a1a] border p-3 flex items-center justify-between cursor-grab active:cursor-grabbing hover:bg-[#2a2a2a] ${scenario.platform === 'Windows' ? 'border-blue-400/50' : 'border-orange-400/50'}`}>
                               <div className="flex items-center gap-2 overflow-hidden">
-                                <Terminal className="w-4 h-4 text-blue-400 shrink-0" />
-                                <span className="text-xs font-mono text-blue-400 truncate">{mapping[step.id].event!.label}</span>
+                                <Terminal className={`w-4 h-4 shrink-0 ${scenario.platform === 'Windows' ? 'text-blue-400' : 'text-orange-400'}`} />
+                                <span className={`text-xs font-mono truncate ${scenario.platform === 'Windows' ? 'text-blue-400' : 'text-orange-400'}`}>{mapping[step.id].event!.label}</span>
                               </div>
-                              <button onClick={() => openInfoModalEvent(mapping[step.id].event!.id)} className="p-1 hover:bg-blue-400/20 text-blue-400/50 hover:text-blue-400 transition-colors rounded shrink-0">
+                              <button onClick={() => openInfoModalEvent(mapping[step.id].event!.id)} className={`p-1 transition-colors rounded shrink-0 ${scenario.platform === 'Windows' ? 'hover:bg-blue-400/20 text-blue-400/50 hover:text-blue-400' : 'hover:bg-orange-400/20 text-orange-400/50 hover:text-orange-400'}`}>
                                 <Info className="w-4 h-4" />
                               </button>
                             </div>
@@ -811,6 +1005,43 @@ function MitreSimulator() {
               Verify Incident Report <Play className="w-4 h-4 ml-2 fill-black" />
             </Button>
           </div>
+
+          {validation.isChecked && (
+            <div className={`border p-4 ${score === 100 ? 'border-[#00ff9c]/40 bg-[#00ff9c]/5' : 'border-amber-400/30 bg-amber-400/5'}`}>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className={`text-xs font-bold uppercase tracking-widest ${score === 100 ? 'text-[#00ff9c]' : 'text-amber-400'}`}>
+                    {score === 100 ? 'Incident mapped correctly' : 'Debrief required'}
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
+                    {score === 100
+                      ? 'Every phase has a matching MITRE technique and telemetry source.'
+                      : `${missedSteps.length} phase${missedSteps.length === 1 ? '' : 's'} still needs review. Use the red markers in the timeline to correct the mapping.`}
+                  </p>
+                </div>
+                <span className="text-2xl font-bold font-mono text-zinc-200">{score}%</span>
+              </div>
+              {missedSteps.length > 0 && (
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {missedSteps.map(step => {
+                    const result = validation.results[step.id];
+                    const mitre = MITRE_DB.find(item => item.id.toLowerCase() === step.requiredMitreId.toLowerCase());
+                    return (
+                      <div key={step.id} className="border border-[#1a1a1a] bg-black/40 p-3 text-[10px] font-mono">
+                        <p className="text-zinc-300 truncate">{step.description}</p>
+                        <p className={result?.mitre ? 'text-[#00ff9c] mt-2' : 'text-red-400 mt-2'}>
+                          {result?.mitre ? 'MITRE OK' : `Expected MITRE: ${step.requiredMitreId}${mitre ? ` — ${mitre.name}` : ''}`}
+                        </p>
+                        <p className={result?.event ? 'text-[#00ff9c] mt-1' : 'text-red-400 mt-1'}>
+                          {result?.event ? 'EVENT OK' : `Expected telemetry: ${step.requiredEventId}`}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right: Tile Inventory (Hidden in Hard Mode) */}
