@@ -15,6 +15,8 @@ import { parseRunbook } from '@/lib/runbook-validation';
 import RunbookPdfExport from '@/app/tools/sysadmin/runbook/components/RunbookPdfExport';
 import { ToolActionButton, ToolActionPanel } from '@/components/tool-action-panel';
 import { useNotification } from '@/components/notification-provider';
+import { createEvidenceBundle } from '@/lib/evidence-bundle';
+import { downloadTextFile, safeDownloadName } from '@/lib/browser-download';
 
 const PLAYBOOK_TEMPLATES: Record<string, Runbook> = {
   "Empty Playbook": {
@@ -211,6 +213,25 @@ export default function PlaybookPage() {
     dlAnchorElem.click();
   };
 
+  const exportEvidenceBundle = () => {
+    const stepSummary = runbook.steps.map((step, index) => {
+      const body = step.description || step.content || "";
+      const command = step.command ? `\nCommand: ${step.command}` : "";
+      return `${index + 1}. [${step.type.toUpperCase()}] ${step.title}\n${body}${command}`.trim();
+    }).join("\n\n");
+    const bundle = createEvidenceBundle({
+      source: "playbook",
+      title: runbook.title || "Imported Playbook",
+      description: runbook.description || "Security workflow exported locally for investigation.",
+      iocs: [],
+      timeline: [],
+      findings: `## Playbook Workflow\n${stepSummary || "No steps defined."}`,
+      artifacts: [{ name: "Workflow metadata", detail: `${runbook.steps.length} steps and ${runbook.variables.length} variables from ${runbook.id}.` }]
+    });
+    downloadTextFile(JSON.stringify(bundle, null, 2), `playbook-${safeDownloadName(runbook.id, "workflow")}.evidence.json`, "application/json;charset=utf-8");
+    notify("Evidence bundle exported for Investigation.");
+  };
+
   const handleShare = () => {
     const compressed = LZString.compressToBase64(JSON.stringify(runbook));
     const url = `${window.location.origin}${window.location.pathname}?s=${compressed}`;
@@ -318,6 +339,9 @@ export default function PlaybookPage() {
               </ToolActionButton>
               <ToolActionButton onClick={exportMarkdown} variant="outline">
                 <FileText className="w-4 h-4 mr-2" /> Markdown
+              </ToolActionButton>
+              <ToolActionButton onClick={exportEvidenceBundle} variant="outline">
+                <FileText className="w-4 h-4 mr-2" /> Evidence Bundle
               </ToolActionButton>
               <RunbookPdfExport runbook={runbook} />
             </ToolActionPanel>

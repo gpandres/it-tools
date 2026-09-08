@@ -3,7 +3,10 @@
 import { ToolLayout } from "@/components/tool-layout";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useRef } from "react";
-import { Search, ShieldAlert, Cpu, Clock, Activity, ArrowLeftRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ShieldAlert, Cpu, Clock, Activity, ArrowLeftRight, ChevronLeft, ChevronRight, FileJson } from "lucide-react";
+import { useNotification } from "@/components/notification-provider";
+import { createEvidenceBundle } from "@/lib/evidence-bundle";
+import { downloadTextFile, safeDownloadName } from "@/lib/browser-download";
 
 interface ParsedPacket {
   id: number;
@@ -34,6 +37,7 @@ export default function PcapViewer() {
   
   const [packets, setPackets] = useState<ParsedPacket[]>([]);
   const [globalHeader, setGlobalHeader] = useState<{ magic: string, version: string, linkType: number } | null>(null);
+  const [captureName, setCaptureName] = useState("capture.pcap");
   
   const [selectedPacketId, setSelectedPacketId] = useState<number | null>(null);
   const [filterQuery, setFilterQuery] = useState("");
@@ -42,6 +46,7 @@ export default function PcapViewer() {
   const [timeFormat, setTimeFormat] = useState<"unix" | "local">("unix");
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 250;
+  const { notify } = useNotification();
 
   const selectedPacket = useMemo(() => {
     if (selectedPacketId === null) return null;
@@ -243,6 +248,7 @@ export default function PcapViewer() {
       setErrorMsg("Choose a standard .pcap file.");
       return;
     }
+    setCaptureName(file.name);
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
@@ -294,6 +300,44 @@ export default function PcapViewer() {
     }
     const d = new Date(tsSec * 1000);
     return `${d.toLocaleDateString()} ${d.toLocaleTimeString()}.${tsUsec.toString().padStart(6, '0')}`;
+  };
+
+  const exportEvidenceBundle = () => {
+    if (packets.length === 0) return;
+    const seenIps = new Set<string>();
+    const iocs = [...(analytics?.topSrcIps ?? []), ...(analytics?.topDstIps ?? [])]
+      .map(([value]) => value)
+      .filter(value => /^\d{1,3}(?:\.\d{1,3}){3}$/.test(value) && !seenIps.has(value) && seenIps.add(value))
+      .map(value => ({ type: "ip" as const, value, tag: "unknown" as const, notes: "Observed in PCAP traffic." }));
+    const ordered = [...packets].sort((a, b) => a.tsSec - b.tsSec || a.tsUsec - b.tsUsec);
+    const first = ordered[0];
+    const last = ordered[ordered.length - 1];
+    const timeline: Array<{ timestamp: string; description: string; source: string }> = first ? [{
+      timestamp: new Date(first.tsSec * 1000 + Math.floor(first.tsUsec / 1000)).toISOString(),
+      description: `Capture contains ${packets.length.toLocaleString()} parsed packets.`,
+      source: captureName
+    }] : [];
+    if (last && first && (last.tsSec !== first.tsSec || last.tsUsec !== first.tsUsec)) {
+      timeline.push({
+        timestamp: new Date(last.tsSec * 1000 + Math.floor(last.tsUsec / 1000)).toISOString(),
+        description: `Last parsed packet observed (${last.protocolName}, ${last.origLen} bytes).`,
+        source: captureName
+      });
+    }
+    const bundle = createEvidenceBundle({
+      source: "pcap",
+      title: `PCAP analysis: ${captureName}`,
+      description: "Network capture evidence exported locally for investigation.",
+      iocs,
+      timeline,
+      findings: `## Capture Summary\n- Packets parsed: ${packets.length.toLocaleString()}\n- Protocols: ${analytics?.topProtos.map(([protocol, count]) => `${protocol} (${count})`).join(", ") || "Not available"}`,
+      artifacts: [{
+        name: "Capture metadata",
+        detail: `${globalHeader ? `PCAP ${globalHeader.version}, link type ${globalHeader.linkType}` : "PCAP"}; ${iocs.length} top IPv4 indicators exported.`
+      }]
+    });
+    downloadTextFile(JSON.stringify(bundle, null, 2), `${safeDownloadName(captureName.replace(/\.pcap$/i, ""), "capture")}.evidence.json`, "application/json;charset=utf-8");
+    notify("PCAP evidence bundle exported for Investigation.");
   };
 
   return (
@@ -368,7 +412,14 @@ export default function PcapViewer() {
                       className="bg-transparent border-none text-xs font-mono text-zinc-300 w-40 px-2 py-1.5 focus:outline-none placeholder:text-zinc-600"
                     />
                   </div>
-                  <Button 
+                  <Button
+                    variant="ghost" size="sm"
+                    onClick={exportEvidenceBundle}
+                    className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 border border-[#1a1a1a]"
+                  >
+                    <FileJson className="mr-1 h-3 w-3" /> Bundle
+                  </Button>
+                  <Button
                     variant="ghost" size="sm"
                     onClick={() => { setPackets([]); setSelectedPacketId(null); setFilterQuery(""); setGlobalHeader(null); setErrorMsg(""); }}
                     className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-red-400 hover:bg-red-950/20 border border-[#1a1a1a]"

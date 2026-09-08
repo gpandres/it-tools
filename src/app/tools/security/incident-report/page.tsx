@@ -10,6 +10,9 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { Copy, Download, FileJson, CheckCircle2, FileText, ClipboardList, ShieldAlert, X, FileUp, Palette, FileSearch } from "lucide-react";
 import { PdfMakeScripts } from "@/components/pdfmake-scripts";
 import { downloadPdfWithPdfMake } from "@/lib/pdfmake-export";
+import { useNotification } from "@/components/notification-provider";
+import { createEvidenceBundle } from "@/lib/evidence-bundle";
+import { downloadTextFile, safeDownloadName } from "@/lib/browser-download";
 
 type IncidentSeverity = "Informational" | "Low" | "Medium" | "High" | "Critical";
 type IncidentStatus = "Open" | "Investigating" | "Contained" | "Resolved" | "Closed";
@@ -142,6 +145,7 @@ export default function IncidentReportTool() {
   const [copied, setCopied] = useState(false);
   const [theme, setTheme] = useState<PdfTheme>("Modern");
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const { notify } = useNotification();
 
   const updateField = (field: keyof IncidentReport, value: string) => {
     setReport(prev => ({ ...prev, [field]: value as any }));
@@ -443,25 +447,56 @@ export default function IncidentReportTool() {
   };
 
   const handleCopyMarkdown = async () => {
-    await navigator.clipboard.writeText(generateMarkdown());
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(generateMarkdown());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      notify("Markdown copied to clipboard.");
+    } catch {
+      notify("Clipboard access is unavailable in this browser.", "error");
+    }
   };
 
   const handleExportJSON = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(report, null, 2));
-    const a = document.createElement('a');
-    a.href = dataStr;
-    a.download = `incident-${report.id || report.date}.json`;
-    a.click();
+    downloadTextFile(JSON.stringify(report, null, 2), `incident-${safeDownloadName(report.id || report.date, "report")}.json`, "application/json;charset=utf-8");
+    notify("Incident report exported as JSON.");
   };
 
   const handleExportTXT = () => {
-    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(generateMarkdown());
-    const a = document.createElement('a');
-    a.href = dataStr;
-    a.download = `incident-${report.id || report.date}.txt`;
-    a.click();
+    downloadTextFile(generateMarkdown(), `incident-${safeDownloadName(report.id || report.date, "report")}.txt`);
+    notify("Incident report exported as text.");
+  };
+
+  const handleExportBundle = () => {
+    const timeline = parsedTimeline.events.map(event => {
+      const time = event.time.replace(/[\[\]]/g, "").trim();
+      const timestamp = /^\d{2}:\d{2}(?::\d{2})?$/.test(time)
+        ? `${report.date || new Date().toISOString().slice(0, 10)}T${time.length === 5 ? `${time}:00` : time}`
+        : time;
+      return { timestamp, description: event.text, source: "Incident Report" };
+    });
+    const findings = [
+      report.summary && `## Summary\n${report.summary}`,
+      report.rootCause && `## Root Cause\n${report.rootCause}`,
+      report.resolution && `## Resolution\n${report.resolution}`,
+      report.actionsTaken && `## Actions Taken\n${report.actionsTaken}`,
+      report.recommendations && `## Recommendations\n${report.recommendations}`,
+      parsedTimeline.undated.length > 0 && `## Undated Notes\n${parsedTimeline.undated.map(note => `- ${note}`).join("\n")}`
+    ].filter(Boolean).join("\n\n");
+    const artifacts = report.affectedSystems.trim()
+      ? [{ name: "Affected systems", detail: report.affectedSystems.split("\n").filter(Boolean).join(", ") }]
+      : [];
+    const bundle = createEvidenceBundle({
+      source: "incident-report",
+      title: report.title || "Imported Incident",
+      description: report.summary || "Incident report evidence bundle.",
+      iocs: [],
+      timeline,
+      findings,
+      artifacts
+    });
+    downloadTextFile(JSON.stringify(bundle, null, 2), `incident-${safeDownloadName(report.id || report.date, "report")}.evidence.json`, "application/json;charset=utf-8");
+    notify("Evidence bundle exported for Investigation.");
   };
 
   return (
@@ -666,6 +701,9 @@ export default function IncidentReportTool() {
                 </Button>
                 <Button onClick={handleExportJSON} variant="ghost" size="icon" className="h-8 w-8 hover:bg-[#1a1a1a] hover:text-white" title="Download JSON">
                   <FileJson className="w-4 h-4 text-zinc-500" />
+                </Button>
+                <Button onClick={handleExportBundle} variant="ghost" size="icon" className="h-8 w-8 hover:bg-[#1a1a1a] hover:text-white" title="Export evidence bundle">
+                  <FileSearch className="w-4 h-4 text-zinc-500" />
                 </Button>
               </div>
             </div>

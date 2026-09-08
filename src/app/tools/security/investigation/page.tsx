@@ -15,6 +15,7 @@ import Findings from './components/Findings';
 import { parseInvestigationCase } from '@/lib/investigation-validation';
 import { useNotification } from '@/components/notification-provider';
 import { downloadTextFile, safeDownloadName } from '@/lib/browser-download';
+import { createEvidenceBundle, investigationFromEvidenceBundle, parseEvidenceBundle } from '@/lib/evidence-bundle';
 
 export default function InvestigationWorkspace() {
   const [cases, setCases] = useState<InvestigationCase[]>([]);
@@ -119,6 +120,20 @@ export default function InvestigationWorkspace() {
     notify("Investigation exported as JSON.");
   };
 
+  const exportEvidenceBundle = () => {
+    if (!activeCase) return;
+    const bundle = createEvidenceBundle({
+      source: "investigation",
+      title: activeCase.title,
+      description: activeCase.description,
+      iocs: activeCase.iocs.map(({ type, value, tag, notes }) => ({ type, value, tag, ...(notes ? { notes } : {}) })),
+      timeline: activeCase.timeline.map(({ timestamp, description, source }) => ({ timestamp, description, ...(source ? { source } : {}) })),
+      findings: activeCase.findings
+    });
+    downloadTextFile(JSON.stringify(bundle, null, 2), `investigation-${safeDownloadName(activeCase.title, 'case')}.evidence.json`, "application/json;charset=utf-8");
+    notify("Evidence bundle exported.");
+  };
+
   const importJSON = (file: File) => {
     if (file.size > 2_000_000) {
       notify("Investigation JSON is too large (maximum 2 MB).", "error");
@@ -129,7 +144,8 @@ export default function InvestigationWorkspace() {
       try {
         const content = e.target?.result as string;
         if (content.length > 2_000_000) throw new Error("Investigation file is too large");
-        const parsed = parseInvestigationCase(JSON.parse(content));
+        const source = JSON.parse(content) as unknown;
+        const parsed = parseInvestigationCase(source);
         if (parsed) {
           // Regenerate ID to prevent collisions if imported multiple times
           parsed.id = crypto.randomUUID();
@@ -139,7 +155,16 @@ export default function InvestigationWorkspace() {
           await loadCases();
           await selectCase(parsed.id);
         } else {
-          notify("Invalid investigation JSON format.", "error");
+          const bundle = parseEvidenceBundle(source);
+          if (!bundle) {
+            notify("Invalid investigation or evidence bundle format.", "error");
+            return;
+          }
+          const imported = investigationFromEvidenceBundle(bundle, crypto.randomUUID());
+          await db.saveCase(imported);
+          await loadCases();
+          await selectCase(imported.id);
+          notify(`Evidence imported from ${bundle.source}.`);
         }
       } catch {
         notify("Could not parse the investigation JSON file.", "error");
@@ -193,6 +218,9 @@ export default function InvestigationWorkspace() {
             </span>
             <Button onClick={exportJSON} variant="outline" size="sm" className="bg-black border-[#1a1a1a]">
               <Download className="w-4 h-4 mr-2" /> Export
+            </Button>
+            <Button onClick={exportEvidenceBundle} variant="outline" size="sm" className="bg-black border-[#1a1a1a]">
+              <Download className="w-4 h-4 mr-2" /> Bundle
             </Button>
             <Button variant="outline" size="sm" className="bg-black border-[#1a1a1a] relative overflow-hidden">
               <Upload className="w-4 h-4 mr-2" /> Import
