@@ -14,6 +14,7 @@ import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
 import { parseRunbook } from '@/lib/runbook-validation';
 import { toJpeg } from 'html-to-image';
 import { downloadRunbookPdf } from '@/lib/runbook-pdf';
+import { ToolActionButton, ToolActionPanel } from '@/components/tool-action-panel';
 
 const PLAYBOOK_TEMPLATES: Record<string, Runbook> = {
   "Empty Playbook": {
@@ -117,6 +118,7 @@ export default function PlaybookPage() {
   const [buildView, setBuildView] = useState<'list' | 'diagram'>('list');
   const [runbook, setRunbook] = useState<Runbook>(PLAYBOOK_TEMPLATES["Ransomware Containment"]);
   const [shareLink, setShareLink] = useState<string | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -210,13 +212,22 @@ export default function PlaybookPage() {
   };
 
   const exportPdf = async () => {
-    const diagram = document.getElementById('runbook-diagram');
-    const diagramImage = diagram ? await toJpeg(diagram, { pixelRatio: 2, cacheBust: true, backgroundColor: '#0a0a0a' }) : undefined;
-    downloadRunbookPdf(runbook, diagramImage ? {
-      dataUrl: diagramImage,
-      width: diagram?.clientWidth || 1200,
-      height: diagram?.clientHeight || 800
-    } : undefined);
+    if (isExportingPdf) return;
+    setIsExportingPdf(true);
+    try {
+      const diagram = document.getElementById('runbook-diagram');
+      const diagramImage = diagram ? await toJpeg(diagram, { pixelRatio: 2, cacheBust: true, backgroundColor: '#0a0a0a' }) : undefined;
+      downloadRunbookPdf(runbook, diagramImage ? {
+        dataUrl: diagramImage,
+        width: (diagram?.clientWidth || 1200) * 2,
+        height: (diagram?.clientHeight || 800) * 2
+      } : undefined);
+    } catch (error) {
+      console.error('Failed to export runbook PDF', error);
+      window.alert('PDF export failed. Try exporting without the diagram or reduce its size.');
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   const handleShare = () => {
@@ -308,12 +319,11 @@ export default function PlaybookPage() {
          )}
 
          {mode === 'build' && (
-           <div className="flex flex-wrap items-center justify-end gap-2 rounded-lg border border-[#1a1a1a] bg-[#080808] p-3">
-             <span className="mr-1 text-[10px] uppercase tracking-widest text-zinc-600">Export / Import</span>
-             <Button onClick={exportJSON} variant="outline" size="sm" className="bg-black border-[#1a1a1a]">
+           <ToolActionPanel label="Export / Import" className="justify-end bg-[#080808]">
+             <ToolActionButton onClick={exportJSON} variant="outline">
                <Download className="w-4 h-4 mr-2" /> JSON
-             </Button>
-             <Button variant="outline" size="sm" className="relative overflow-hidden bg-black border-[#1a1a1a]">
+             </ToolActionButton>
+             <ToolActionButton variant="outline" className="relative overflow-hidden">
                <Upload className="w-4 h-4 mr-2" /> Load
                <input
                  type="file"
@@ -323,14 +333,14 @@ export default function PlaybookPage() {
                    if (e.target.files && e.target.files[0]) importJSON(e.target.files[0]);
                  }}
                />
-             </Button>
-             <Button onClick={exportMarkdown} variant="outline" size="sm" className="bg-black border-[#1a1a1a]">
+             </ToolActionButton>
+             <ToolActionButton onClick={exportMarkdown} variant="outline">
                <FileText className="w-4 h-4 mr-2" /> Markdown
-             </Button>
-             <Button onClick={exportPdf} variant="outline" size="sm" className="bg-black border-[#1a1a1a] text-[#ffb000] hover:border-[#ffb000]">
-               <FileText className="w-4 h-4 mr-2" /> PDF
-             </Button>
-           </div>
+             </ToolActionButton>
+             <ToolActionButton onClick={exportPdf} variant="outline" disabled={isExportingPdf} className="text-[#ffb000] hover:border-[#ffb000] hover:text-[#ffb000]">
+               <FileText className="w-4 h-4 mr-2" /> {isExportingPdf ? 'Exporting...' : 'PDF'}
+             </ToolActionButton>
+           </ToolActionPanel>
          )}
 
        </div>

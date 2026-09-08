@@ -11,14 +11,15 @@ import {
   Node,
   NodeChange,
   EdgeChange,
-  BackgroundVariant
+  BackgroundVariant,
+  useReactFlow
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Runbook, RunbookStep } from './types';
 import RunbookNode from './RunbookNode';
-import { Button } from '@/components/ui/button';
 import { Download, Plus } from 'lucide-react';
 import { toPng } from 'html-to-image';
+import { ToolActionButton, ToolActionPanel } from '@/components/tool-action-panel';
 
 interface DiagramBuilderProps {
   runbook: Runbook;
@@ -31,7 +32,8 @@ const nodeTypes = {
 
 export default function DiagramBuilder({ runbook, onChange }: DiagramBuilderProps) {
   const diagramRef = useRef<HTMLDivElement>(null);
-  const [newStepType, setNewStepType] = useState<RunbookStep['type']>('information');
+  const { screenToFlowPosition } = useReactFlow();
+  const [pngBackground, setPngBackground] = useState<'black' | 'white' | 'transparent'>('black');
   
   // Transform Runbook Steps into ReactFlow Nodes
   const initialNodes: Node[] = useMemo(() => {
@@ -164,27 +166,41 @@ export default function DiagramBuilder({ runbook, onChange }: DiagramBuilderProp
     [runbook, onChange]
   );
 
-  const addStep = () => {
+  const addStep = (type: RunbookStep['type'], position?: { x: number; y: number }) => {
     const stepNumber = runbook.steps.length + 1;
     const newStep: RunbookStep = {
       id: `step-${Date.now()}`,
-      type: newStepType,
-      title: `New ${newStepType} step`,
+      type,
+      title: `New ${type} step`,
       description: '',
-      items: newStepType === 'checklist' ? [''] : undefined,
-      uiPosition: { x: 80 + (stepNumber % 3) * 300, y: Math.floor((stepNumber - 1) / 3) * 220 }
+      items: type === 'checklist' ? [''] : undefined,
+      uiPosition: position || { x: 80 + (stepNumber % 3) * 300, y: Math.floor((stepNumber - 1) / 3) * 220 }
     };
     onChange({ ...runbook, steps: [...runbook.steps, newStep] });
   };
 
+  const handlePaletteDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const type = event.dataTransfer.getData('application/runbook-step-type') as RunbookStep['type'];
+    if (!type) return;
+    addStep(type, screenToFlowPosition({ x: event.clientX, y: event.clientY }));
+  };
+
   const exportPng = async () => {
     if (!diagramRef.current) return;
-    const dataUrl = await toPng(diagramRef.current, {
-      pixelRatio: 3,
-      cacheBust: true,
-      backgroundColor: '#0a0a0a',
-      filter: node => !node.classList?.contains('diagram-export-exclude')
-    });
+    const originalBackground = diagramRef.current.style.backgroundColor;
+    diagramRef.current.style.backgroundColor = pngBackground === 'transparent' ? 'transparent' : pngBackground;
+    let dataUrl: string;
+    try {
+      dataUrl = await toPng(diagramRef.current, {
+        pixelRatio: 3,
+        cacheBust: true,
+        backgroundColor: pngBackground === 'transparent' ? 'transparent' : pngBackground,
+        filter: node => !node.classList?.contains('diagram-export-exclude')
+      });
+    } finally {
+      diagramRef.current.style.backgroundColor = originalBackground;
+    }
     const anchor = document.createElement('a');
     anchor.download = `runbook-diagram-${runbook.id}.png`;
     anchor.href = dataUrl;
@@ -193,17 +209,18 @@ export default function DiagramBuilder({ runbook, onChange }: DiagramBuilderProp
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3 border border-[#1a1a1a] bg-[#0a0a0a] p-3">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Add step</span>
-          <select value={newStepType} onChange={event => setNewStepType(event.target.value as RunbookStep['type'])} className="h-9 border border-[#242424] bg-black px-2 text-xs text-zinc-300 outline-none focus:border-[#00ff9c]">
-            {(['checklist', 'command', 'information', 'decision', 'warning', 'verification'] as const).map(type => <option key={type} value={type}>{type}</option>)}
+      <ToolActionPanel className="justify-end bg-[#0a0a0a]">
+        <label className="mr-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-600">
+          PNG background
+          <select value={pngBackground} onChange={event => setPngBackground(event.target.value as typeof pngBackground)} className="h-8 border border-[#242424] bg-black px-2 text-xs normal-case tracking-normal text-zinc-300 outline-none focus:border-[#00ff9c]">
+            <option value="black">Black</option>
+            <option value="white">White</option>
+            <option value="transparent">Transparent</option>
           </select>
-          <Button type="button" size="sm" onClick={addStep} className="bg-[#00ff9c] text-black hover:bg-[#00cc7a]"><Plus className="mr-2 h-3.5 w-3.5" /> Add step</Button>
-        </div>
-        <Button type="button" size="sm" variant="outline" onClick={exportPng} className="border-[#242424] bg-black text-zinc-300 hover:border-[#00ff9c] hover:text-[#00ff9c]"><Download className="mr-2 h-3.5 w-3.5" /> Export PNG</Button>
-      </div>
-      <div ref={diagramRef} id="runbook-diagram" className="h-[800px] w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]">
+        </label>
+        <ToolActionButton type="button" variant="outline" onClick={exportPng}><Download className="mr-2 h-3.5 w-3.5" /> Export PNG</ToolActionButton>
+      </ToolActionPanel>
+      <div ref={diagramRef} id="runbook-diagram" onDragOver={event => event.preventDefault()} onDrop={handlePaletteDrop} className="relative h-[800px] w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]">
         <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -213,13 +230,24 @@ export default function DiagramBuilder({ runbook, onChange }: DiagramBuilderProp
         nodeTypes={nodeTypes}
         fitView
         colorMode="dark"
-        proOptions={{ hideAttribution: true }}
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={2} color="#222" />
         <Controls className="diagram-export-exclude bg-black border border-[#1a1a1a] fill-white" />
         </ReactFlow>
       
-      <div className="diagram-export-exclude absolute top-4 right-4 bg-black/80 backdrop-blur p-4 rounded-lg border border-[#1a1a1a] max-w-xs z-10 pointer-events-none">
+      <div className="diagram-export-exclude absolute left-3 top-3 z-20 w-36 border border-[#242424] bg-[#050505]/95 p-2 shadow-xl backdrop-blur" aria-label="Diagram step toolbox">
+        <div className="mb-2 text-[9px] font-bold uppercase tracking-widest text-[#ffb000]">Step toolbox</div>
+        <div className="space-y-1">
+          {(['checklist', 'command', 'information', 'decision', 'warning', 'verification'] as const).map(type => (
+            <button key={type} type="button" draggable onDragStart={event => event.dataTransfer.setData('application/runbook-step-type', type)} onClick={() => addStep(type)} className="flex w-full cursor-grab items-center border border-[#1a1a1a] px-2 py-1.5 text-left text-[10px] text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c] active:cursor-grabbing">
+              <Plus className="mr-2 h-3 w-3 shrink-0" /> {type}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-[9px] leading-relaxed text-zinc-600">Click to add or drag onto the canvas.</p>
+      </div>
+
+      <div className="diagram-export-exclude absolute right-4 top-4 bg-black/80 backdrop-blur p-4 rounded-lg border border-[#1a1a1a] max-w-xs z-10 pointer-events-none">
         <h4 className="text-[#00ff9c] font-bold text-sm mb-2">Diagram Mode</h4>
         <p className="text-xs text-zinc-400">
           Drag nodes to arrange them. For "Decision" steps, you can drag the green (YES) and red (NO) handles to explicitly link them to other steps.

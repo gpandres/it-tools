@@ -41,9 +41,11 @@ function imageBytes(dataUrl: string) {
 }
 
 function binaryString(bytes: Uint8Array) {
-  let value = '';
-  for (let i = 0; i < bytes.length; i += 1) value += String.fromCharCode(bytes[i]);
-  return value;
+  const chunks: string[] = [];
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    chunks.push(String.fromCharCode(...bytes.subarray(i, i + 0x8000)));
+  }
+  return chunks.join('');
 }
 
 function bytesFromString(value: string) {
@@ -128,7 +130,11 @@ export function downloadRunbookPdf(runbook: Runbook, diagram?: { dataUrl: string
   const pageIds: number[] = [];
   const contentIds: number[] = [];
   const image = hasDiagram ? imageBytes(diagram!.dataUrl) : null;
-  const imageId = image ? object(`<< /Type /XObject /Subtype /Image /Width ${Math.max(1, Math.round(diagram!.width))} /Height ${Math.max(1, Math.round(diagram!.height))} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.length} >>\nstream\n${binaryString(image)}\nendstream`) : null;
+  const imageId = image ? object(joinBytes([
+    bytesFromString(`<< /Type /XObject /Subtype /Image /Width ${Math.max(1, Math.round(diagram!.width))} /Height ${Math.max(1, Math.round(diagram!.height))} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.length} >>\nstream\n`),
+    image,
+    bytesFromString('\nendstream')
+  ])) : null;
 
   pages.forEach((page, index) => {
     const content = pageContent(page, index + 1, totalPages);
