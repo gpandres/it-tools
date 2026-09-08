@@ -144,6 +144,25 @@ test("auto layout leaves a single group coordinate space untouched", () => {
   assert.deepEqual(result.map(node => node.position), nodes.map(node => node.position));
 });
 
+test("auto layout handles the maximum supported 500-node topology", () => {
+  const nodes = Array.from({ length: 500 }, (_, index) => ({
+    id: `node-${index}`,
+    position: { x: 10_000, y: 10_000 },
+    width: index % 7 === 0 ? 260 : 140,
+    height: index % 11 === 0 ? 180 : 100,
+  }));
+  const edges = nodes.slice(1).map((node, index) => ({ source: `node-${Math.floor(index / 2)}`, target: node.id }));
+  const started = performance.now();
+  const result = autoLayout(nodes, edges);
+  const elapsed = performance.now() - started;
+
+  assert.equal(result.length, 500);
+  assert.ok(result.every(node => Number.isFinite(node.position.x) && Number.isFinite(node.position.y)));
+  // Keep a generous ceiling for slower CI runners while catching accidental
+  // quadratic regressions in the layout implementation.
+  assert.ok(elapsed < 5_000, `500-node layout took ${Math.round(elapsed)}ms`);
+});
+
 test("validates connection semantics and VLAN lists", () => {
   const issues = validateDiagram({
     nodes: [

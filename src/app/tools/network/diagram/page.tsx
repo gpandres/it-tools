@@ -391,9 +391,12 @@ function DiagramFlow() {
     }
     const nodesBounds = getNodesBoundsFromFlow(nodes);
     
-    // Default image width/height (will scale based on bounds)
-    const imageWidth = 1920;
-    const imageHeight = 1080;
+    // Keep ordinary exports crisp while reducing raster work for large
+    // diagrams. The viewport transform still includes every node and edge.
+    const isLargeDiagram = nodes.length > 300;
+    const imageWidth = isLargeDiagram ? 1600 : 1920;
+    const imageHeight = isLargeDiagram ? 900 : 1080;
+    const pixelRatio = isLargeDiagram ? 0.75 : 1;
     
     const viewport = getViewportForBounds(nodesBounds, imageWidth, imageHeight, 0.01, 2, 0.1);
     
@@ -407,11 +410,13 @@ function DiagramFlow() {
       return;
     }
     exportInFlight.current = true;
+    if (isLargeDiagram) notify('Generating a lighter export for this large topology.', 'info');
 
     toPng(element, {
       backgroundColor,
       width: imageWidth,
       height: imageHeight,
+      pixelRatio,
       style: {
         width: `${imageWidth}px`,
         height: `${imageHeight}px`,

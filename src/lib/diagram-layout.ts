@@ -94,12 +94,12 @@ export function autoLayout<T extends LayoutNode>(nodes: T[], edges: LayoutEdge[]
     for (const [layer, ids] of groups) {
       if (layer === 0) continue;
       const previousRows = new Map((groups.get(layer - 1) ?? []).map((id, index) => [id, index]));
+      const scores = new Map(ids.map(id => {
+        const neighbours = (incomingNeighbours.get(id) ?? []).filter(source => previousRows.has(source)).map(source => previousRows.get(source) as number);
+        return [id, neighbours.length ? neighbours.reduce((sum, row) => sum + row, 0) / neighbours.length : Number.MAX_SAFE_INTEGER] as const;
+      }));
       ids.sort((left, right) => {
-        const score = (id: string) => {
-          const neighbours = (incomingNeighbours.get(id) ?? []).filter(source => previousRows.has(source)).map(source => previousRows.get(source) as number);
-          return neighbours.length ? neighbours.reduce((sum, row) => sum + row, 0) / neighbours.length : Number.MAX_SAFE_INTEGER;
-        };
-        return score(left) - score(right) || (originalOrder.get(left) ?? 0) - (originalOrder.get(right) ?? 0);
+        return (scores.get(left) ?? Number.MAX_SAFE_INTEGER) - (scores.get(right) ?? Number.MAX_SAFE_INTEGER) || (originalOrder.get(left) ?? 0) - (originalOrder.get(right) ?? 0);
       });
     }
   }
