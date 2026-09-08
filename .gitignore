@@ -51,5 +51,4 @@ next-env.d.ts
 /.tmp-npm-cache/
 
 
-/tests
 /docs
