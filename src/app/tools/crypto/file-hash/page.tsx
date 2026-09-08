@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Copy, Check, UploadCloud, File as FileIcon, Loader2, ShieldCheck, AlertCircle, XCircle } from "lucide-react";
 import { Suspense, useState, useRef, useMemo, useEffect } from "react";
+import { useNotification } from "@/components/notification-provider";
 
 type HashResults = {
   md5: string;
@@ -24,6 +25,7 @@ function FileHashContent() {
   
   const [stats, setStats] = useState({ bytesProcessed: 0, speed: 0, elapsed: 0, eta: 0 });
   const workerRef = useRef<Worker | null>(null);
+  const { notify } = useNotification();
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -129,14 +131,14 @@ function FileHashContent() {
         }
       } else if (type === "error") {
         console.error(e.data.error);
-        alert("Error hashing file: " + e.data.error);
+        notify(`Error hashing file: ${e.data.error}`, "error");
         setIsHashing(false);
       }
     };
 
     workerRef.current.onerror = (err) => {
       console.error("Worker error", err);
-      alert("Web Worker failed. See console for details.");
+      notify("The hashing worker failed. Please try the file again.", "error");
       setIsHashing(false);
     };
 

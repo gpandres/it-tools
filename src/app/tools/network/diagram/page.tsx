@@ -12,6 +12,7 @@ import Sidebar from './components/Sidebar';
 import { TEMPLATES } from './components/Templates';
 import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
 import { parseDiagram } from '@/lib/diagram-validation';
+import { useNotification } from '@/components/notification-provider';
 
 const nodeTypes = { networkNode: NetworkNode };
 const edgeTypes = { networkEdge: NetworkEdge };
@@ -21,6 +22,7 @@ function DiagramFlow() {
   const [edges, setEdges] = useState<any[]>(TEMPLATES["Small Office"].edges);
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<any | null>(null);
+  const { notify } = useNotification();
   
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, fitView } = useReactFlow();
@@ -141,6 +143,10 @@ function DiagramFlow() {
   };
 
   const importDiagram = (file: File) => {
+    if (file.size > 2_000_000) {
+      notify("Diagram files are limited to 2 MB in the browser.", "error");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -152,12 +158,13 @@ function DiagramFlow() {
           setEdges(parsed.edges);
           setTimeout(() => fitView({ padding: 0.2 }), 100);
         } else {
-          alert("Invalid diagram JSON format.");
+          notify("Invalid diagram JSON format.", "error");
         }
       } catch (err) {
-        alert("Failed to parse JSON file.");
+        notify("Failed to parse the diagram JSON file.", "error");
       }
     };
+    reader.onerror = () => notify("Could not read the diagram JSON file.", "error");
     reader.readAsText(file);
   };
 
@@ -189,7 +196,7 @@ function DiagramFlow() {
       a.setAttribute('download', `network-diagram-${bgColor}.png`);
       a.setAttribute('href', dataUrl);
       a.click();
-    });
+    }).catch(() => notify("Could not export the diagram image.", "error"));
   };
 
   return (

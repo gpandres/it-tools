@@ -15,12 +15,14 @@ import LZString from 'lz-string';
 import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
 import { parseRunbook } from '@/lib/runbook-validation';
 import { ToolActionButton, ToolActionPanel } from '@/components/tool-action-panel';
+import { useNotification } from '@/components/notification-provider';
 
 export default function RunbookPage() {
   const [mode, setMode] = useState<'build' | 'run'>('build');
   const [buildView, setBuildView] = useState<'list' | 'diagram'>('list');
   const [runbook, setRunbook] = useState<Runbook>(TEMPLATES["Empty Runbook"]);
   const [shareLink, setShareLink] = useState<string | null>(null);
+  const { notify } = useNotification();
 
   // Load from local storage on mount
   useEffect(() => {
@@ -69,6 +71,10 @@ export default function RunbookPage() {
   };
 
   const importJSON = (file: File) => {
+    if (file.size > 2_000_000) {
+      notify("Runbook files are limited to 2 MB in the browser.", "error");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -78,12 +84,13 @@ export default function RunbookPage() {
         if (parsed) {
           setRunbook(parsed);
         } else {
-          alert("Invalid runbook JSON format.");
+          notify("Invalid runbook JSON format.", "error");
         }
       } catch (err) {
-        alert("Failed to parse JSON file.");
+        notify("Failed to parse the runbook JSON file.", "error");
       }
     };
+    reader.onerror = () => notify("Could not read the runbook JSON file.", "error");
     reader.readAsText(file);
   };
 

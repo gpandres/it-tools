@@ -5,6 +5,7 @@ import { ToolLayout } from "@/components/tool-layout";
 import { Upload, Trash2, Camera, MapPin, Calendar, Smartphone, Download, Info, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import exifr from "exifr";
+import { useNotification } from "@/components/notification-provider";
 
 export default function ExifAnalyzer() {
   const [isDragging, setIsDragging] = useState(false);
@@ -21,10 +22,11 @@ export default function ExifAnalyzer() {
   const [cleanFileUrl, setCleanFileUrl] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { notify } = useNotification();
 
-  const processFile = async (file: File) => {
+  const processFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file (JPEG, PNG, WEBP, etc).");
+      notify("Please upload an image file (JPEG, PNG, WEBP, etc.).", "error");
       return;
     }
 
@@ -55,7 +57,7 @@ export default function ExifAnalyzer() {
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, [notify]);
 
   const scrubMetadata = async () => {
     if (!fileInfo) return;
@@ -74,7 +76,7 @@ export default function ExifAnalyzer() {
       const ctx = canvas.getContext("2d");
       
       if (!ctx) {
-        alert("Canvas not supported in this browser.");
+        notify("Canvas is not supported in this browser.", "error");
         setScrubStatus("idle");
         return;
       }
@@ -90,14 +92,14 @@ export default function ExifAnalyzer() {
           setCleanFileUrl(cleanUrl);
           setScrubStatus("done");
         } else {
-          alert("Error exporting clean image.");
+          notify("Could not export the cleaned image.", "error");
           setScrubStatus("idle");
         }
       }, type, 1.0);
     };
     
     img.onerror = () => {
-      alert("Failed to process image for scrubbing.");
+      notify("Failed to process the image for scrubbing.", "error");
       setScrubStatus("idle");
     };
   };
@@ -118,7 +120,7 @@ export default function ExifAnalyzer() {
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       processFile(e.dataTransfer.files[0]);
     }
-  }, []);
+  }, [processFile]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
