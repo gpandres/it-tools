@@ -1,9 +1,10 @@
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, GripVertical, AlertTriangle, CheckSquare, Terminal, Info, GitBranch, ShieldCheck } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, CheckSquare, Terminal, Info, GitBranch, ShieldCheck } from "lucide-react";
 import { Runbook, RunbookStep, StepType } from "./types";
 
 interface BuilderProps {
@@ -21,6 +22,18 @@ const STEP_ICONS: Record<StepType, any> = {
 };
 
 export default function Builder({ runbook, onChange }: BuilderProps) {
+  const [decisionMessage, setDecisionMessage] = useState<string | null>(null);
+  const messageTimer = useRef<number | undefined>(undefined);
+
+  const showDecisionMessage = (message: string) => {
+    setDecisionMessage(message);
+    if (messageTimer.current !== undefined) window.clearTimeout(messageTimer.current);
+    messageTimer.current = window.setTimeout(() => setDecisionMessage(null), 3600);
+  };
+
+  useEffect(() => () => {
+    if (messageTimer.current !== undefined) window.clearTimeout(messageTimer.current);
+  }, []);
   
   const addStep = (type: StepType) => {
     const newStep: RunbookStep = {
@@ -33,10 +46,26 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
   };
 
   const updateStep = (id: string, updates: Partial<RunbookStep>) => {
+    const currentStep = runbook.steps.find(step => step.id === id);
+    const candidate = currentStep ? { ...currentStep, ...updates } : undefined;
+    if (candidate?.type === 'decision' && candidate.decisionTrueNext && candidate.decisionTrueNext === candidate.decisionFalseNext) {
+      showDecisionMessage('YES and NO cannot point to the same step.');
+      return;
+    }
     onChange({
       ...runbook,
       steps: runbook.steps.map(s => s.id === id ? { ...s, ...updates } : s)
     });
+  };
+
+  const updateDecisionTarget = (step: RunbookStep, branch: 'yes' | 'no', value: string | null) => {
+    const target = value || undefined;
+    const otherTarget = branch === 'yes' ? step.decisionFalseNext : step.decisionTrueNext;
+    if (target && target === otherTarget) {
+      showDecisionMessage('YES and NO cannot point to the same step.');
+      return;
+    }
+    updateStep(step.id, branch === 'yes' ? { decisionTrueNext: target } : { decisionFalseNext: target });
   };
 
   const removeStep = (id: string) => {
@@ -59,7 +88,7 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
     <div className="space-y-6">
       <div className="grid gap-4 bg-[#0a0a0a] p-4 border border-[#1a1a1a] rounded-lg">
         <div>
-          <Label>Runbook Title</Label>
+          <Label className="mb-2 block">Runbook Title</Label>
           <Input 
             value={runbook.title} 
             onChange={(e) => onChange({ ...runbook, title: e.target.value })}
@@ -67,7 +96,7 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
           />
         </div>
         <div>
-          <Label>Description</Label>
+          <Label className="mb-2 block">Description</Label>
           <Textarea 
             value={runbook.description} 
             onChange={(e) => onChange({ ...runbook, description: e.target.value })}
@@ -237,7 +266,7 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <Label className="text-xs text-[#00ff9c]">If YES, jump to Step ID:</Label>
-                            <Select value={step.decisionTrueNext || ''} onValueChange={(v) => updateStep(step.id, { decisionTrueNext: v || undefined })}>
+                            <Select value={step.decisionTrueNext || ''} onValueChange={(v) => updateDecisionTarget(step, 'yes', v)}>
                               <SelectTrigger className="bg-black border-[#1a1a1a] mt-1 text-xs">
                                 <SelectValue placeholder="Select step..." />
                               </SelectTrigger>
@@ -250,7 +279,7 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
                           </div>
                           <div>
                             <Label className="text-xs text-red-500">If NO, jump to Step ID:</Label>
-                            <Select value={step.decisionFalseNext || ''} onValueChange={(v) => updateStep(step.id, { decisionFalseNext: v || undefined })}>
+                            <Select value={step.decisionFalseNext || ''} onValueChange={(v) => updateDecisionTarget(step, 'no', v)}>
                               <SelectTrigger className="bg-black border-[#1a1a1a] mt-1 text-xs">
                                 <SelectValue placeholder="Select step..." />
                               </SelectTrigger>
@@ -262,6 +291,7 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
                             </Select>
                           </div>
                         </div>
+                        {decisionMessage && <p role="status" aria-live="polite" className="border border-[#6b4a00] bg-[#120e04] px-2 py-1.5 text-xs text-[#ffcc66]">{decisionMessage}</p>}
                       </div>
                     )}
 

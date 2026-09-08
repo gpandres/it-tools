@@ -1,8 +1,8 @@
 import { Handle, Position } from '@xyflow/react';
-import { Terminal, Info, ShieldCheck, GitBranch, AlertTriangle, CheckSquare } from "lucide-react";
-import { StepType } from './types';
+import { Terminal, Info, ShieldCheck, GitBranch, AlertTriangle, CheckSquare, type LucideIcon } from "lucide-react";
+import { RunbookStep, StepType } from './types';
 
-const STEP_ICONS: Record<StepType, any> = {
+const STEP_ICONS: Record<StepType, LucideIcon> = {
   checklist: CheckSquare,
   command: Terminal,
   information: Info,
@@ -11,21 +11,26 @@ const STEP_ICONS: Record<StepType, any> = {
   verification: ShieldCheck
 };
 
-export default function RunbookNode({ data }: { data: any }) {
-  const Icon = STEP_ICONS[data.type as StepType] || Info;
+type RunbookNodeData = RunbookStep & {
+  onTitleChange?: (title: string) => void;
+  onDescriptionChange?: (description: string) => void;
+};
+
+export default function RunbookNode({ data }: { data: RunbookNodeData }) {
+  const Icon = STEP_ICONS[data.type] || Info;
   
   return (
-    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg shadow-xl w-[250px] overflow-hidden">
-      <div className="bg-[#111] p-2 flex items-center gap-2 border-b border-[#1a1a1a]">
-        <Icon className="w-4 h-4 text-zinc-400" />
-        <span className="text-xs font-mono text-zinc-400 uppercase tracking-wider truncate">
+    <div className="runbook-node border rounded-lg shadow-xl w-[250px] overflow-hidden">
+      <div className="runbook-node-header p-2 flex items-center gap-2 border-b">
+        <Icon className="w-4 h-4" />
+        <span className="text-xs font-mono uppercase tracking-wider truncate">
           {data.type}
         </span>
       </div>
       
       <div className="p-4">
-        <h3 className="font-bold text-sm text-white truncate mb-1">{data.title}</h3>
-        <p className="text-xs text-zinc-500 line-clamp-2">{data.description || data.content || "No description provided."}</p>
+        <input value={data.title} onChange={event => data.onTitleChange?.(event.target.value)} onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} aria-label="Step title" className="nodrag runbook-node-title mb-1 w-full truncate border-0 bg-transparent p-0 font-bold text-sm outline-none focus:ring-1 focus:ring-[#00ff9c]" />
+        <textarea value={data.description ?? data.content ?? ''} onChange={event => data.onDescriptionChange?.(event.target.value)} onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()} aria-label="Step description" placeholder="No description provided." className="nodrag runbook-node-description min-h-10 w-full resize-none border-0 bg-transparent p-0 text-xs outline-none focus:ring-1 focus:ring-[#00ff9c]" />
       </div>
 
       <Handle type="target" position={Position.Top} className="w-2 h-2 bg-zinc-500" />

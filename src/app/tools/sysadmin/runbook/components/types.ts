@@ -23,6 +23,14 @@ export interface RunbookStep {
   uiPosition?: { x: number, y: number };
 }
 
+export interface RunbookEdge {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string;
+  label?: string;
+}
+
 export interface RunbookVariable {
   name: string; // e.g. "HOST", "IP"
   description: string;
@@ -39,4 +47,6 @@ export interface Runbook {
   lastUpdated?: string;
   variables: RunbookVariable[];
   steps: RunbookStep[];
+  edges?: RunbookEdge[];
+  hiddenEdges?: string[];
 }

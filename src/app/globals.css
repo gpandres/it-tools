@@ -175,6 +175,65 @@
   fill: #a1a1aa !important;
 }
 
+/* Diagram colors are also resolved into the standalone PNG export. */
+.runbook-diagram,
+.runbook-exporting {
+  --runbook-card: #101215;
+  --runbook-header: #1c2026;
+  --runbook-border: #475569;
+  --runbook-title: #f8fafc;
+  --runbook-text: #cbd5e1;
+  --runbook-line: #94a3b8;
+  --runbook-yes: #34d399;
+  --runbook-no: #fb7185;
+  --runbook-label-outline: #0a0a0a;
+}
+
+.runbook-node {
+  background: var(--runbook-card);
+  border-color: var(--runbook-border);
+}
+
+.runbook-node-header {
+  background: var(--runbook-header);
+  border-color: var(--runbook-border);
+  color: var(--runbook-text);
+}
+
+.runbook-node-title { color: var(--runbook-title); }
+.runbook-node-description { color: var(--runbook-text); }
+
+.runbook-exporting[data-export-background='white'] {
+  --runbook-card: #ffffff;
+  --runbook-header: #f1f5f9;
+  --runbook-border: #94a3b8;
+  --runbook-title: #0f172a;
+  --runbook-text: #334155;
+  --runbook-line: #475569;
+  --runbook-yes: #047857;
+  --runbook-no: #be123c;
+  --runbook-label-outline: #ffffff;
+}
+
+.runbook-exporting[data-export-background='transparent'] {
+  --runbook-line: #64748b;
+  --runbook-yes: #10b981;
+  --runbook-no: #f43f5e;
+}
+
+.runbook-exporting .react-flow__handle {
+  opacity: 0 !important;
+}
+
+.runbook-exporting .react-flow__edge.animated path {
+  animation: none !important;
+  stroke-dasharray: none;
+}
+
+.runbook-exporting .runbook-node {
+  box-shadow: none;
+}
+
 :root {
   color-scheme: dark;
   --phosphor: #00ff9c;

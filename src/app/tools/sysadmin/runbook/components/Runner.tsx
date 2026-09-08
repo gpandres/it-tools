@@ -1,10 +1,19 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Runbook, RunbookStep, RunbookVariable } from "./types";
 import { Check, Copy, ArrowRight, Play, Terminal, Info, ShieldCheck, GitBranch, AlertTriangle, CheckSquare } from "lucide-react";
+
+function isValidIPv4(value: string) {
+  const octets = value.trim().split('.');
+  return octets.length === 4 && octets.every(octet => /^(0|[1-9]\d{0,2})$/.test(octet) && Number(octet) <= 255);
+}
+
+function isAddressVariable(name: string) {
+  return /(^|_)(IP|CIDR|ADDRESS|HOST)(_|$)/i.test(name);
+}
 
 interface RunnerProps {
   runbook: Runbook;
@@ -20,13 +29,19 @@ export default function Runner({ runbook, onExit }: RunnerProps) {
   const [history, setHistory] = useState<string[]>([]);
   const [completed, setCompleted] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [variableErrors, setVariableErrors] = useState<Record<string, string>>({});
 
   const [checklistState, setChecklistState] = useState<Record<string, boolean>>({});
+  const [decisionChoice, setDecisionChoice] = useState<'yes' | 'no' | null>(null);
 
   const currentStep = useMemo(() => {
     if (completed || currentStepIndex >= runbook.steps.length) return null;
     return runbook.steps[currentStepIndex];
   }, [runbook.steps, currentStepIndex, completed]);
+
+  useEffect(() => {
+    setDecisionChoice(null);
+  }, [currentStep?.id]);
 
   // Replace variables in text
   const hydrateText = (text: string = '') => {
@@ -44,8 +59,21 @@ export default function Runner({ runbook, onExit }: RunnerProps) {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  const validateVariables = () => {
+    const errors: Record<string, string> = {};
+    variables.forEach(variable => {
+      const value = (variable.value || '').trim();
+      if (isAddressVariable(variable.name) && value && !isValidIPv4(value)) {
+        errors[variable.name] = 'Enter a valid IPv4 address, for example 10.0.0.50.';
+      }
+    });
+    setVariableErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const proceedToNext = () => {
     if (!currentStep) return;
+    if (!validateVariables()) return;
     setHistory([...history, currentStep.id]);
     
     // Linear progression if no branching
@@ -58,6 +86,7 @@ export default function Runner({ runbook, onExit }: RunnerProps) {
 
   const proceedToSpecific = (stepId: string) => {
     if (!currentStep) return;
+    if (!validateVariables()) return;
     setHistory([...history, currentStep.id]);
     
     const idx = runbook.steps.findIndex(s => s.id === stepId);
@@ -67,6 +96,12 @@ export default function Runner({ runbook, onExit }: RunnerProps) {
       // Step not found, just finish
       setCompleted(true);
     }
+  };
+
+  const chooseDecision = (choice: 'yes' | 'no', stepId: string) => {
+    if (decisionChoice) return;
+    setDecisionChoice(choice);
+    proceedToSpecific(stepId);
   };
 
   const progressPercent = runbook.steps.length > 0 
@@ -116,15 +151,24 @@ export default function Runner({ runbook, onExit }: RunnerProps) {
                   <div key={i}>
                     <Label className="text-xs text-zinc-300">{v.name}</Label>
                     <Input 
-                      value={v.value || ''}
-                      onChange={(e) => {
-                        const newVars = [...variables];
-                        newVars[i].value = e.target.value;
-                        setVariables(newVars);
-                      }}
+                       value={v.value || ''}
+                       onChange={(e) => {
+                         const newVars = [...variables];
+                         newVars[i].value = e.target.value;
+                         setVariables(newVars);
+                         if (isAddressVariable(v.name)) {
+                           const nextValue = e.target.value.trim();
+                           setVariableErrors(current => ({
+                             ...current,
+                             [v.name]: nextValue && !isValidIPv4(nextValue) ? 'Enter a valid IPv4 address, for example 10.0.0.50.' : ''
+                           }));
+                         }
+                       }}
                       placeholder={v.defaultValue}
-                      className="bg-black border-[#1a1a1a] text-xs font-mono mt-1 focus-visible:ring-[#00ff9c]"
-                    />
+                       inputMode={isAddressVariable(v.name) ? 'decimal' : undefined}
+                       className={`mt-1 bg-black text-xs font-mono focus-visible:ring-[#00ff9c] ${variableErrors[v.name] ? 'border-red-500 focus-visible:ring-red-500' : 'border-[#1a1a1a]'}`}
+                     />
+                     {variableErrors[v.name] && <p className="mt-1 text-[10px] text-red-400">{variableErrors[v.name]}</p>}
                     {v.description && <p className="text-[10px] text-zinc-500 mt-1">{v.description}</p>}
                   </div>
                 ))}
@@ -211,13 +255,15 @@ export default function Runner({ runbook, onExit }: RunnerProps) {
                   <h3 className="text-lg font-bold text-orange-400">{hydrateText(currentStep.decisionQuestion)}</h3>
                   <div className="flex justify-center gap-4">
                     <Button 
-                      onClick={() => proceedToSpecific(currentStep.decisionTrueNext || '')}
+                      onClick={() => chooseDecision('yes', currentStep.decisionTrueNext || '')}
+                      disabled={Boolean(decisionChoice)}
                       className="bg-[#00ff9c] text-black hover:bg-[#00cc7a] px-8"
                     >
                       YES
                     </Button>
                     <Button 
-                      onClick={() => proceedToSpecific(currentStep.decisionFalseNext || '')}
+                      onClick={() => chooseDecision('no', currentStep.decisionFalseNext || '')}
+                      disabled={Boolean(decisionChoice)}
                       className="bg-red-500 text-white hover:bg-red-600 px-8"
                     >
                       NO

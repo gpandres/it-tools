@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, Clock3, Search, Star, X } from "lucide-react";
 import { toolsRegistry, CATEGORIES } from "@/lib/tools";
 import { useFavorites } from "./favorites-provider";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } from "./ui/dialog";
 
 const APP_VERSION = "0.1.0";
-const SIDEBAR_SIGNALS = ["packet parade", "shell idle", "orbit stable", "cache warm"];
 
 function matchesTool(tool: typeof toolsRegistry[number], query: string) {
   const normalized = query.trim().toLowerCase();
@@ -23,16 +22,8 @@ export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [collapsedCategories, setCollapsedCategories] = useState<string[]>([]);
-  const [signalIndex, setSignalIndex] = useState(0);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const { favorites, recent, isLoaded } = useFavorites();
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setSignalIndex(() => Math.floor(Math.random() * SIDEBAR_SIGNALS.length));
-    }, 4200);
-    return () => window.clearInterval(timer);
-  }, []);
 
   const filteredTools = useMemo(() => toolsRegistry.filter(tool => matchesTool(tool, query)), [query]);
   const favoriteTools = useMemo(() => filteredTools.filter(tool => favorites.includes(tool.id)), [favorites, filteredTools]);
@@ -96,6 +87,6 @@ export function Sidebar() {
 
   return <>
     <div className="flex items-center justify-between gap-4 border-b border-[#1a1a1a] bg-black p-4 md:hidden"><Link href="/" className="font-bold tracking-widest text-[#ffb000]">IT_TOOLS<span className="cursor-blink text-[#00ff9c]">_</span></Link><Dialog open={isOpen} onOpenChange={setIsOpen}><DialogTrigger className="border border-zinc-700 px-3 py-2 text-sm" aria-label="Open navigation">Menu</DialogTrigger><DialogContent className="flex max-h-[90dvh] flex-col overflow-hidden bg-[#050505]"><DialogTitle>Tool navigation</DialogTitle><DialogDescription>Search, filter and browse the toolbox.</DialogDescription>{navigation}{footer}</DialogContent></Dialog></div>
-    <aside className="sticky top-0 hidden h-dvh min-h-0 w-64 shrink-0 flex-col overflow-hidden border-r border-[#1a1a1a] bg-[#050505] md:flex"><div className="relative min-h-[104px] shrink-0 border-b border-[#1a1a1a] px-4 py-4"><Link href="/" className="font-bold text-xl tracking-widest text-[#ffb000]">IT_TOOLS<span className="cursor-blink text-[#00ff9c]">_</span></Link><p className="mt-2 text-[10px] tracking-widest text-zinc-500">LOCAL-FIRST · NO TRACKING</p><div className={`absolute bottom-2 left-4 right-4 flex cursor-pointer select-none items-center gap-2 overflow-hidden text-[9px] tracking-wider text-zinc-600 ${showEasterEgg ? "sidebar-easter-egg" : ""}`} aria-label="Toolbox status" title="Double-click for a surprise" onDoubleClick={triggerEasterEgg}><span className="sidebar-pacman" aria-hidden="true">{showEasterEgg ? "★" : "◖"}</span><span className="sidebar-dots" aria-hidden="true">···</span><span className="truncate text-[#1f7a5a]">{showEasterEgg ? "secret unlocked // nice reflexes" : SIDEBAR_SIGNALS[signalIndex]}</span></div></div>{navigation}{footer}</aside>
+    <aside className="sticky top-0 hidden h-dvh min-h-0 w-64 shrink-0 flex-col overflow-hidden border-r border-[#1a1a1a] bg-[#050505] md:flex"><div className="relative min-h-[104px] shrink-0 border-b border-[#1a1a1a] px-4 py-4"><Link href="/" className="font-bold text-xl tracking-widest text-[#ffb000]">IT_TOOLS<span className="cursor-blink text-[#00ff9c]">_</span></Link><p className="mt-2 text-[10px] tracking-widest text-zinc-500">LOCAL-FIRST · NO TRACKING</p><div className={`absolute bottom-2 left-4 right-4 flex cursor-pointer select-none items-center gap-2 overflow-hidden text-[9px] tracking-wider text-zinc-600 ${showEasterEgg ? "sidebar-easter-egg" : ""}`} aria-label="Toolbox status" title="Double-click for a surprise" onDoubleClick={triggerEasterEgg}><span className="sidebar-pacman" aria-hidden="true">{showEasterEgg ? "★" : "◖"}</span><span className="sidebar-dots" aria-hidden="true">···</span><span className="truncate text-[#1f7a5a]">{showEasterEgg ? "secret unlocked // nice reflexes" : "packet parade"}</span></div></div>{navigation}{footer}</aside>
   </>;
 }

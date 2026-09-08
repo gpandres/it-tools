@@ -1,4 +1,4 @@
-import type { Runbook, RunbookStep, RunbookVariable, StepType } from "@/app/tools/sysadmin/runbook/components/types";
+import type { Runbook, RunbookEdge, RunbookStep, RunbookVariable, StepType } from "@/app/tools/sysadmin/runbook/components/types";
 
 const STEP_TYPES: readonly StepType[] = ["checklist", "command", "information", "decision", "verification", "warning"];
 const text = (value: unknown, max: number): value is string => typeof value === "string" && value.length <= max;
@@ -27,14 +27,26 @@ function isStep(value: unknown): value is RunbookStep {
   return true;
 }
 
+function isEdge(value: unknown): value is RunbookEdge {
+  if (!value || typeof value !== "object") return false;
+  const edge = value as Partial<RunbookEdge>;
+  return text(edge.id, 256) && text(edge.source, 128) && text(edge.target, 128) &&
+    (edge.sourceHandle === undefined || text(edge.sourceHandle, 64)) &&
+    (edge.label === undefined || text(edge.label, 100));
+}
+
 export function parseRunbook(value: unknown): Runbook | null {
   if (!value || typeof value !== "object") return null;
   const runbook = value as Partial<Runbook>;
   if (!text(runbook.id, 128) || !text(runbook.title, 500) || !text(runbook.description, 5000)) return null;
   if (!Array.isArray(runbook.variables) || runbook.variables.length > 100 || !runbook.variables.every(isVariable)) return null;
   if (!Array.isArray(runbook.steps) || runbook.steps.length > 500 || !runbook.steps.every(isStep)) return null;
+  if (runbook.edges !== undefined && (!Array.isArray(runbook.edges) || runbook.edges.length > 1000 || !runbook.edges.every(isEdge))) return null;
+  if (runbook.hiddenEdges !== undefined && (!Array.isArray(runbook.hiddenEdges) || runbook.hiddenEdges.length > 1000 || !runbook.hiddenEdges.every(edge => text(edge, 256)))) return null;
   const ids = new Set(runbook.steps.map((step) => step.id));
   return runbook.steps.every((step) =>
-    (!step.decisionTrueNext || ids.has(step.decisionTrueNext)) && (!step.decisionFalseNext || ids.has(step.decisionFalseNext))
-  ) ? runbook as Runbook : null;
+    (!step.decisionTrueNext || ids.has(step.decisionTrueNext)) &&
+    (!step.decisionFalseNext || ids.has(step.decisionFalseNext)) &&
+    !(step.decisionTrueNext && step.decisionTrueNext === step.decisionFalseNext)
+  ) && (runbook.edges || []).every(edge => ids.has(edge.source) && ids.has(edge.target)) ? runbook as Runbook : null;
 }

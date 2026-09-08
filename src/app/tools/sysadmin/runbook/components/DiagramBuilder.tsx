@@ -5,7 +5,6 @@ import {
   Background, 
   applyNodeChanges, 
   applyEdgeChanges, 
-  addEdge,
   Connection,
   Edge,
   Node,
@@ -14,13 +13,12 @@ import {
   BackgroundVariant,
   useReactFlow,
   ReactFlowProvider,
-  getNodesBounds,
   getViewportForBounds
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Runbook, RunbookStep } from './types';
 import RunbookNode from './RunbookNode';
-import { Download, Plus, X } from 'lucide-react';
+import { Download, Plus, Trash2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { ToolActionButton, ToolActionPanel } from '@/components/tool-action-panel';
 
@@ -33,11 +31,65 @@ const nodeTypes = {
   runbookStep: RunbookNode
 };
 
+// html-to-image clones SVG subtrees without resolving their descendants' CSS.
+// Materialize those styles so exported labels, icons and paths match the canvas.
+function inlineSvgStyles(root: HTMLElement) {
+  const properties = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'font-family', 'font-size', 'font-weight', 'paint-order', 'opacity', 'visibility'];
+  const snapshots = Array.from(root.querySelectorAll<SVGElement>('svg, svg *')).map(element => {
+    const computed = getComputedStyle(element);
+    return {
+      element,
+      original: element.getAttribute('style'),
+      values: properties.map(property => [property, computed.getPropertyValue(property)] as const)
+    };
+  });
+  for (const { element, values } of snapshots) {
+    for (const [property, value] of values) element.style.setProperty(property, value);
+  }
+  return () => {
+    for (const { element, original } of snapshots) {
+      if (original === null) element.removeAttribute('style');
+      else element.setAttribute('style', original);
+    }
+  };
+}
+
+const decisionLabelStyle = {
+  fontSize: 12,
+  fontWeight: 700,
+  stroke: 'var(--runbook-label-outline)',
+  strokeWidth: 4,
+  strokeLinejoin: 'round' as const,
+  paintOrder: 'stroke' as const
+};
+
 function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
   const diagramRef = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, getNodesBounds } = useReactFlow();
   const [pngBackground, setPngBackground] = useState<'black' | 'white' | 'transparent'>('black');
-  const [showDiagramHelp, setShowDiagramHelp] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
+  const [canvasNotice, setCanvasNotice] = useState<string | null>(null);
+  const noticeTimer = useRef<number | undefined>(undefined);
+
+  const showCanvasNotice = useCallback((message: string) => {
+    setCanvasNotice(message);
+    if (noticeTimer.current !== undefined) window.clearTimeout(noticeTimer.current);
+    noticeTimer.current = window.setTimeout(() => setCanvasNotice(null), 3600);
+  }, []);
+
+  useEffect(() => () => {
+    if (noticeTimer.current !== undefined) window.clearTimeout(noticeTimer.current);
+  }, []);
+
+  const updateStepTitle = useCallback((id: string, title: string) => {
+    onChange({ ...runbook, steps: runbook.steps.map(step => step.id === id ? { ...step, title } : step) });
+  }, [runbook, onChange]);
+
+  const updateStepDescription = useCallback((id: string, description: string) => {
+    onChange({ ...runbook, steps: runbook.steps.map(step => step.id === id ? { ...step, description } : step) });
+  }, [runbook, onChange]);
   
   // Transform Runbook Steps into ReactFlow Nodes
   const initialNodes: Node[] = useMemo(() => {
@@ -45,35 +97,46 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
       id: step.id,
       type: 'runbookStep',
       position: step.uiPosition || { x: 250, y: index * 200 },
-      data: { ...step }
+      data: {
+        ...step,
+        onTitleChange: (title: string) => updateStepTitle(step.id, title),
+        onDescriptionChange: (description: string) => updateStepDescription(step.id, description)
+      }
     }));
-  }, [runbook.steps]);
+  }, [runbook.steps, updateStepTitle, updateStepDescription]);
 
   // Transform Runbook Steps into ReactFlow Edges
   const initialEdges: Edge[] = useMemo(() => {
     const edges: Edge[] = [];
+    const hiddenEdges = new Set(runbook.hiddenEdges || []);
     
     runbook.steps.forEach((step, index) => {
       if (step.type === 'decision') {
-        if (step.decisionTrueNext) {
+        const trueEdgeId = `e-${step.id}-true-${step.decisionTrueNext}`;
+        if (step.decisionTrueNext && !hiddenEdges.has(trueEdgeId)) {
           edges.push({
-            id: `e-${step.id}-true-${step.decisionTrueNext}`,
+            id: trueEdgeId,
             source: step.id,
             target: step.decisionTrueNext,
             sourceHandle: 'true',
             label: 'YES',
-            style: { stroke: '#00ff9c' },
+            labelShowBg: false,
+            labelStyle: { ...decisionLabelStyle, fill: 'var(--runbook-yes)' },
+            style: { stroke: 'var(--runbook-yes)', strokeWidth: 2 },
             animated: true
           });
         }
-        if (step.decisionFalseNext) {
+        const falseEdgeId = `e-${step.id}-false-${step.decisionFalseNext}`;
+        if (step.decisionFalseNext && !hiddenEdges.has(falseEdgeId)) {
           edges.push({
-            id: `e-${step.id}-false-${step.decisionFalseNext}`,
+            id: falseEdgeId,
             source: step.id,
             target: step.decisionFalseNext,
             sourceHandle: 'false',
             label: 'NO',
-            style: { stroke: '#ef4444' },
+            labelShowBg: false,
+            labelStyle: { ...decisionLabelStyle, fill: 'var(--runbook-no)' },
+            style: { stroke: 'var(--runbook-no)', strokeWidth: 2 },
             animated: true
           });
         }
@@ -82,23 +145,29 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
         // But since we want to fully support flowcharts, let's look at the next sequential step unless specified otherwise
         // Actually, for a fully graph-based runbook, we should probably add `nextStepId` to linear steps.
         // But to keep JSON simple, we assume linear progression by array order if not defined.
-        if (index + 1 < runbook.steps.length) {
+        const linearEdgeId = `e-${step.id}-linear-${runbook.steps[index + 1]?.id}`;
+        if (index + 1 < runbook.steps.length && !hiddenEdges.has(linearEdgeId)) {
           const nextStep = runbook.steps[index + 1];
           // Only draw linear fallback edge if the user hasn't explicitly wired it.
           // Since our JSON doesn't strictly have a `nextStep` property for non-decisions,
           // we'll just show the implicit linear flow as gray edges.
           edges.push({
-            id: `e-${step.id}-linear-${nextStep.id}`,
+            id: linearEdgeId,
             source: step.id,
             target: nextStep.id,
-            style: { stroke: '#333', strokeDasharray: '5 5' }
+            style: { stroke: 'var(--runbook-line)', strokeWidth: 2, strokeDasharray: '6 5' }
           });
         }
       }
     });
+
+    (runbook.edges || []).forEach(edge => {
+      if (hiddenEdges.has(edge.id)) return;
+      edges.push({ ...edge, markerEnd: undefined });
+    });
     
     return edges;
-  }, [runbook.steps]);
+  }, [runbook.steps, runbook.edges, runbook.hiddenEdges]);
 
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
@@ -143,32 +212,80 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
   );
 
   const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    []
+    (changes: EdgeChange[]) => {
+      setEdges((eds) => applyEdgeChanges(changes, eds));
+      const removed = changes.filter(change => change.type === 'remove').map(change => change.id);
+      if (!removed.length) return;
+      const updatedSteps = runbook.steps.map(step => {
+        const trueEdge = `e-${step.id}-true-${step.decisionTrueNext}`;
+        const falseEdge = `e-${step.id}-false-${step.decisionFalseNext}`;
+        return {
+          ...step,
+          decisionTrueNext: removed.includes(trueEdge) ? undefined : step.decisionTrueNext,
+          decisionFalseNext: removed.includes(falseEdge) ? undefined : step.decisionFalseNext
+        };
+      });
+      const customEdges = (runbook.edges || []).filter(edge => !removed.includes(edge.id));
+      const hiddenEdges = Array.from(new Set([...(runbook.hiddenEdges || []), ...removed.filter(id => !customEdges.some(edge => edge.id === id))]));
+      onChange({ ...runbook, steps: updatedSteps, edges: customEdges, hiddenEdges });
+    },
+    [runbook, onChange]
   );
 
   const onConnect = useCallback(
     (connection: Connection) => {
-      // Only allow connecting if source is a decision node
+      // Decision nodes use their YES/NO handles; other nodes create custom links.
       const sourceStep = runbook.steps.find(s => s.id === connection.source);
-      if (!sourceStep || sourceStep.type !== 'decision') {
-        alert("Currently, explicit wiring is only supported for Decision nodes.");
+      if (!sourceStep || !connection.target) {
+        return;
+      }
+
+      if (connection.source === connection.target) {
+        showCanvasNotice('A step cannot connect to itself.');
         return;
       }
       
       const updatedSteps = [...runbook.steps];
       const stepIndex = updatedSteps.findIndex(s => s.id === connection.source);
       
-      if (connection.sourceHandle === 'true') {
+      if (sourceStep.type === 'decision' && connection.sourceHandle === 'true') {
+        if (sourceStep.decisionFalseNext === connection.target) {
+          showCanvasNotice('YES and NO cannot point to the same step.');
+          return;
+        }
         updatedSteps[stepIndex] = { ...sourceStep, decisionTrueNext: connection.target };
-      } else if (connection.sourceHandle === 'false') {
+      } else if (sourceStep.type === 'decision' && connection.sourceHandle === 'false') {
+        if (sourceStep.decisionTrueNext === connection.target) {
+          showCanvasNotice('YES and NO cannot point to the same step.');
+          return;
+        }
         updatedSteps[stepIndex] = { ...sourceStep, decisionFalseNext: connection.target };
+      } else {
+        const duplicate = (runbook.edges || []).some(edge => edge.source === sourceStep.id && edge.target === connection.target);
+        if (duplicate) {
+          showCanvasNotice('That connection already exists.');
+          return;
+        }
+        const edgeId = `e-custom-${sourceStep.id}-${connection.target}-${Date.now()}`;
+        onChange({ ...runbook, edges: [...(runbook.edges || []), { id: edgeId, source: sourceStep.id, target: connection.target }] });
+        return;
       }
       
       onChange({ ...runbook, steps: updatedSteps });
     },
-    [runbook, onChange]
+    [runbook, onChange, showCanvasNotice]
   );
+
+  const handleSelectionChange = useCallback(({ edges: selectedEdges }: { edges: Edge[] }) => {
+    const nextIds = selectedEdges.map(edge => edge.id).sort();
+    setSelectedEdgeIds(current => current.length === nextIds.length && current.every((id, index) => id === nextIds[index]) ? current : nextIds);
+  }, []);
+
+  const removeSelectedEdges = () => {
+    if (!selectedEdgeIds.length) return;
+    onEdgesChange(selectedEdgeIds.map(id => ({ id, type: 'remove' })));
+    setSelectedEdgeIds([]);
+  };
 
   const addStep = (type: RunbookStep['type'], position?: { x: number; y: number }) => {
     const stepNumber = runbook.steps.length + 1;
@@ -191,9 +308,10 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
   };
 
   const exportPng = async () => {
-    if (!diagramRef.current) return;
-    const flowViewport = diagramRef.current.querySelector<HTMLElement>('.react-flow__viewport');
-    const target = flowViewport || diagramRef.current;
+    if (!diagramRef.current || isExporting) return;
+    const diagram = diagramRef.current;
+    const flowViewport = diagram.querySelector<HTMLElement>('.react-flow__viewport');
+    const target = flowViewport || diagram;
     const bounds = nodes.length ? getNodesBounds(nodes) : { x: 0, y: 0, width: 1200, height: 800 };
     const padding = 80;
     const imageWidth = Math.min(4000, Math.max(1200, Math.ceil(bounds.width + padding * 2)));
@@ -202,23 +320,39 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
       ? getViewportForBounds(bounds, imageWidth, imageHeight, 0.1, 2, padding / Math.max(bounds.width, bounds.height))
       : { x: 0, y: 0, zoom: 1 };
     const backgroundColor = pngBackground === 'transparent' ? undefined : pngBackground === 'white' ? '#ffffff' : '#000000';
-    const dataUrl = await toPng(target, {
-      width: imageWidth,
-      height: imageHeight,
-      pixelRatio: 1,
-      cacheBust: true,
-      backgroundColor,
-      style: flowViewport ? {
-        width: `${imageWidth}px`,
-        height: `${imageHeight}px`,
-        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
-      } : undefined,
-      filter: node => !node.classList?.contains('diagram-export-exclude')
-    });
-    const anchor = document.createElement('a');
-    anchor.download = `runbook-diagram-${runbook.id}.png`;
-    anchor.href = dataUrl;
-    anchor.click();
+    setIsExporting(true);
+    setExportError(null);
+    let restoreSvgStyles: (() => void) | undefined;
+    try {
+      await document.fonts.ready;
+      target.classList.add('runbook-exporting');
+      target.dataset.exportBackground = pngBackground;
+      restoreSvgStyles = inlineSvgStyles(target);
+      const dataUrl = await toPng(target, {
+        width: imageWidth,
+        height: imageHeight,
+        pixelRatio: 1,
+        cacheBust: true,
+        backgroundColor,
+        style: flowViewport ? {
+          width: `${imageWidth}px`,
+          height: `${imageHeight}px`,
+          transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
+        } : undefined,
+        filter: node => !node.classList?.contains('diagram-export-exclude')
+      });
+      const anchor = document.createElement('a');
+      anchor.download = `runbook-diagram-${runbook.id}.png`;
+      anchor.href = dataUrl;
+      anchor.click();
+    } catch {
+      setExportError('The PNG could not be exported. Please try again.');
+    } finally {
+      restoreSvgStyles?.();
+      target.classList.remove('runbook-exporting');
+      delete target.dataset.exportBackground;
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -226,23 +360,26 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
       <ToolActionPanel className="justify-end bg-[#0a0a0a]">
         <label className="mr-2 flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-600">
           PNG background
-          <select value={pngBackground} onChange={event => setPngBackground(event.target.value as typeof pngBackground)} className="h-8 border border-[#242424] bg-black px-2 text-xs normal-case tracking-normal text-zinc-300 outline-none focus:border-[#00ff9c]">
+          <select disabled={isExporting} value={pngBackground} onChange={event => setPngBackground(event.target.value as typeof pngBackground)} className="h-8 border border-[#242424] bg-black px-2 text-xs normal-case tracking-normal text-zinc-300 outline-none focus:border-[#00ff9c]">
             <option value="black">Black</option>
             <option value="white">White</option>
             <option value="transparent">Transparent</option>
           </select>
         </label>
-        <ToolActionButton type="button" variant="outline" onClick={exportPng}><Download className="mr-2 h-3.5 w-3.5" /> Export PNG</ToolActionButton>
+        <ToolActionButton type="button" variant="outline" disabled={isExporting} onClick={exportPng}><Download className="mr-2 h-3.5 w-3.5" /> {isExporting ? 'Exporting…' : 'Export PNG'}</ToolActionButton>
       </ToolActionPanel>
-      <div ref={diagramRef} id="runbook-diagram" onDragOver={event => event.preventDefault()} onDrop={handlePaletteDrop} className="relative h-[800px] w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]">
+      {exportError && <p role="alert" className="text-sm text-red-400">{exportError}</p>}
+      <div ref={diagramRef} id="runbook-diagram" onDragOver={event => event.preventDefault()} onDrop={handlePaletteDrop} className="runbook-diagram relative h-[800px] w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]">
         <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onSelectionChange={handleSelectionChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         fitView
+        deleteKeyCode={['Backspace', 'Delete']}
         colorMode="dark"
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={2} color="#222" />
@@ -258,18 +395,11 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
             </button>
           ))}
         </div>
-        <p className="mt-2 text-[9px] leading-relaxed text-zinc-600">Click to add or drag onto the canvas.</p>
+          <p className="mt-2 text-[9px] leading-relaxed text-zinc-600">Click to add or drag onto the canvas.</p>
+        <ToolActionButton type="button" tone="danger" disabled={!selectedEdgeIds.length} onClick={removeSelectedEdges} className="mt-2 w-full justify-center"><Trash2 className="mr-2 h-3.5 w-3.5" /> Delete line</ToolActionButton>
       </div>
+      {canvasNotice && <div role="status" aria-live="polite" className="diagram-export-exclude pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2 border border-[#6b4a00] bg-[#120e04]/95 px-3 py-2 text-xs text-[#ffcc66] shadow-lg">{canvasNotice}</div>}
 
-      {showDiagramHelp && <div className="diagram-export-exclude absolute right-4 top-4 z-10 max-w-xs border border-[#1a1a1a] bg-black/80 p-4 backdrop-blur">
-        <div className="mb-2 flex items-center justify-between gap-4">
-          <h4 className="text-sm font-bold text-[#00ff9c]">Diagram Mode</h4>
-          <button type="button" onClick={() => setShowDiagramHelp(false)} aria-label="Close diagram help" title="Close" className="text-zinc-500 transition-colors hover:text-white"><X className="h-3.5 w-3.5" /></button>
-        </div>
-        <p className="text-xs text-zinc-400">
-          Drag nodes to arrange them. For "Decision" steps, you can drag the green (YES) and red (NO) handles to explicitly link them to other steps.
-        </p>
-      </div>}
       </div>
     </div>
   );
