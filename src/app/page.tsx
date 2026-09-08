@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Star, ArrowRight } from "lucide-react";
+import { Eye, Star, ArrowRight, X } from "lucide-react";
 import { CommandMenu } from "@/components/command-menu";
 import { useFavorites } from "@/components/favorites-provider";
 import { toolsRegistry, CATEGORIES } from "@/lib/tools";
@@ -12,15 +12,28 @@ import { readLocalStorage, STORAGE_CHANGED, writeLocalStorage } from "@/lib/stor
 const HOME_JSON_LD = serializeJsonLd(catalogStructuredData(toolsRegistry));
 const TOOL_DATA_FLOW = new Map(toolsRegistry.map(tool => [tool.id, toolDataFlow(tool)]));
 const HOME_FILTERS_KEY = "it_tools_home_filters";
+const HOME_WORKFLOWS_HIDDEN_KEY = "it_tools_home_workflows_hidden";
+const INITIAL_TOOL_BATCH = 12;
+const TOOL_BATCH_SIZE = 24;
 
 function ToolCardsSkeleton() {
   return <div aria-label="Loading tools" className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4" role="status">
-    {Array.from({ length: 9 }, (_, index) => <article key={index} aria-hidden="true" className="flex min-h-[190px] flex-col border border-zinc-800 bg-[#050505] p-5">
-      <div className="mb-4 h-2 w-24 animate-pulse bg-[#163b2d]" />
-      <div className="mb-3 h-4 w-3/4 animate-pulse bg-[#101b17]" />
-      <div className="h-3 w-full animate-pulse bg-[#101b17]" />
+    {Array.from({ length: 3 }, (_, index) => <article key={index} aria-hidden="true" className="flex min-h-[190px] flex-col border border-zinc-800 bg-[#050505] p-5">
+      <div className="h-2 w-24 animate-pulse bg-[#163b2d]" />
+      <div className="mt-5 h-4 w-3/4 animate-pulse bg-[#101b17]" />
+      <div className="mt-4 h-3 w-full animate-pulse bg-[#101b17]" />
       <div className="mt-2 h-3 w-5/6 animate-pulse bg-[#101b17]" />
-      <div className="mt-auto h-3 w-28 animate-pulse bg-[#101b17]" />
+    </article>)}
+  </div>;
+}
+
+function WorkflowSkeleton() {
+  return <div aria-label="Loading workflows" className="grid xl:grid-cols-3 gap-4" role="status">
+    {Array.from({ length: 3 }, (_, index) => <article key={index} aria-hidden="true" className="min-h-[150px] border border-zinc-800 bg-[#050505] p-5">
+      <div className="h-4 w-2/3 animate-pulse bg-[#163b2d]" />
+      <div className="mt-4 h-3 w-full animate-pulse bg-[#101b17]" />
+      <div className="mt-2 h-3 w-5/6 animate-pulse bg-[#101b17]" />
+      <div className="mt-6 h-3 w-1/2 animate-pulse bg-[#101b17]" />
     </article>)}
   </div>;
 }
@@ -52,7 +65,9 @@ export default function Home() {
   const [category, setCategory] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [localOnly, setLocalOnly] = useState(false);
+  const [workflowsHidden, setWorkflowsHidden] = useState(false);
   const [filtersReady, setFiltersReady] = useState(false);
+  const [visibleToolCount, setVisibleToolCount] = useState(INITIAL_TOOL_BATCH);
   const { favorites, recent, addFavorite, removeFavorite, clearRecent, isLoaded } = useFavorites();
   const preferencesReady = useRef(isLoaded);
   useEffect(() => {
@@ -76,6 +91,7 @@ export default function Home() {
           // Ignore malformed filter preferences and keep the default catalogue view.
         }
       }
+      if (readLocalStorage(HOME_WORKFLOWS_HIDDEN_KEY) === "1") setWorkflowsHidden(true);
       setFiltersReady(true);
     };
     const restoreTimer = window.setTimeout(restoreFilters, 0);
@@ -106,11 +122,52 @@ export default function Home() {
     return tool ? [tool] : [];
   });
   const catalogueReady = isLoaded && filtersReady;
+  useEffect(() => {
+    if (!catalogueReady) return;
+    let nextCount = Math.min(INITIAL_TOOL_BATCH, filtered.length);
+    let cancelled = false;
+    let batchHandle: number | undefined;
+    const browserWindow = window as unknown as {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const scheduleBatch = () => {
+      if (cancelled) return;
+      batchHandle = browserWindow.requestIdleCallback
+        ? browserWindow.requestIdleCallback(addBatch, { timeout: 300 })
+        : window.setTimeout(addBatch, 0);
+    };
+    const addBatch = () => {
+      if (cancelled) return;
+      nextCount = Math.min(nextCount + TOOL_BATCH_SIZE, filtered.length);
+      setVisibleToolCount(nextCount);
+      if (nextCount < filtered.length) scheduleBatch();
+    };
+    const initialHandle = window.setTimeout(() => {
+      if (cancelled) return;
+      setVisibleToolCount(nextCount);
+      if (nextCount < filtered.length) scheduleBatch();
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(initialHandle);
+      if (browserWindow.requestIdleCallback && batchHandle !== undefined) browserWindow.cancelIdleCallback?.(batchHandle);
+      else if (batchHandle !== undefined) window.clearTimeout(batchHandle);
+    };
+  }, [catalogueReady, category, favorites, favoritesOnly, filtered.length, localOnly, query]);
   const onToggleFavorite = useCallback((toolId: string, isFavorite: boolean) => {
     if (!preferencesReady.current) return;
     if (isFavorite) removeFavorite(toolId);
     else addFavorite(toolId);
   }, [addFavorite, removeFavorite]);
+  const hideWorkflows = () => {
+    setWorkflowsHidden(true);
+    writeLocalStorage(HOME_WORKFLOWS_HIDDEN_KEY, "1");
+  };
+  const showWorkflows = () => {
+    setWorkflowsHidden(false);
+    writeLocalStorage(HOME_WORKFLOWS_HIDDEN_KEY, "0");
+  };
   return <main className="flex-1 p-4 sm:p-8 lg:p-12">
     <title>IT Tools | andresgp.dev</title>
     <meta name="description" content="Local-first tools for developers, sysadmins, DevOps and cybersecurity teams." />
@@ -150,10 +207,13 @@ export default function Home() {
         <div className="flex flex-wrap gap-2">{recentTools.map(tool => <Link key={tool.id} href={tool.path} className="border border-zinc-800 px-3 py-2 text-xs text-zinc-300 hover:border-[#00ff9c]">{tool.name}</Link>)}</div>
       </section>}
 
-      <section aria-labelledby="workflows-heading">
-        <h2 id="workflows-heading" className="text-sm text-[#ffb000] mb-2">Start with a workflow</h2>
-        <p className="text-xs text-zinc-400 mb-4">Guided routes through existing tools. Move your results between steps manually.</p>
-        <div className="grid xl:grid-cols-3 gap-4">
+      {!workflowsHidden && <section aria-labelledby="workflows-heading">
+        <div className="flex items-center gap-3">
+          <h2 id="workflows-heading" className="text-sm text-[#ffb000]">Start with a workflow</h2>
+          {catalogueReady && <button type="button" onClick={hideWorkflows} className="ml-auto inline-flex items-center gap-1 text-[10px] text-zinc-600 hover:text-zinc-300" title="Remove the workflow guide from Home"><X aria-hidden="true" className="h-3 w-3" />Hide</button>}
+        </div>
+        <p className="mt-2 text-xs text-zinc-400 mb-4">Guided routes through existing tools. Move your results between steps manually.</p>
+        {!catalogueReady ? <WorkflowSkeleton /> : <div id="home-workflows-content" className="grid xl:grid-cols-3 gap-4">
           {workflows.map(flow => <article key={flow.id} className="border border-zinc-800 bg-[#050505] p-5">
             <h3 className="text-sm font-bold text-[#00ff9c]">{flow.name}</h3>
             <p className="text-xs text-zinc-400 mt-2 mb-4">{flow.description}</p>
@@ -162,11 +222,14 @@ export default function Home() {
               return <li key={id}><Link href={tool.path} className="flex gap-2 items-center text-xs text-zinc-300 hover:text-[#00ff9c]"><span className="text-zinc-500">{index + 1}.</span>{tool.name}<ArrowRight className="w-3 h-3 ml-auto shrink-0" aria-hidden="true" /></Link></li>;
             })}</ol>
           </article>)}
-        </div>
-      </section>
+        </div>}
+      </section>}
 
       <section aria-labelledby="catalogue-heading">
-        <h2 id="catalogue-heading" className="text-lg text-[#ffb000] mb-4">All tools</h2>
+        <div className="mb-4 flex items-center gap-4">
+          <h2 id="catalogue-heading" className="text-lg text-[#ffb000]">All tools</h2>
+          {catalogueReady && workflowsHidden && <button type="button" onClick={showWorkflows} className="ml-auto inline-flex items-center gap-1 text-[10px] text-zinc-600 hover:text-zinc-300" title="Show the workflow guide on Home"><Eye aria-hidden="true" className="h-3 w-3" />Show workflow guide</button>}
+        </div>
         <div className="flex flex-col lg:flex-row gap-3">
           <div className="flex-1">
             <label htmlFor="tool-search" className="block text-xs text-zinc-400 mb-2">Search by name, task or vendor</label>
@@ -187,7 +250,7 @@ export default function Home() {
           {catalogueReady && (query || category || favoritesOnly || localOnly) && <button className="underline text-[#00ff9c]" onClick={() => { setQuery(""); setCategory(""); setFavoritesOnly(false); setLocalOnly(false); }}>Reset filters</button>}
         </div>
         {!catalogueReady ? <ToolCardsSkeleton /> : filtered.length === 0 ? <p className="p-8 border border-zinc-800 text-sm text-zinc-400">No matching tools. Try another search or reset the filters.</p> : <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(tool => <HomeToolCard key={tool.id} tool={tool} favorite={favorites.includes(tool.id)} onToggleFavorite={onToggleFavorite} />)}
+          {filtered.slice(0, visibleToolCount).map(tool => <HomeToolCard key={tool.id} tool={tool} favorite={favorites.includes(tool.id)} onToggleFavorite={onToggleFavorite} />)}
         </div>}
       </section>
     </div>
