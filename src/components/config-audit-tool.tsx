@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, ShieldAlert } from "lucide-react";
 import { ToolLayout } from "@/components/tool-layout";
-import { analyzeConfig, MAX_AUDIT_INPUT_LENGTH, type AuditRule } from "@/lib/config-audit";
+import { analyzeConfig, MAX_AUDIT_INPUT_LENGTH, type AuditFinding, type AuditRule } from "@/lib/config-audit";
 
 export type { AuditRule } from "@/lib/config-audit";
 
@@ -11,7 +11,8 @@ type ConfigAuditToolProps = {
   title: string;
   description: string;
   placeholder: string;
-  rules: AuditRule[];
+  rules?: AuditRule[];
+  analyzer?: (input: string) => AuditFinding[];
 };
 
 const severityStyles = {
@@ -20,10 +21,10 @@ const severityStyles = {
   low: "border-blue-500/40 bg-blue-500/10 text-blue-300",
 };
 
-export function ConfigAuditTool({ title, description, placeholder, rules }: ConfigAuditToolProps) {
+export function ConfigAuditTool({ title, description, placeholder, rules = [], analyzer }: ConfigAuditToolProps) {
   const [input, setInput] = useState("");
   const [inputTruncated, setInputTruncated] = useState(false);
-  const findings = useMemo(() => analyzeConfig(input, rules), [input, rules]);
+  const findings = useMemo(() => analyzer ? analyzer(input) : analyzeConfig(input, rules), [analyzer, input, rules]);
 
   const handleInputChange = (value: string) => {
     const truncated = value.length > MAX_AUDIT_INPUT_LENGTH;

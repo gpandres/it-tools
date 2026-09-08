@@ -17,7 +17,7 @@ export type AuditFinding = AuditRule & {
 
 export const MAX_AUDIT_INPUT_LENGTH = 1_000_000;
 
-function linePosition(input: string, index: number) {
+export function sourcePositionAt(input: string, index: number) {
   const beforeMatch = input.slice(0, index);
   const lastNewline = beforeMatch.lastIndexOf("\n");
 
@@ -27,7 +27,7 @@ function linePosition(input: string, index: number) {
   };
 }
 
-function excerptAt(input: string, index: number) {
+export function sourceExcerptAt(input: string, index: number) {
   const lines = input.split("\n");
   const line = lines[input.slice(0, index).split("\n").length - 1] ?? "";
   return line.trim().slice(0, 240);
@@ -44,8 +44,8 @@ export function analyzeConfig(input: string, rules: AuditRule[]): AuditFinding[]
 
     return [{
       ...rule,
-      ...linePosition(input, match.index),
-      excerpt: excerptAt(input, match.index),
+      ...sourcePositionAt(input, match.index),
+      excerpt: sourceExcerptAt(input, match.index),
     }];
   });
 }
