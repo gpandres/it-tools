@@ -68,8 +68,13 @@ export default function IOCManager({ iocs, onChange }: IOCManagerProps) {
     return defanged;
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      notify("Indicator copied to clipboard.");
+    } catch {
+      notify("Clipboard access is unavailable in this browser.", "error");
+    }
   };
 
   const getTagColor = (tag: IOCTag) => {

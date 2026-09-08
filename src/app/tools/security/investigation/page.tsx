@@ -14,6 +14,7 @@ import TimelineView from './components/TimelineView';
 import Findings from './components/Findings';
 import { parseInvestigationCase } from '@/lib/investigation-validation';
 import { useNotification } from '@/components/notification-provider';
+import { downloadTextFile, safeDownloadName } from '@/lib/browser-download';
 
 export default function InvestigationWorkspace() {
   const [cases, setCases] = useState<InvestigationCase[]>([]);
@@ -113,12 +114,9 @@ export default function InvestigationWorkspace() {
 
   const exportJSON = () => {
     if (!activeCase) return;
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(activeCase, null, 2));
-    const dlAnchorElem = document.createElement('a');
-    dlAnchorElem.setAttribute("href", dataStr);
-    const safeTitle = activeCase.title.replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'case';
-    dlAnchorElem.setAttribute("download", `investigation-${safeTitle}.json`);
-    dlAnchorElem.click();
+    const safeTitle = safeDownloadName(activeCase.title, 'case');
+    downloadTextFile(JSON.stringify(activeCase, null, 2), `investigation-${safeTitle}.json`, "application/json;charset=utf-8");
+    notify("Investigation exported as JSON.");
   };
 
   const importJSON = (file: File) => {
@@ -138,8 +136,8 @@ export default function InvestigationWorkspace() {
           parsed.createdAt = Date.now();
           parsed.updatedAt = Date.now();
           await db.saveCase(parsed);
-          loadCases();
-          selectCase(parsed.id);
+          await loadCases();
+          await selectCase(parsed.id);
         } else {
           notify("Invalid investigation JSON format.", "error");
         }

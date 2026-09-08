@@ -2,34 +2,19 @@
 
 import { useState, useCallback, useRef } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { AlignLeft, Clock, ArrowDownUp, AlertCircle, Upload } from "lucide-react";
+import { AlignLeft, Clock, ArrowDownUp, AlertCircle, Upload, Download, FileJson } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-type LogEntry = {
-  id: number;
-  originalText: string;
-  timestamp: Date | null;
-  timestampStr: string;
-};
-
-// Common log timestamp patterns
-const PATTERNS = [
-  // ISO 8601 (e.g. 2023-10-05T14:48:00.000Z)
-  /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?/i,
-  // Syslog (e.g. Oct 15 10:00:00)
-  /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}/i,
-  // Apache/Nginx (e.g. 15/Oct/2023:10:00:00 +0000)
-  /\d{2}\/(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\/\d{4}:\d{2}:\d{2}:\d{2}\s+[+-]\d{4}/i,
-  // Standard DB/App Logs (e.g. 2023-10-05 14:48:00)
-  /\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?/
-];
+import { useNotification } from "@/components/notification-provider";
+import { downloadTextFile } from "@/lib/browser-download";
+import { MAX_TIMELINE_ENTRIES, MAX_TIMELINE_INPUT_LENGTH, parseLogTimeline, timelineToCsv, type TimelineEntry } from "@/lib/log-timeline";
 
 export default function LogTimelineGenerator() {
   const [rawLogs, setRawLogs] = useState("");
-  const [timeline, setTimeline] = useState<LogEntry[] | null>(null);
+  const [timeline, setTimeline] = useState<TimelineEntry[] | null>(null);
   const [stats, setStats] = useState({ total: 0, withTime: 0, noTime: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { notify } = useNotification();
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -41,14 +26,19 @@ export default function LogTimelineGenerator() {
     setIsDragging(false);
   }, []);
 
-  const handleFile = (file: File) => {
+  const handleFile = useCallback((file: File) => {
+    if (file.size > MAX_TIMELINE_INPUT_LENGTH) {
+      notify("Log files are limited to 5 MB in the browser.", "error");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target?.result as string;
-      setRawLogs((prev) => (prev ? prev + "\n" + text : text));
+      const text = typeof e.target?.result === "string" ? e.target.result : "";
+      setRawLogs((prev) => `${prev ? `${prev}\n` : ""}${text}`.slice(0, MAX_TIMELINE_INPUT_LENGTH));
     };
+    reader.onerror = () => notify("Could not read the log file.", "error");
     reader.readAsText(file);
-  };
+  }, [notify]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -56,7 +46,7 @@ export default function LogTimelineGenerator() {
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFile(e.dataTransfer.files[0]);
     }
-  }, []);
+  }, [handleFile]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -66,65 +56,33 @@ export default function LogTimelineGenerator() {
   };
 
   const processLogs = () => {
-    if (!rawLogs.trim()) return;
+    if (!rawLogs.trim()) {
+      notify("Paste or load log data before building the timeline.", "error");
+      return;
+    }
+    const parsed = parseLogTimeline(rawLogs);
+    setTimeline(parsed.entries);
+    setStats({ total: parsed.total, withTime: parsed.withTime, noTime: parsed.noTime });
+    if (parsed.truncated) {
+      notify(`Timeline limited to ${MAX_TIMELINE_ENTRIES.toLocaleString()} lines or 5 MB.`, "error");
+    } else if (parsed.withTime === 0) {
+      notify("No supported timestamps were found in the supplied logs.", "error");
+    }
+  };
 
-    const lines = rawLogs.split('\n').filter(l => l.trim() !== '');
-    const entries: LogEntry[] = [];
-    
-    let withTime = 0;
-    let noTime = 0;
-
-    lines.forEach((line, index) => {
-      let foundDate: Date | null = null;
-      let foundStr = "";
-
-      for (const regex of PATTERNS) {
-        const match = line.match(regex);
-        if (match) {
-          // Attempt to parse
-          let dateStr = match[0];
-          
-          // Fix Apache format for standard Date parsing (replace first two colons with space)
-          if (dateStr.includes("/") && dateStr.includes(":")) {
-            dateStr = dateStr.replace(":", " ");
-          }
-
-          const parsed = new Date(dateStr);
-          // Check if valid date
-          if (!isNaN(parsed.getTime())) {
-            foundDate = parsed;
-            foundStr = match[0];
-            break;
-          }
-        }
-      }
-
-      if (foundDate) {
-        withTime++;
-      } else {
-        noTime++;
-      }
-
-      entries.push({
-        id: index,
-        originalText: line,
-        timestamp: foundDate,
-        timestampStr: foundStr
-      });
-    });
-
-    // Sort chronologically
-    entries.sort((a, b) => {
-      if (a.timestamp && b.timestamp) {
-        return a.timestamp.getTime() - b.timestamp.getTime();
-      }
-      if (a.timestamp && !b.timestamp) return -1; // Entries with time go first
-      if (!a.timestamp && b.timestamp) return 1;
-      return 0; // Both no time, maintain original order
-    });
-
-    setTimeline(entries);
-    setStats({ total: lines.length, withTime, noTime });
+  const exportTimeline = (format: "csv" | "json") => {
+    if (!timeline) return;
+    const stamp = new Date().toISOString().slice(0, 10);
+    if (format === "csv") {
+      downloadTextFile(timelineToCsv(timeline), `log-timeline-${stamp}.csv`, "text/csv;charset=utf-8");
+    } else {
+      downloadTextFile(JSON.stringify(timeline.map(entry => ({
+        timestamp: entry.timestamp?.toISOString() ?? null,
+        timestampDetected: entry.timestampStr || null,
+        rawLog: entry.originalText
+      })), null, 2), `log-timeline-${stamp}.json`, "application/json;charset=utf-8");
+    }
+    notify(`Timeline exported as ${format.toUpperCase()}.`);
   };
 
   return (
@@ -189,7 +147,7 @@ export default function LogTimelineGenerator() {
             
             {/* Header / Stats */}
             <div className="flex justify-between items-center bg-[#050505] border border-[#1a1a1a] p-4">
-              <div className="flex gap-6 font-mono text-sm">
+              <div className="flex flex-wrap gap-6 font-mono text-sm">
                 <div>
                   <span className="text-zinc-500 block text-[10px] uppercase">Total Lines</span>
                   <span className="text-zinc-200">{stats.total}</span>
@@ -205,9 +163,17 @@ export default function LogTimelineGenerator() {
                   </div>
                 )}
               </div>
-              <Button onClick={() => setTimeline(null)} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a]">
-                New Analysis
-              </Button>
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button onClick={() => exportTimeline("csv")} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a]">
+                  <Download className="mr-2 h-4 w-4" /> CSV
+                </Button>
+                <Button onClick={() => exportTimeline("json")} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a]">
+                  <FileJson className="mr-2 h-4 w-4" /> JSON
+                </Button>
+                <Button onClick={() => setTimeline(null)} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a]">
+                  New Analysis
+                </Button>
+              </div>
             </div>
 
             {/* Visual Timeline */}
@@ -216,7 +182,7 @@ export default function LogTimelineGenerator() {
                <div className="absolute left-[50px] md:left-[220px] top-10 bottom-10 w-0.5 bg-[#1a1a1a] hidden md:block"></div>
                
                <div className="space-y-6 relative z-10">
-                 {timeline.map((entry, index) => {
+                 {timeline.map((entry) => {
                    const hasTime = !!entry.timestamp;
                    
                    // Extract the message part by removing the timestamp from the original text (if possible)
@@ -226,7 +192,7 @@ export default function LogTimelineGenerator() {
                    }
 
                    return (
-                     <div key={index} className="flex flex-col md:flex-row gap-4 md:gap-8 group">
+                     <div key={entry.id} className="flex flex-col md:flex-row gap-4 md:gap-8 group">
                         {/* Timestamp side */}
                         <div className="md:w-[200px] shrink-0 text-left md:text-right pt-1 relative">
                            {hasTime ? (
