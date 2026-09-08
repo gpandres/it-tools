@@ -1,5 +1,6 @@
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Download, FileJson, Upload } from 'lucide-react';
+import { Download, FileJson, FolderOpen, Save, Trash2, Upload } from 'lucide-react';
+import type { SavedNetworkDiagram } from '@/lib/network-diagram-workspace';
 
 export function DiagramGuide() {
   return (
@@ -52,4 +53,42 @@ export function DiagramExportPanel({ exportImage, exportSvg, exportInventory, ex
       </div>
     </section>
   );
+}
+
+type DiagramWorkspacePanelProps = {
+  diagrams: SavedNetworkDiagram[];
+  onSave: () => void;
+  onLoad: (diagram: SavedNetworkDiagram) => void;
+  onDelete: (id: string) => void;
+};
+
+export function DiagramWorkspacePanel({ diagrams, onSave, onLoad, onDelete }: DiagramWorkspacePanelProps) {
+  return (
+    <section className="mt-4 rounded-lg border border-[#1a1a1a] bg-[#080808] p-4" aria-labelledby="diagram-workspace-heading">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 id="diagram-workspace-heading" className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Saved diagrams</h2>
+          <p className="mt-1 text-[10px] text-zinc-600">Keep up to 10 local snapshots for different sites, environments, or change reviews.</p>
+        </div>
+        <Button type="button" onClick={onSave} variant="outline" size="sm" className="bg-black text-[10px] text-[#00ff9c]"><Save className="mr-1 h-3 w-3" />Save snapshot</Button>
+      </div>
+      {diagrams.length === 0 ? <p className="rounded border border-dashed border-[#1a1a1a] px-3 py-4 text-center font-mono text-[10px] text-zinc-600">No saved snapshots yet.</p> : <div className="grid gap-2 md:grid-cols-2">
+        {diagrams.map(diagram => <article key={diagram.id} className="flex min-w-0 items-center justify-between gap-3 rounded border border-[#1a1a1a] bg-black p-3">
+          <div className="min-w-0">
+            <h3 className="truncate font-mono text-[11px] font-bold text-[#00ff9c]">{diagram.title}</h3>
+            <p className="truncate text-[10px] text-zinc-600">{diagram.description || 'No description'} · {diagram.nodes.length} nodes · {diagram.edges.length} links</p>
+            <p className="mt-1 font-mono text-[9px] text-zinc-700">{formatSnapshotDate(diagram.updatedAt)}</p>
+          </div>
+          <div className="flex shrink-0 gap-1">
+            <Button type="button" onClick={() => onLoad(diagram)} variant="outline" size="sm" className="bg-black px-2 text-[10px]" title={`Load ${diagram.title}`}><FolderOpen className="h-3 w-3" /><span className="sr-only">Load</span></Button>
+            <Button type="button" onClick={() => onDelete(diagram.id)} variant="outline" size="sm" className="bg-black px-2 text-[10px] text-red-300" title={`Delete ${diagram.title}`}><Trash2 className="h-3 w-3" /><span className="sr-only">Delete</span></Button>
+          </div>
+        </article>)}
+      </div>}
+    </section>
+  );
+}
+
+function formatSnapshotDate(timestamp: number) {
+  return timestamp > 0 ? new Date(timestamp).toISOString().slice(0, 10) : 'unknown date';
 }

@@ -9,7 +9,7 @@ import { ToolLayout } from "@/components/tool-layout";
 import NetworkNodeComponent from './nodes/NetworkNode';
 import NetworkEdgeComponent from './edges/NetworkEdge';
 import Sidebar from './components/Sidebar';
-import { DiagramExportPanel, DiagramGuide } from './components/DiagramSupportPanels';
+import { DiagramExportPanel, DiagramGuide, DiagramWorkspacePanel } from './components/DiagramSupportPanels';
 import { TEMPLATES } from './components/Templates';
 import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
 import { parseDiagram, validateDiagram } from '@/lib/diagram-validation';
@@ -19,6 +19,7 @@ import { downloadBlob, downloadUrl } from '@/lib/browser-download';
 import { serializeNetworkDiagram, serializeNetworkInventory } from '@/lib/network-diagram-export';
 import { analyzeNetworkTopology, findNetworkPath } from '@/lib/diagram-analysis';
 import { serializeNetworkMarkdown } from '@/lib/network-diagram-documentation';
+import { MAX_SAVED_NETWORK_DIAGRAMS, readNetworkDiagramLibrary, writeNetworkDiagramLibrary, type SavedNetworkDiagram } from '@/lib/network-diagram-workspace';
 import type { DiagramMetadata } from '@/lib/diagram-validation';
 import type { NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, DiagramSnapshot } from './types';
 
@@ -36,7 +37,9 @@ function DiagramFlow() {
   const [showMinimap, setShowMinimap] = useState(true);
   const [focusMode, setFocusMode] = useState(false);
   const [diagramMetadata, setDiagramMetadata] = useState<DiagramMetadata>(DEFAULT_DIAGRAM_METADATA);
+  const [savedDiagrams, setSavedDiagrams] = useState<SavedNetworkDiagram[]>([]);
   const exportInFlight = useRef(false);
+  const workspaceLoaded = useRef(false);
   const { notify } = useNotification();
   
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -89,6 +92,8 @@ function DiagramFlow() {
         console.error("Failed to parse saved diagram", e);
       }
     }
+    setSavedDiagrams(readNetworkDiagramLibrary());
+    workspaceLoaded.current = true;
   }, [fitView, replaceDiagram]);
 
   // Save to local storage on change
@@ -98,6 +103,10 @@ function DiagramFlow() {
     }, 1000);
     return () => clearTimeout(saveTimer);
   }, [nodes, edges, diagramMetadata]);
+
+  useEffect(() => {
+    if (workspaceLoaded.current) writeNetworkDiagramLibrary(savedDiagrams);
+  }, [savedDiagrams]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<NetworkNode>[]) => setNodes((nds) => {
@@ -497,6 +506,39 @@ function DiagramFlow() {
     downloadBlob(new Blob([markdown], { type: 'text/markdown;charset=utf-8' }), `network-documentation-${Date.now()}.md`);
   };
 
+  const saveWorkspaceSnapshot = () => {
+    if (nodesRef.current.length === 0) {
+      notify('Add at least one node before saving a diagram snapshot.', 'info');
+      return;
+    }
+    const timestamp = Date.now();
+    const title = diagramMetadata.title?.trim() || 'Untitled topology';
+    const snapshot: SavedNetworkDiagram = {
+      id: `diagram_${timestamp}_${nodesRef.current.length}`,
+      title,
+      description: diagramMetadata.description?.trim() || '',
+      nodes: cloneNodes(nodesRef.current),
+      edges: cloneEdges(edgesRef.current),
+      updatedAt: timestamp,
+    };
+    setSavedDiagrams(current => [snapshot, ...current].slice(0, MAX_SAVED_NETWORK_DIAGRAMS));
+    notify(`Saved local snapshot: ${title}`, 'info');
+  };
+
+  const loadWorkspaceSnapshot = (snapshot: SavedNetworkDiagram) => {
+    replaceDiagram(snapshot.nodes, snapshot.edges);
+    setDiagramMetadata({ title: snapshot.title, description: snapshot.description });
+    setSelectedNodeIds([]);
+    setSelectedEdgeIds([]);
+    setTimeout(() => fitView({ padding: 0.2 }), 100);
+    notify(`Loaded local snapshot: ${snapshot.title}`, 'info');
+  };
+
+  const deleteWorkspaceSnapshot = (snapshotId: string) => {
+    setSavedDiagrams(current => current.filter(snapshot => snapshot.id !== snapshotId));
+    notify('Local diagram snapshot deleted.', 'info');
+  };
+
   const runAutoLayout = () => {
     recordHistory();
     const nextNodes = autoLayout(nodesRef.current, edgesRef.current);
@@ -583,6 +625,7 @@ function DiagramFlow() {
         </div>
       </div>
       <DiagramExportPanel exportImage={exportImage} exportSvg={exportSvg} exportInventory={exportInventory} exportDiagram={exportDiagram} exportMarkdown={exportMarkdown} importDiagram={importDiagram} />
+      <DiagramWorkspacePanel diagrams={savedDiagrams} onSave={saveWorkspaceSnapshot} onLoad={loadWorkspaceSnapshot} onDelete={deleteWorkspaceSnapshot} />
     </>
   );
 }

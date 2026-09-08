@@ -7,6 +7,7 @@ import { parseDiagram, validateDiagram } from "../src/lib/diagram-validation.ts"
 import { autoLayout } from "../src/lib/diagram-layout.ts";
 import { analyzeNetworkTopology, findNetworkPath } from "../src/lib/diagram-analysis.ts";
 import { serializeNetworkMarkdown, summarizeNetworkDiagram } from "../src/lib/network-diagram-documentation.ts";
+import { parseNetworkDiagramLibrary } from "../src/lib/network-diagram-workspace.ts";
 import { NETWORK_INVENTORY_HEADERS, serializeNetworkDiagram, serializeNetworkInventory } from "../src/lib/network-diagram-export.ts";
 import type { NetworkEdge, NetworkNode } from "../src/app/tools/network/diagram/types.ts";
 
@@ -67,6 +68,21 @@ test("generates safe network documentation with inventory and resilience finding
   assert.match(markdown, /Edge \\| Router/);
   assert.match(markdown, /## Device inventory/);
   assert.match(markdown, /Critical nodes: Edge \\| Router/);
+});
+
+test("sanitizes the local diagram library and keeps the newest snapshots first", () => {
+  const snapshot = {
+    id: "newer",
+    updatedAt: 20,
+    metadata: { title: "DMZ", description: "Perimeter" },
+    nodes: [{ id: "fw", position: { x: 0, y: 0 }, data: { label: "Firewall", type: "firewall", injected: "remove" } }],
+    edges: [],
+  };
+  const library = parseNetworkDiagramLibrary([snapshot, { ...snapshot, id: "older", updatedAt: 10 }, { ...snapshot, id: "newer" }, "invalid"]);
+
+  assert.deepEqual(library.map(diagram => diagram.id), ["newer", "older"]);
+  assert.equal(library[0].title, "DMZ");
+  assert.equal((library[0].nodes[0].data as unknown as Record<string, unknown>).injected, undefined);
 });
 
 test("rejects malformed IPv4 values instead of truncating them", () => {

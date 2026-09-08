@@ -16,7 +16,7 @@ export function setStorageConsent(consent: Exclude<StorageConsent, null>): boole
     if (consent === "none") {
       // Clear only application-owned keys, never the whole origin.
       const keys = Array.from({ length: window.localStorage.length }, (_, index) => window.localStorage.key(index))
-        .filter((key): key is string => key !== null && (key.startsWith("it_tools_") || ["playbook_draft", "runbook_draft", "network_diagram"].includes(key)));
+        .filter((key): key is string => key !== null && (key.startsWith("it_tools_") || ["playbook_draft", "runbook_draft", "network_diagram", "network_diagram_library"].includes(key)));
       keys.forEach(key => window.localStorage.removeItem(key));
       window.indexedDB?.deleteDatabase("InvestigationWorkspaceDB");
     }
