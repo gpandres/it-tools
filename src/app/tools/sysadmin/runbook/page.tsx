@@ -4,20 +4,22 @@ import { useState, useEffect } from 'react';
 import { ToolLayout } from "@/components/tool-layout";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, PenTool, Download, Upload, FileText, DownloadCloud } from "lucide-react";
+import { Play, PenTool, Download, Upload, FileText } from "lucide-react";
 import Builder from './components/Builder';
 import Runner from './components/Runner';
 import DiagramBuilder from './components/DiagramBuilder';
+import RunbookPdfExport from './components/RunbookPdfExport';
 import { TEMPLATES } from './components/Templates';
 import { Runbook } from './components/types';
 import LZString from 'lz-string';
 import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
 import { parseRunbook } from '@/lib/runbook-validation';
+import { ToolActionButton, ToolActionPanel } from '@/components/tool-action-panel';
 
 export default function RunbookPage() {
   const [mode, setMode] = useState<'build' | 'run'>('build');
   const [buildView, setBuildView] = useState<'list' | 'diagram'>('list');
-  const [runbook, setRunbook] = useState<Runbook>(TEMPLATES["Network Outage Triage"]);
+  const [runbook, setRunbook] = useState<Runbook>(TEMPLATES["Empty Runbook"]);
   const [shareLink, setShareLink] = useState<string | null>(null);
 
   // Load from local storage on mount
@@ -130,8 +132,9 @@ export default function RunbookPage() {
       <div className="w-full max-w-6xl mx-auto space-y-6">
         
         {/* Top Action Bar */}
-        <div className="flex justify-between items-center bg-[#0a0a0a] p-4 border border-[#1a1a1a] rounded-lg">
-          <div className="flex gap-2">
+        <div className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex shrink-0 flex-wrap gap-2">
             <Button 
               onClick={() => setMode('build')} 
               variant={mode === 'build' ? 'default' : 'outline'}
@@ -166,7 +169,7 @@ export default function RunbookPage() {
           </div>
 
           {mode === 'build' && (
-            <div className="flex gap-2 items-center">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
               <Button onClick={handleShare} variant="outline" size="sm" className="bg-black border-[#1a1a1a] text-blue-400 hover:bg-blue-900/20 hover:text-blue-300">
                 {shareLink ? "Copied!" : "Share URL"}
               </Button>
@@ -185,27 +188,9 @@ export default function RunbookPage() {
                 </SelectContent>
               </Select>
               
-              <div className="h-4 w-px bg-[#333] mx-2"></div>
-              
-              <Button onClick={exportJSON} variant="outline" size="sm" className="bg-black border-[#1a1a1a]">
-                <Download className="w-4 h-4 mr-2" /> JSON
-              </Button>
-              <Button variant="outline" size="sm" className="bg-black border-[#1a1a1a] relative overflow-hidden">
-                <Upload className="w-4 h-4 mr-2" /> Load
-                <input 
-                  type="file" 
-                  accept=".json"
-                  className="absolute inset-0 opacity-0 cursor-pointer" 
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) importJSON(e.target.files[0]);
-                  }} 
-                />
-              </Button>
-              <Button onClick={exportMarkdown} variant="outline" size="sm" className="bg-black border-[#1a1a1a]">
-                <FileText className="w-4 h-4 mr-2" /> Markdown
-              </Button>
             </div>
           )}
+          </div>
         </div>
 
         {/* Content Area */}
@@ -217,6 +202,24 @@ export default function RunbookPage() {
           )
         ) : (
           <Runner runbook={runbook} onExit={() => setMode('build')} />
+        )}
+
+        {mode === 'build' && (
+          <ToolActionPanel label="Export / Import" className="justify-end bg-[#080808]">
+            <ToolActionButton onClick={exportJSON} variant="outline">
+              <Download className="mr-2 h-4 w-4" /> JSON
+            </ToolActionButton>
+            <ToolActionButton variant="outline" className="relative overflow-hidden">
+              <Upload className="mr-2 h-4 w-4" /> Load
+              <input type="file" accept=".json" className="absolute inset-0 cursor-pointer opacity-0" onChange={event => {
+                if (event.target.files?.[0]) importJSON(event.target.files[0]);
+              }} />
+            </ToolActionButton>
+            <ToolActionButton onClick={exportMarkdown} variant="outline">
+              <FileText className="mr-2 h-4 w-4" /> Markdown
+            </ToolActionButton>
+            <RunbookPdfExport runbook={runbook} />
+          </ToolActionPanel>
         )}
 
       </div>

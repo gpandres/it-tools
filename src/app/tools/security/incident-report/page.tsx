@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Copy, Download, FileJson, CheckCircle2, FileText, ClipboardList, ShieldAlert, X, FileUp, Palette, FileSearch } from "lucide-react";
-import Script from "next/script";
+import { PdfMakeScripts } from "@/components/pdfmake-scripts";
+import { downloadPdfWithPdfMake } from "@/lib/pdfmake-export";
 
 type IncidentSeverity = "Informational" | "Low" | "Medium" | "High" | "Critical";
 type IncidentStatus = "Open" | "Investigating" | "Contained" | "Resolved" | "Closed";
@@ -401,15 +402,7 @@ export default function IncidentReportTool() {
 
   const handleExportPDF = () => {
     try {
-      const win = window as any;
-      if (!win.pdfMake) {
-        alert("PDF engine is still loading, please wait a moment.");
-        return;
-      }
-
-      const pdfMake = win.pdfMake;
-      const docDef = generateDocDef();
-      pdfMake.createPdf(docDef).download(`incident-${report.id || report.date}.pdf`);
+      downloadPdfWithPdfMake(generateDocDef(), `incident-${report.id || report.date}.pdf`);
     } catch (e) {
       console.error("Export error:", e);
     }
@@ -473,8 +466,7 @@ export default function IncidentReportTool() {
 
   return (
     <>
-      <Script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js" strategy="lazyOnload" />
-      <Script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/vfs_fonts.min.js" strategy="lazyOnload" />
+      <PdfMakeScripts />
       <ToolLayout
         title="Incident Report Generator"
       description="Create structured IT and cybersecurity incident reports from raw notes, logs, and timelines."

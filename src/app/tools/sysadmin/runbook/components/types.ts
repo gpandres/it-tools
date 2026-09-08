@@ -21,6 +21,7 @@ export interface RunbookStep {
   
   // UI Meta
   uiPosition?: { x: number, y: number };
+  uiSize?: { width: number, height: number };
 }
 
 export interface RunbookEdge {

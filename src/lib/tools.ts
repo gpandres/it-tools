@@ -184,7 +184,7 @@ export const toolsRegistry: ToolDefinition[] = [
   },
   {
     id: "incident-playbook",
-    name: "Incident Response Playbook Engine",
+    name: "Interactive Playbook Builder",
     description: "Design and execute structured security incident response workflows.",
     category: "CYBERSECURITY / BLUE TEAM",
     path: "/tools/security/playbook",

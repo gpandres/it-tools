@@ -53,6 +53,7 @@ import { Sidebar } from "@/components/sidebar";
 
 import { CookieBanner } from "@/components/cookie-banner";
 import { FavoritesProvider } from "@/components/favorites-provider";
+import { NotificationProvider } from "@/components/notification-provider";
 
 export default function RootLayout({
   children,
@@ -63,12 +64,14 @@ export default function RootLayout({
     <html lang="en" className={`${jetbrainsMono.variable} h-full dark`} data-scroll-behavior="smooth">
       <body className="min-h-full flex flex-col md:flex-row bg-background text-foreground antialiased selection:bg-[var(--phosphor)] selection:text-black">
         <FavoritesProvider>
+          <NotificationProvider>
           <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-black focus:p-4 focus:text-[#00ff9c]">Skip to content</a>
           <Sidebar />
           <div id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-w-0">
             {children}
             <CookieBanner />
           </div>
+          </NotificationProvider>
         </FavoritesProvider>
       </body>
     </html>

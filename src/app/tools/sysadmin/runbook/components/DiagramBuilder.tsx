@@ -12,47 +12,25 @@ import {
   EdgeChange,
   BackgroundVariant,
   useReactFlow,
-  ReactFlowProvider,
-  getViewportForBounds
+  useNodesInitialized,
+  ReactFlowProvider
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Runbook, RunbookStep } from './types';
 import RunbookNode from './RunbookNode';
 import { Download, Plus, Trash2 } from 'lucide-react';
-import { toPng } from 'html-to-image';
 import { ToolActionButton, ToolActionPanel } from '@/components/tool-action-panel';
+import { captureRunbookDiagram } from '@/lib/runbook-diagram-export';
 
 interface DiagramBuilderProps {
   runbook: Runbook;
   onChange: (r: Runbook) => void;
+  onExportReady?: (root: HTMLElement, nodes: Node[]) => void;
 }
 
 const nodeTypes = {
   runbookStep: RunbookNode
 };
-
-// html-to-image clones SVG subtrees without resolving their descendants' CSS.
-// Materialize those styles so exported labels, icons and paths match the canvas.
-function inlineSvgStyles(root: HTMLElement) {
-  const properties = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'font-family', 'font-size', 'font-weight', 'paint-order', 'opacity', 'visibility'];
-  const snapshots = Array.from(root.querySelectorAll<SVGElement>('svg, svg *')).map(element => {
-    const computed = getComputedStyle(element);
-    return {
-      element,
-      original: element.getAttribute('style'),
-      values: properties.map(property => [property, computed.getPropertyValue(property)] as const)
-    };
-  });
-  for (const { element, values } of snapshots) {
-    for (const [property, value] of values) element.style.setProperty(property, value);
-  }
-  return () => {
-    for (const { element, original } of snapshots) {
-      if (original === null) element.removeAttribute('style');
-      else element.setAttribute('style', original);
-    }
-  };
-}
 
 const decisionLabelStyle = {
   fontSize: 12,
@@ -63,15 +41,27 @@ const decisionLabelStyle = {
   paintOrder: 'stroke' as const
 };
 
-function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
+function DiagramBuilderCanvas({ runbook, onChange, onExportReady }: DiagramBuilderProps) {
   const diagramRef = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition, getNodesBounds } = useReactFlow();
+  const { screenToFlowPosition, getNodes } = useReactFlow();
+  const nodesInitialized = useNodesInitialized();
   const [pngBackground, setPngBackground] = useState<'black' | 'white' | 'transparent'>('black');
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [canvasNotice, setCanvasNotice] = useState<string | null>(null);
   const noticeTimer = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    if (!onExportReady || (!nodesInitialized && runbook.steps.length > 0)) return;
+    // Measurements initialize the handles first; allow the edges and labels to paint.
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        if (diagramRef.current) onExportReady(diagramRef.current, getNodes());
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [onExportReady, nodesInitialized, runbook.steps.length, getNodes]);
 
   const showCanvasNotice = useCallback((message: string) => {
     setCanvasNotice(message);
@@ -90,6 +80,10 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
   const updateStepDescription = useCallback((id: string, description: string) => {
     onChange({ ...runbook, steps: runbook.steps.map(step => step.id === id ? { ...step, description } : step) });
   }, [runbook, onChange]);
+
+  const updateStepSize = useCallback((id: string, uiSize: { width: number; height: number }) => {
+    onChange({ ...runbook, steps: runbook.steps.map(step => step.id === id ? { ...step, uiSize } : step) });
+  }, [runbook, onChange]);
   
   // Transform Runbook Steps into ReactFlow Nodes
   const initialNodes: Node[] = useMemo(() => {
@@ -97,13 +91,15 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
       id: step.id,
       type: 'runbookStep',
       position: step.uiPosition || { x: 250, y: index * 200 },
+      style: { width: step.uiSize?.width || 250, height: step.uiSize?.height || 150 },
       data: {
         ...step,
         onTitleChange: (title: string) => updateStepTitle(step.id, title),
-        onDescriptionChange: (description: string) => updateStepDescription(step.id, description)
+        onDescriptionChange: (description: string) => updateStepDescription(step.id, description),
+        onSizeChange: (size: { width: number; height: number }) => updateStepSize(step.id, size)
       }
     }));
-  }, [runbook.steps, updateStepTitle, updateStepDescription]);
+  }, [runbook.steps, updateStepTitle, updateStepDescription, updateStepSize]);
 
   // Transform Runbook Steps into ReactFlow Edges
   const initialEdges: Edge[] = useMemo(() => {
@@ -310,37 +306,10 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
   const exportPng = async () => {
     if (!diagramRef.current || isExporting) return;
     const diagram = diagramRef.current;
-    const flowViewport = diagram.querySelector<HTMLElement>('.react-flow__viewport');
-    const target = flowViewport || diagram;
-    const bounds = nodes.length ? getNodesBounds(nodes) : { x: 0, y: 0, width: 1200, height: 800 };
-    const padding = 80;
-    const imageWidth = Math.min(4000, Math.max(1200, Math.ceil(bounds.width + padding * 2)));
-    const imageHeight = Math.min(3000, Math.max(800, Math.ceil(bounds.height + padding * 2)));
-    const viewport = nodes.length
-      ? getViewportForBounds(bounds, imageWidth, imageHeight, 0.1, 2, padding / Math.max(bounds.width, bounds.height))
-      : { x: 0, y: 0, zoom: 1 };
-    const backgroundColor = pngBackground === 'transparent' ? undefined : pngBackground === 'white' ? '#ffffff' : '#000000';
     setIsExporting(true);
     setExportError(null);
-    let restoreSvgStyles: (() => void) | undefined;
     try {
-      await document.fonts.ready;
-      target.classList.add('runbook-exporting');
-      target.dataset.exportBackground = pngBackground;
-      restoreSvgStyles = inlineSvgStyles(target);
-      const dataUrl = await toPng(target, {
-        width: imageWidth,
-        height: imageHeight,
-        pixelRatio: 1,
-        cacheBust: true,
-        backgroundColor,
-        style: flowViewport ? {
-          width: `${imageWidth}px`,
-          height: `${imageHeight}px`,
-          transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`
-        } : undefined,
-        filter: node => !node.classList?.contains('diagram-export-exclude')
-      });
+      const { dataUrl } = await captureRunbookDiagram(diagram, getNodes(), 'png', pngBackground);
       const anchor = document.createElement('a');
       anchor.download = `runbook-diagram-${runbook.id}.png`;
       anchor.href = dataUrl;
@@ -348,9 +317,6 @@ function DiagramBuilderCanvas({ runbook, onChange }: DiagramBuilderProps) {
     } catch {
       setExportError('The PNG could not be exported. Please try again.');
     } finally {
-      restoreSvgStyles?.();
-      target.classList.remove('runbook-exporting');
-      delete target.dataset.exportBackground;
       setIsExporting(false);
     }
   };
