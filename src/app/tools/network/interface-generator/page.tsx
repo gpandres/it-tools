@@ -1,12 +1,13 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { MultiVendorOutput, type VendorOutput } from "@/components/multi-vendor-output";
 import { ToolLayout } from "@/components/tool-layout";
+import { validateIp } from "@/lib/network";
 
-// Helper to convert CIDR (0-32) to subnet mask string
 function cidrToMask(cidr: number): string {
   if (cidr < 0 || cidr > 32) return "Invalid";
-  const mask = ~((1 << (32 - cidr)) - 1);
+  const mask = cidr === 0 ? 0 : (~0 << (32 - cidr));
   return [
     (mask >>> 24) & 255,
     (mask >>> 16) & 255,
@@ -15,140 +16,97 @@ function cidrToMask(cidr: number): string {
   ].join(".");
 }
 
+type InterfaceVendor = "cisco" | "mikrotik" | "fortigate" | "juniper" | "arista";
+
 function InterfaceConfigGeneratorContent() {
   const [ip, setIp] = useState("192.168.1.1");
   const [cidr, setCidr] = useState("24");
   const [iface, setIface] = useState("GigabitEthernet0/1");
   const [description, setDescription] = useState("LAN Connection");
-  
-  const [activeTab, setActiveTab] = useState<"cisco" | "mikrotik" | "fortigate">("cisco");
+  const [activeTab, setActiveTab] = useState<InterfaceVendor>("cisco");
 
-  const parsedCidr = parseInt(cidr, 10);
-  const isValidCidr = !isNaN(parsedCidr) && parsedCidr >= 0 && parsedCidr <= 32;
-  const mask = isValidCidr ? cidrToMask(parsedCidr) : "";
+  const parsedCidr = Number(cidr);
+  const isValidCidr = Number.isInteger(parsedCidr) && parsedCidr >= 0 && parsedCidr <= 32;
+  const isValidIp = validateIp(ip.trim());
+  const isValidInterface = /^[A-Za-z0-9_.:/-]+$/.test(iface.trim());
+  const mask = isValidCidr ? cidrToMask(parsedCidr) : "SUBNET_MASK";
+  const safeIp = isValidIp ? ip.trim() : "IP_ADDRESS";
+  const safeCidr = isValidCidr ? String(parsedCidr) : "CIDR";
+  const safeInterface = isValidInterface && iface.trim() ? iface.trim() : "INTERFACE_NAME";
+  const safeDescription = description.replace(/[\r\n"]/g, " ").trim() || "INTERFACE_DESCRIPTION";
 
-  const generateCisco = () => {
-    return `interface ${iface}
- description ${description}
- ip address ${ip} ${mask}
+  const generateCisco = () => `interface ${safeInterface}
+ description ${safeDescription}
+ ip address ${safeIp} ${mask}
  no shutdown
 exit`;
-  };
 
-  const generateMikrotik = () => {
-    return `/ip address
-add address=${ip}/${cidr} interface=${iface} comment="${description}"`;
-  };
+  const generateMikrotik = () => `/ip address
+add address=${safeIp}/${safeCidr} interface=${safeInterface} comment="${safeDescription}"`;
 
-  const generateFortigate = () => {
-    return `config system interface
-    edit "${iface}"
-        set ip ${ip} ${mask}
-        set description "${description}"
+  const generateFortigate = () => `config system interface
+    edit "${safeInterface}"
+        set ip ${safeIp} ${mask}
+        set description "${safeDescription}"
         set allowaccess ping
     next
 end`;
-  };
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-  };
+  const generateJuniper = () => `set interfaces ${safeInterface} description "${safeDescription}"
+set interfaces ${safeInterface} unit 0 family inet address ${safeIp}/${safeCidr}`;
+
+  const generateArista = () => `interface ${safeInterface}
+ description ${safeDescription}
+ no switchport
+ ip address ${safeIp}/${safeCidr}
+ no shutdown
+exit`;
+
+  const outputs: VendorOutput[] = [
+    { id: "cisco", label: "Cisco IOS", code: generateCisco() },
+    { id: "mikrotik", label: "MikroTik", code: generateMikrotik() },
+    { id: "fortigate", label: "FortiGate", code: generateFortigate() },
+    { id: "juniper", label: "Juniper Junos", code: generateJuniper() },
+    { id: "arista", label: "Arista EOS", code: generateArista() },
+  ];
 
   return (
     <ToolLayout
       title="Interface Config Generator"
-      description="Generate network interface configurations for Cisco, MikroTik, and FortiGate."
+      description="Generate Layer 3 interface configurations for Cisco, MikroTik, FortiGate, Juniper, and Arista."
     >
       <div className="space-y-6">
-        {/* Input Section */}
-        <div className="p-4 border border-[#1a1a1a] bg-[#0a0a0a] space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Interface Name</label>
-              <input
-                type="text"
-                value={iface}
-                onChange={(e) => setIface(e.target.value)}
-                className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
-                placeholder="GigabitEthernet0/1"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">IP Address</label>
-              <input
-                type="text"
-                value={ip}
-                onChange={(e) => setIp(e.target.value)}
-                className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
-                placeholder="192.168.1.1"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">CIDR</label>
+        <div className="space-y-4 rounded border border-[#1a1a1a] bg-[#0a0a0a] p-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <label className="space-y-2">
+              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Interface Name</span>
+              <input type="text" value={iface} onChange={e => setIface(e.target.value)} placeholder="GigabitEthernet0/1 or ge-0/0/1" className="w-full border border-[#1a1a1a] bg-black p-3 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
+            </label>
+            <label className="space-y-2">
+              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">IP Address</span>
+              <input type="text" value={ip} onChange={e => setIp(e.target.value)} placeholder="192.168.1.1" className="w-full border border-[#1a1a1a] bg-black p-3 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
+            </label>
+            <label className="space-y-2">
+              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">CIDR Prefix</span>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-mono">/</span>
-                <input
-                  type="number"
-                  value={cidr}
-                  onChange={(e) => setCidr(e.target.value)}
-                  min="0"
-                  max="32"
-                  className="w-full bg-black border border-[#1a1a1a] p-3 pl-7 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
-                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-zinc-500">/</span>
+                <input type="number" value={cidr} onChange={e => setCidr(e.target.value)} min="0" max="32" className="w-full border border-[#1a1a1a] bg-black p-3 pl-7 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
               </div>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Description</label>
-              <input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
-                placeholder="LAN Connection"
-              />
-            </div>
+            </label>
+            <label className="space-y-2">
+              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Description</span>
+              <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="LAN Connection" className="w-full border border-[#1a1a1a] bg-black p-3 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
+            </label>
           </div>
         </div>
 
-        {/* Vendors Tabs */}
-        <div className="flex border-b border-[#1a1a1a] gap-1 overflow-x-auto no-scrollbar">
-          {(["cisco", "mikrotik", "fortigate"] as const).map((vendor) => (
-            <button
-              key={vendor}
-              onClick={() => setActiveTab(vendor)}
-              className={`
-                px-6 py-3 text-sm font-bold uppercase tracking-wider transition-colors
-                ${activeTab === vendor 
-                  ? "text-[#00ff9c] border-b-2 border-[#00ff9c]" 
-                  : "text-zinc-500 hover:text-zinc-300"}
-              `}
-            >
-              {vendor}
-            </button>
-          ))}
-        </div>
+        {(!isValidIp || !isValidCidr || !isValidInterface || !description.trim()) && (
+          <div className="border border-amber-500/40 bg-amber-500/5 p-3 font-mono text-xs text-amber-300">
+            The preview uses placeholders until the IPv4 address, CIDR prefix, interface name, and description are valid.
+          </div>
+        )}
 
-        {/* Output Section */}
-        <div className="relative group">
-          <pre className="p-6 bg-[#050505] border border-[#1a1a1a] text-[#00ff9c] font-mono text-sm overflow-x-auto whitespace-pre">
-            {activeTab === "cisco" && generateCisco()}
-            {activeTab === "mikrotik" && generateMikrotik()}
-            {activeTab === "fortigate" && generateFortigate()}
-          </pre>
-          
-          <button
-            onClick={() => {
-              const text = 
-                activeTab === "cisco" ? generateCisco() :
-                activeTab === "mikrotik" ? generateMikrotik() :
-                generateFortigate();
-              handleCopy(text);
-            }}
-            className="absolute top-4 right-4 bg-[#1a1a1a] text-zinc-400 hover:text-[#00ff9c] px-3 py-1 text-xs uppercase tracking-wider transition-colors opacity-0 group-hover:opacity-100"
-          >
-            Copy
-          </button>
-        </div>
+        <MultiVendorOutput outputs={outputs} activeId={activeTab} onActiveChange={id => setActiveTab(id as InterfaceVendor)} />
       </div>
     </ToolLayout>
   );
@@ -156,7 +114,7 @@ end`;
 
 export default function InterfaceConfigGenerator() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
+    <Suspense fallback={<div className="p-8 text-center font-mono text-zinc-500 glow-amber">Loading...</div>}>
       <InterfaceConfigGeneratorContent />
     </Suspense>
   );

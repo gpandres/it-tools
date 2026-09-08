@@ -1,27 +1,27 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { MultiVendorOutput, type VendorOutput } from "@/components/multi-vendor-output";
 import { ToolLayout } from "@/components/tool-layout";
-import { Check, Copy } from "lucide-react";
 import { validateIp } from "@/lib/network";
 
 function NatGeneratorContent() {
-  const [natType, setNatType] = useState("dnat");
+  const [natType, setNatType] = useState<"dnat" | "snat">("dnat");
   
   // DNAT fields
   const [publicIp, setPublicIp] = useState("1.1.1.1");
   const [publicPort, setPublicPort] = useState("443");
   const [privateIp, setPrivateIp] = useState("192.168.1.50");
   const [privatePort, setPrivatePort] = useState("443");
-  const [protocol, setProtocol] = useState("tcp");
+  const [protocol, setProtocol] = useState<"tcp" | "udp">("tcp");
 
   // SNAT fields
   const [srcNetwork, setSrcNetwork] = useState("192.168.1.0/24");
   const [outIface, setOutIface] = useState("wan1");
   const [snatType, setSnatType] = useState("masquerade");
   const [snatIp, setSnatIp] = useState("1.1.1.2");
+  const [activeVendor, setActiveVendor] = useState("mikrotik");
 
-  const [copied, setCopied] = useState("");
 
   const isValidPort = (value: string) => {
     if (!/^\d+$/.test(value.trim())) return false;
@@ -45,18 +45,12 @@ function NatGeneratorContent() {
   const safePublicPort = isValidPort(publicPort) ? publicPort.trim() : "PUBLIC_PORT";
   const safePrivatePort = isValidPort(privatePort) ? privatePort.trim() : "PRIVATE_PORT";
   const safeSourceNetwork = isValidNetwork(srcNetwork) ? srcNetwork.trim() : "SOURCE_NETWORK";
-  const safeInterface = /^[A-Za-z0-9_.:-]+$/.test(outIface.trim()) ? outIface.trim() : "INTERFACE_NAME";
+  const safeInterface = /^[A-Za-z0-9_.:-]+$/.test(outIface.trim()) && outIface.trim() ? outIface.trim() : "INTERFACE_NAME";
   const hasInvalidDnatInput = safePublicIp === "PUBLIC_IP" || safePrivateIp === "PRIVATE_IP" ||
     safePublicPort === "PUBLIC_PORT" || safePrivatePort === "PRIVATE_PORT";
   const hasInvalidSnatInput = safeSourceNetwork === "SOURCE_NETWORK" || safeInterface === "INTERFACE_NAME" ||
     (snatType === "src-nat" && safeSnatIp === "SNAT_IP");
   const hasInvalidInput = natType === "dnat" ? hasInvalidDnatInput : hasInvalidSnatInput;
-
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(id);
-    setTimeout(() => setCopied(""), 2000);
-  };
 
   const generateMikrotik = () => {
     if (natType === "dnat") {
@@ -94,17 +88,20 @@ function NatGeneratorContent() {
     }
   };
 
+  const outputs: VendorOutput[] = [
+    { id: "mikrotik", label: "MikroTik RouterOS", code: generateMikrotik() },
+    { id: "fortigate", label: "FortiGate FortiOS", code: generateFortigate() },
+    { id: "iptables", label: "Linux iptables", code: generateIptables() },
+  ];
+
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div className="flex gap-4">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="radio" checked={natType === "dnat"} onChange={() => setNatType("dnat")} className="accent-[#00ff9c] w-4 h-4" />
-          <span className={`font-bold tracking-wider ${natType === "dnat" ? "text-[#00ff9c]" : "text-zinc-500"}`}>DNAT (Port Forwarding)</span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="radio" checked={natType === "snat"} onChange={() => setNatType("snat")} className="accent-[#00ff9c] w-4 h-4" />
-          <span className={`font-bold tracking-wider ${natType === "snat" ? "text-[#00ff9c]" : "text-zinc-500"}`}>SNAT / Masquerade</span>
-        </label>
+    <div className="space-y-6">
+      <div className="flex w-fit flex-wrap overflow-hidden rounded border border-[#1a1a1a] bg-black">
+        {(["dnat", "snat"] as const).map(mode => (
+          <button key={mode} type="button" aria-pressed={natType === mode} onClick={() => setNatType(mode)} className={`px-5 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${natType === mode ? "bg-[#00ff9c] text-black" : "text-zinc-500 hover:text-zinc-300"}`}>
+            {mode === "dnat" ? "DNAT (Port Forwarding)" : "SNAT / Masquerade"}
+          </button>
+        ))}
       </div>
 
       {hasInvalidInput && (
@@ -126,7 +123,7 @@ function NatGeneratorContent() {
                 <label className="text-xs font-mono text-zinc-400">Public Port & Protocol</label>
                 <div className="flex gap-2">
                   <input type="text" value={publicPort} onChange={(e) => setPublicPort(e.target.value)} className="flex-1 bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none" />
-                  <select value={protocol} onChange={(e) => setProtocol(e.target.value)} className="bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono uppercase focus:border-[#00ff9c] focus:outline-none w-24">
+                  <select value={protocol} onChange={(e) => setProtocol(e.target.value === "udp" ? "udp" : "tcp")} className="bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono uppercase focus:border-[#00ff9c] focus:outline-none w-24">
                     <option value="tcp">TCP</option>
                     <option value="udp">UDP</option>
                   </select>
@@ -180,28 +177,7 @@ function NatGeneratorContent() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        {[
-          { id: "mikrotik", title: "MikroTik RouterOS", code: generateMikrotik() },
-          { id: "fortigate", title: "FortiGate (FortiOS)", code: generateFortigate() },
-          { id: "iptables", title: "Linux iptables", code: generateIptables() }
-        ].map((platform) => (
-          <div key={platform.id} className="border border-[#1a1a1a] bg-[#050505]">
-            <header className="flex items-center justify-between px-4 py-2 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-              <span className="text-zinc-400 text-xs font-bold uppercase tracking-widest">{platform.title}</span>
-              <button
-                onClick={() => handleCopy(platform.code, platform.id)}
-                className="text-zinc-500 hover:text-[#00ff9c] transition-colors flex items-center gap-1 text-xs uppercase tracking-wider"
-              >
-                {copied === platform.id ? <><Check className="w-3 h-3"/> Copied</> : <><Copy className="w-3 h-3"/> Copy</>}
-              </button>
-            </header>
-            <pre className="p-4 text-[#00ff9c] font-mono text-sm overflow-x-auto whitespace-pre-wrap">
-              {platform.code}
-            </pre>
-          </div>
-        ))}
-      </div>
+      <MultiVendorOutput outputs={outputs} activeId={activeVendor} onActiveChange={setActiveVendor} />
     </div>
   );
 }

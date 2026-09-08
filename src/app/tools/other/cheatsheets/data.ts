@@ -1,3 +1,5 @@
+import { canonicalCommandText } from "@/lib/network-command-catalog";
+
 export interface CheatSheetEntry {
   id: string;
   platform: 'Cisco' | 'MikroTik' | 'FortiGate' | 'Linux' | 'Windows' | 'Docker' | 'Kubernetes' | 'Git' | 'Nmap' | 'OpenSSL' | 'Other';
@@ -8,19 +10,10 @@ export interface CheatSheetEntry {
   aliases: string[];
 }
 
-export const CHEATSHEETS: CheatSheetEntry[] = [
+const PLATFORM_CHEATSHEETS: CheatSheetEntry[] = [
   // ==========================================
   // LINUX
   // ==========================================
-  {
-    id: "linux-net-1",
-    platform: "Linux",
-    category: "Networking",
-    command: "ip route show",
-    description: "Display the current IP routing table",
-    tags: ["routing", "network", "ip", "route"],
-    aliases: ["routing table", "routes", "netstat -rn", "route -n"]
-  },
   {
     id: "linux-net-2",
     platform: "Linux",
@@ -273,24 +266,6 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
   // CISCO
   // ==========================================
   {
-    id: "cisco-net-1",
-    platform: "Cisco",
-    category: "Networking",
-    command: "show ip route",
-    description: "Display the current IP routing table",
-    tags: ["routing", "network", "show", "ip"],
-    aliases: ["routing table", "routes", "ip route", "sh ip ro"]
-  },
-  {
-    id: "cisco-net-2",
-    platform: "Cisco",
-    category: "Networking",
-    command: "show ip interface brief",
-    description: "Display a brief summary of interface statuses and IP addresses",
-    tags: ["interfaces", "ip", "status", "brief"],
-    aliases: ["sh ip int br", "interfaces", "ip address", "status"]
-  },
-  {
     id: "cisco-net-3",
     platform: "Cisco",
     category: "Networking",
@@ -309,15 +284,6 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
     aliases: ["wr mem", "copy run start", "save config"]
   },
   {
-    id: "cisco-net-5",
-    platform: "Cisco",
-    category: "Networking",
-    command: "show mac address-table",
-    description: "Show the MAC address table of the switch",
-    tags: ["mac", "switch", "table", "address"],
-    aliases: ["mac table", "sh mac", "cam table"]
-  },
-  {
     id: "cisco-net-6",
     platform: "Cisco",
     category: "Networking",
@@ -325,15 +291,6 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
     description: "Show detailed information about directly connected Cisco devices",
     tags: ["cdp", "neighbors", "discovery"],
     aliases: ["sh cdp nei det", "discover neighbors"]
-  },
-  {
-    id: "cisco-sec-1",
-    platform: "Cisco",
-    category: "Security",
-    command: "show access-lists",
-    description: "Show all configured access lists and hit counts",
-    tags: ["acl", "security", "firewall"],
-    aliases: ["sh access-lists", "list acls"]
   },
 
   // ==========================================
@@ -389,15 +346,6 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
   // FORTIGATE
   // ==========================================
   {
-    id: "fortigate-net-1",
-    platform: "FortiGate",
-    category: "Networking",
-    command: "get router info routing-table all",
-    description: "Display the full IP routing table",
-    tags: ["routing", "network", "table", "get"],
-    aliases: ["routing table", "routes", "show ip route"]
-  },
-  {
     id: "fortigate-sys-1",
     platform: "FortiGate",
     category: "System Administration",
@@ -414,15 +362,6 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
     description: "Capture packets (tcpdump equivalent) for a specific IP with high verbosity",
     tags: ["packet", "sniffer", "capture", "pcap"],
     aliases: ["tcpdump", "capture packets", "wireshark"]
-  },
-  {
-    id: "fortigate-sec-2",
-    platform: "FortiGate",
-    category: "Security",
-    command: "show firewall policy",
-    description: "Show all firewall policies",
-    tags: ["firewall", "policy", "rules"],
-    aliases: ["list rules", "acls", "policies"]
   },
 
   // ==========================================
@@ -581,3 +520,7 @@ export const CHEATSHEETS: CheatSheetEntry[] = [
     aliases: ["create key", "new private key"]
   }
 ];
+
+// The cross-vendor catalog owns exact intent translations. Keep this sheet
+// focused on platform-specific workflows instead of showing the same command twice.
+export const CHEATSHEETS = PLATFORM_CHEATSHEETS.filter(entry => !canonicalCommandText.has(entry.command.trim().toLowerCase()));

@@ -1,14 +1,16 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { MultiVendorOutput, type VendorOutput } from "@/components/multi-vendor-output";
 import { ToolLayout } from "@/components/tool-layout";
+
+type VlanVendor = "cisco" | "mikrotik" | "fortigate" | "juniper" | "arista";
 
 function VlanToolContent() {
   const [vlanIdStr, setVlanIdStr] = useState("10");
   const [iface, setIface] = useState("GigabitEthernet0/1");
   const [nativeVlan, setNativeVlan] = useState("1");
-  
-  const [activeTab, setActiveTab] = useState<"cisco" | "mikrotik" | "fortigate">("cisco");
+  const [activeTab, setActiveTab] = useState<VlanVendor>("cisco");
   const [portMode, setPortMode] = useState<"access" | "trunk">("access");
 
   const parsedVlanId = Number(vlanIdStr);
@@ -17,215 +19,147 @@ function VlanToolContent() {
   const nativeVlanId = Number.isInteger(parsedNativeVlan) ? parsedNativeVlan : 0;
   const isValidVlan = vlanId >= 1 && vlanId <= 4094;
   const isValidNativeVlan = nativeVlanId >= 1 && nativeVlanId <= 4094;
-  const safeInterface = /^[A-Za-z0-9_.:/-]+$/.test(iface.trim()) ? iface.trim() : "INTERFACE_NAME";
+  const isValidInterface = /^[A-Za-z0-9_.:/-]+$/.test(iface.trim());
+  const safeInterface = isValidInterface && iface.trim() ? iface.trim() : "INTERFACE_NAME";
+  const safeVlan = isValidVlan ? String(vlanId) : "VLAN_ID";
+  const safeNativeVlan = isValidNativeVlan ? String(nativeVlanId) : "NATIVE_VLAN_ID";
+  const vlanName = `VLAN_${safeVlan}`;
 
   const getVlanInfo = (id: number) => {
-    if (id === 1) return { type: "Default / Native", desc: "Default VLAN on most switches (Often untagged). Cannot be deleted." };
+    if (id === 1) return { type: "Default / Native", desc: "Default VLAN on most switches; it is commonly untagged and should be changed deliberately." };
     if (id >= 2 && id <= 1001) return { type: "Standard", desc: "Normal VLAN range for general network use." };
-    if (id >= 1002 && id <= 1005) return { type: "Reserved", desc: "Reserved for Token Ring and FDDI. Cannot be deleted." };
-    if (id >= 1006 && id <= 4094) return { type: "Extended", desc: "Extended VLAN range. Requires VTP transparent mode on older Cisco switches." };
+    if (id >= 1002 && id <= 1005) return { type: "Reserved", desc: "Reserved legacy range for Token Ring and FDDI on Cisco platforms." };
+    if (id >= 1006 && id <= 4094) return { type: "Extended", desc: "Extended VLAN range; platform and VTP configuration can affect support." };
     return { type: "Invalid", desc: "VLAN ID must be between 1 and 4094." };
   };
 
   const vlanInfo = isValidVlan ? getVlanInfo(vlanId) : null;
 
-  const generateCisco = () => {
-    if (portMode === "access") {
-      return `interface ${safeInterface}
+  const generateCisco = () => portMode === "access"
+    ? `interface ${safeInterface}
  switchport mode access
- switchport access vlan ${isValidVlan ? vlanId : "VLAN_ID"}
+ switchport access vlan ${safeVlan}
  spanning-tree portfast
  no shutdown
-exit`;
-    } else {
-      return `interface ${safeInterface}
+exit`
+    : `interface ${safeInterface}
  switchport mode trunk
- switchport trunk allowed vlan ${isValidVlan ? vlanId : "VLAN_ID"}
- switchport trunk native vlan ${isValidNativeVlan ? nativeVlanId : "NATIVE_VLAN_ID"}
+ switchport trunk allowed vlan ${safeVlan}
+ switchport trunk native vlan ${safeNativeVlan}
  no shutdown
 exit`;
-    }
-  };
 
-  const generateMikrotik = () => {
-    if (portMode === "access") {
-      return `/interface bridge port
-add bridge=bridge interface=${safeInterface} pvid=${isValidVlan ? vlanId : "VLAN_ID"}
+  const generateMikrotik = () => portMode === "access"
+    ? `/interface bridge port
+add bridge=bridge interface=${safeInterface} pvid=${safeVlan}
 /interface bridge vlan
-add bridge=bridge tagged=bridge untagged=${safeInterface} vlan-ids=${isValidVlan ? vlanId : "VLAN_ID"}`;
-    } else {
-      return `/interface bridge port
+add bridge=bridge tagged=bridge untagged=${safeInterface} vlan-ids=${safeVlan}`
+    : `/interface bridge port
 add bridge=bridge interface=${safeInterface}
 /interface bridge vlan
-add bridge=bridge tagged=bridge,${safeInterface} vlan-ids=${isValidVlan ? vlanId : "VLAN_ID"}`;
-    }
-  };
+add bridge=bridge tagged=bridge,${safeInterface} vlan-ids=${safeVlan}`;
 
-  const generateFortigate = () => {
-    if (portMode === "access") {
-      return `config system interface
-    edit "${safeInterface}"
-        set vlanforward enable
-    next
-end
-# FortiSwitch specific access port:
+  const generateFortigate = () => portMode === "access"
+    ? `# FortiSwitch managed access port
 config switch-controller managed-switch
-    edit "S123456789"
+    edit "SWITCH_SERIAL"
         config ports
             edit "${safeInterface}"
-                set vlan "${isValidVlan ? vlanId : "VLAN_ID"}"
+                set vlan "${safeVlan}"
             next
         end
     next
-end`;
-    } else {
-      return `config system interface
-    edit "${safeInterface}.${isValidVlan ? vlanId : "VLAN_ID"}"
+end`
+    : `# FortiGate VLAN sub-interface (trunk parent)
+config system interface
+    edit "${safeInterface}.${safeVlan}"
         set vdom "root"
         set interface "${safeInterface}"
-        set vlanid ${isValidVlan ? vlanId : "VLAN_ID"}
+        set vlanid ${safeVlan}
     next
 end`;
-    }
-  };
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-  };
+  const generateJuniper = () => portMode === "access"
+    ? `set vlans ${vlanName} vlan-id ${safeVlan}
+set interfaces ${safeInterface} unit 0 family ethernet-switching interface-mode access
+set interfaces ${safeInterface} unit 0 family ethernet-switching vlan members ${vlanName}`
+    : `set vlans ${vlanName} vlan-id ${safeVlan}
+set interfaces ${safeInterface} native-vlan-id ${safeNativeVlan}
+set interfaces ${safeInterface} unit 0 family ethernet-switching interface-mode trunk
+set interfaces ${safeInterface} unit 0 family ethernet-switching vlan members ${vlanName}`;
+
+  const generateArista = () => portMode === "access"
+    ? `vlan ${safeVlan}
+interface ${safeInterface}
+ switchport mode access
+ switchport access vlan ${safeVlan}
+ no shutdown
+exit`
+    : `vlan ${safeVlan}
+interface ${safeInterface}
+ switchport mode trunk
+ switchport trunk allowed vlan ${safeVlan}
+ switchport trunk native vlan ${safeNativeVlan}
+ no shutdown
+exit`;
+
+  const outputs: VendorOutput[] = [
+    { id: "cisco", label: "Cisco IOS", code: generateCisco() },
+    { id: "mikrotik", label: "MikroTik", code: generateMikrotik() },
+    { id: "fortigate", label: "FortiGate", code: generateFortigate() },
+    { id: "juniper", label: "Juniper Junos", code: generateJuniper() },
+    { id: "arista", label: "Arista EOS", code: generateArista() },
+  ];
 
   return (
-    <ToolLayout
-      title="VLAN Calculator & Config"
-      description="Calculate VLAN ranges and generate 802.1Q access/trunk port configurations."
-    >
+    <ToolLayout title="VLAN Calculator & Config" description="Calculate VLAN ranges and generate 802.1Q access/trunk configurations for Cisco, MikroTik, FortiGate, Juniper, and Arista.">
       <div className="space-y-6">
-        {/* Input Section */}
-        <div className="p-4 border border-[#1a1a1a] bg-[#0a0a0a] space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">VLAN ID (1-4094)</label>
-              <input
-                type="number"
-                value={vlanIdStr}
-                onChange={(e) => setVlanIdStr(e.target.value)}
-                min="1"
-                max="4094"
-                className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Interface Name</label>
-              <input
-                type="text"
-                value={iface}
-                onChange={(e) => setIface(e.target.value)}
-                className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
-                placeholder="GigabitEthernet0/1"
-              />
-            </div>
+        <div className="space-y-4 rounded border border-[#1a1a1a] bg-[#0a0a0a] p-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <label className="space-y-2">
+              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">VLAN ID (1-4094)</span>
+              <input type="number" value={vlanIdStr} onChange={e => setVlanIdStr(e.target.value)} min="1" max="4094" className="w-full border border-[#1a1a1a] bg-black p-3 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
+            </label>
+            <label className="space-y-2">
+              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Interface Name</span>
+              <input type="text" value={iface} onChange={e => setIface(e.target.value)} placeholder="GigabitEthernet0/1 or ge-0/0/1" className="w-full border border-[#1a1a1a] bg-black p-3 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
+            </label>
             {portMode === "trunk" && (
-              <div>
-                <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Native VLAN</label>
-                <input
-                  type="number"
-                  value={nativeVlan}
-                  onChange={(e) => setNativeVlan(e.target.value)}
-                  min="1"
-                  max="4094"
-                  className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
-                />
-              </div>
+              <label className="space-y-2">
+                <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Native VLAN</span>
+                <input type="number" value={nativeVlan} onChange={e => setNativeVlan(e.target.value)} min="1" max="4094" className="w-full border border-[#1a1a1a] bg-black p-3 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
+              </label>
             )}
           </div>
         </div>
 
-        {(!isValidVlan || (portMode === "trunk" && !isValidNativeVlan) || safeInterface === "INTERFACE_NAME") && (
-          <div className="p-3 border border-amber-500/40 bg-amber-500/5 text-amber-300 font-mono text-xs">
+        {(!isValidVlan || (portMode === "trunk" && !isValidNativeVlan) || !isValidInterface) && (
+          <div className="border border-amber-500/40 bg-amber-500/5 p-3 font-mono text-xs text-amber-300">
             The preview uses placeholders until the VLAN IDs and interface name are valid. VLAN IDs must be integers from 1 to 4094.
           </div>
         )}
 
-        {/* VLAN Info Banner */}
         {vlanInfo && (
-          <div className="p-4 border border-[#1a1a1a] bg-[#050505] flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="text-xs text-zinc-500 font-bold uppercase tracking-wider">VLAN Range Type</div>
-              <div className="text-[#00ff9c] font-mono">{vlanInfo.type}</div>
-            </div>
-            <div className="text-sm text-zinc-400 md:text-right">
-              {vlanInfo.desc}
-            </div>
+          <div className="flex flex-col justify-between gap-4 rounded border border-[#1a1a1a] bg-[#050505] p-4 md:flex-row md:items-center">
+            <div><div className="text-xs font-bold uppercase tracking-wider text-zinc-500">VLAN Range Type</div><div className="font-mono text-[#00ff9c]">{vlanInfo.type}</div></div>
+            <div className="text-sm text-zinc-400 md:text-right">{vlanInfo.desc}</div>
           </div>
         )}
 
-        {/* Port Mode Toggle */}
-        <div className="flex border border-[#1a1a1a] rounded-sm overflow-hidden bg-black w-fit">
-          <button
-            onClick={() => setPortMode("access")}
-            className={`px-6 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
-              portMode === "access" ? "bg-[#00ff9c] text-black" : "text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            Access Port (Untagged)
-          </button>
-          <button
-            onClick={() => setPortMode("trunk")}
-            className={`px-6 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
-              portMode === "trunk" ? "bg-[#00ff9c] text-black" : "text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            Trunk Port (Tagged)
-          </button>
-        </div>
-
-        {/* Vendors Tabs */}
-        <div className="flex border-b border-[#1a1a1a] gap-1 overflow-x-auto no-scrollbar">
-          {(["cisco", "mikrotik", "fortigate"] as const).map((vendor) => (
-            <button
-              key={vendor}
-              onClick={() => setActiveTab(vendor)}
-              className={`
-                px-6 py-3 text-sm font-bold uppercase tracking-wider transition-colors
-                ${activeTab === vendor 
-                  ? "text-[#00ff9c] border-b-2 border-[#00ff9c]" 
-                  : "text-zinc-500 hover:text-zinc-300"}
-              `}
-            >
-              {vendor}
+        <div className="flex w-fit flex-wrap overflow-hidden rounded border border-[#1a1a1a] bg-black">
+          {(["access", "trunk"] as const).map(mode => (
+            <button key={mode} type="button" aria-pressed={portMode === mode} onClick={() => setPortMode(mode)} className={`px-5 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${portMode === mode ? "bg-[#00ff9c] text-black" : "text-zinc-500 hover:text-zinc-300"}`}>
+              {mode === "access" ? "Access Port (Untagged)" : "Trunk Port (Tagged)"}
             </button>
           ))}
         </div>
 
-        {/* Output Section */}
-        <div className="relative group">
-          <pre className="p-6 bg-[#050505] border border-[#1a1a1a] text-[#00ff9c] font-mono text-sm overflow-x-auto whitespace-pre">
-            {activeTab === "cisco" && generateCisco()}
-            {activeTab === "mikrotik" && generateMikrotik()}
-            {activeTab === "fortigate" && generateFortigate()}
-          </pre>
-          
-          <button
-            onClick={() => {
-              const text = 
-                activeTab === "cisco" ? generateCisco() :
-                activeTab === "mikrotik" ? generateMikrotik() :
-                generateFortigate();
-              handleCopy(text);
-            }}
-            className="absolute top-4 right-4 bg-[#1a1a1a] text-zinc-400 hover:text-[#00ff9c] px-3 py-1 text-xs uppercase tracking-wider transition-colors opacity-0 group-hover:opacity-100"
-          >
-            Copy
-          </button>
-        </div>
+        <MultiVendorOutput outputs={outputs} activeId={activeTab} onActiveChange={id => setActiveTab(id as VlanVendor)} />
       </div>
     </ToolLayout>
   );
 }
 
 export default function VlanTool() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
-      <VlanToolContent />
-    </Suspense>
-  );
+  return <Suspense fallback={<div className="p-8 text-center font-mono text-zinc-500 glow-amber">Loading...</div>}><VlanToolContent /></Suspense>;
 }
