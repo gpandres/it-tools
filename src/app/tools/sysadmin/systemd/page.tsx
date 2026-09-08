@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { Terminal, Settings, Copy, Check, Plus, Trash2 } from "lucide-react";
+import { Terminal, Settings, Copy, Check, Plus, Trash2, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function SystemdGeneratorContent() {
@@ -13,28 +13,51 @@ function SystemdGeneratorContent() {
   const [user, setUser] = useState("nobody");
   const [restart, setRestart] = useState("on-failure");
   const [restartSec, setRestartSec] = useState("5");
+  const [hardening, setHardening] = useState({
+    noNewPrivileges: true,
+    privateTmp: true,
+    protectHome: true,
+  });
 
   const [envVars, setEnvVars] = useState<{ id: string; key: string; val: string }[]>([]);
   const [copied, setCopied] = useState(false);
 
+  const cleanLine = (value: string) => value.replace(/[\r\n]+/g, " ").trim();
+  const safeServiceName = /^[A-Za-z0-9@_.-]+$/.test(serviceName.trim()) ? serviceName.trim() : "my-app";
+  const safeDescription = cleanLine(description) || safeServiceName;
+  const safeExecStart = cleanLine(execStart);
+  const safeWorkingDir = cleanLine(workingDir);
+  const safeUser = cleanLine(user);
+  const restartDelay = Math.max(0, parseFloat(restartSec) || 0);
+  const invalidEnvironmentCount = envVars.filter((env) => env.key && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(env.key.trim())).length;
+
+  const escapeEnvironmentValue = (value: string) => cleanLine(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+
   const generateService = () => {
-    let out = `[Unit]\nDescription=${description || serviceName}\nAfter=network.target\n\n`;
+    let out = `[Unit]\nDescription=${safeDescription}\nAfter=network-online.target\nWants=network-online.target\n\n`;
     out += `[Service]\nType=simple\n`;
-    if (user) out += `User=${user}\n`;
-    if (workingDir) out += `WorkingDirectory=${workingDir}\n`;
-    if (execStart) out += `ExecStart=${execStart}\n`;
+    if (safeUser) out += `User=${safeUser}\n`;
+    if (safeWorkingDir) out += `WorkingDirectory=${safeWorkingDir}\n`;
+    if (safeExecStart) out += `ExecStart=${safeExecStart}\n`;
     
     out += `Restart=${restart}\n`;
     if (restart !== "no") {
-      out += `RestartSec=${restartSec}\n`;
+      out += `RestartSec=${restartDelay}\n`;
     }
 
     if (envVars.length > 0) {
       out += "\n";
       envVars.forEach(env => {
-        if (env.key) out += `Environment="${env.key}=${env.val}"\n`;
+        const key = env.key.trim();
+        if (key && /^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+          out += `Environment="${key}=${escapeEnvironmentValue(env.val)}"\n`;
+        }
       });
     }
+
+    if (hardening.noNewPrivileges) out += "NoNewPrivileges=true\n";
+    if (hardening.privateTmp) out += "PrivateTmp=true\n";
+    if (hardening.protectHome) out += "ProtectHome=true\n";
 
     out += `\n[Install]\nWantedBy=multi-user.target`;
     return out;
@@ -140,7 +163,7 @@ function SystemdGeneratorContent() {
                   <option value="no">no (Never)</option>
                   <option value="on-failure">on-failure (Exit code != 0)</option>
                   <option value="always">always (Any exit)</option>
-                  <option value="unless-stopped">unless-stopped</option>
+                  <option value="on-abnormal">on-abnormal (Crash signals)</option>
                 </select>
               </div>
               {restart !== "no" && (
@@ -149,6 +172,7 @@ function SystemdGeneratorContent() {
                   <div className="flex">
                     <input 
                       type="number" 
+                      min="0" step="0.1"
                       value={restartSec} 
                       onChange={(e) => setRestartSec(e.target.value)} 
                       className="w-full bg-black border border-[#1a1a1a] border-r-0 p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none"
@@ -201,6 +225,39 @@ function SystemdGeneratorContent() {
               )}
             </div>
           </div>
+
+          <div className="space-y-4 pt-4 border-t border-[#1a1a1a]">
+            <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4" /> Service Hardening
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {([
+                ["noNewPrivileges", "NoNewPrivileges"],
+                ["privateTmp", "PrivateTmp"],
+                ["protectHome", "ProtectHome"],
+              ] as const).map(([key, label]) => (
+                <label key={key} className="flex items-center gap-2 border border-[#1a1a1a] bg-black p-2 text-[10px] font-mono text-zinc-400 cursor-pointer hover:border-[#00ff9c]/50">
+                  <input
+                    type="checkbox"
+                    checked={hardening[key]}
+                    onChange={(event) => setHardening((current) => ({ ...current, [key]: event.target.checked }))}
+                    className="accent-[#00ff9c]"
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+            <p className="text-[10px] text-zinc-600 font-mono">Review filesystem and device requirements before enabling these restrictions in production.</p>
+          </div>
+
+          {(safeServiceName !== serviceName.trim() || invalidEnvironmentCount > 0) && (
+            <div className="border border-amber-500/40 bg-amber-500/5 p-3 flex gap-2 text-amber-300">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <p className="text-[10px] font-mono leading-relaxed">
+                Invalid unit identifiers are replaced with a safe fallback and invalid environment keys are omitted from the preview.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -210,7 +267,7 @@ function SystemdGeneratorContent() {
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-zinc-500" />
-              <span className="text-zinc-400 text-xs font-mono">/etc/systemd/system/{serviceName || "service"}.service</span>
+              <span className="text-zinc-400 text-xs font-mono">/etc/systemd/system/{safeServiceName || "service"}.service</span>
             </div>
             <button
               onClick={handleCopy}
@@ -227,9 +284,9 @@ function SystemdGeneratorContent() {
         
         <div className="border border-[#1a1a1a] bg-[#0a0a0a] p-4 text-zinc-400">
           <span className="text-xs font-bold uppercase tracking-widest text-zinc-500 block mb-2">Installation Commands</span>
-          <code className="text-xs font-mono block mb-1 text-zinc-300">sudo nano /etc/systemd/system/{serviceName || "app"}.service</code>
+          <code className="text-xs font-mono block mb-1 text-zinc-300">sudo nano /etc/systemd/system/{safeServiceName || "app"}.service</code>
           <code className="text-xs font-mono block mb-1 text-zinc-300">sudo systemctl daemon-reload</code>
-          <code className="text-xs font-mono block mb-1 text-zinc-300">sudo systemctl enable --now {serviceName || "app"}</code>
+          <code className="text-xs font-mono block mb-1 text-zinc-300">sudo systemctl enable --now {safeServiceName || "app"}</code>
         </div>
       </div>
 

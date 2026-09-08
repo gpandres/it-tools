@@ -24,10 +24,12 @@ function StorageCalculatorContent() {
     "PiB": Math.pow(1024, 5),
   };
 
-  const inputValue = parseFloat(value) || 0;
+  const parsedValue = parseFloat(value);
+  const inputValue = Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0;
   
   // Convert input to raw bytes
-  const bytes = inputValue * (multipliers[unit] || 1);
+  const calculatedBytes = inputValue * (multipliers[unit] || 1);
+  const bytes = Number.isFinite(calculatedBytes) ? calculatedBytes : 0;
 
   const calculate = (targetUnit: string) => {
     return bytes / multipliers[targetUnit];
