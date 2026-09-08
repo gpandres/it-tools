@@ -94,6 +94,18 @@ const defenseImpairmentEntry = (id: string, name: string, platform: Platform, pa
   platform,
 });
 
+const credentialAccessEntry = (id: string, name: string, platform: Platform, parentId?: string): MitreDef => ({
+  id,
+  ...(parentId ? { parentId } : {}),
+  tactic: "Credential Access",
+  name,
+  description: `${name} can be abused to obtain account names, passwords, hashes, tokens, keys, or other authentication material.`,
+  example: `Investigating unexpected ${name.toLowerCase()} access and correlating it with process, identity, file, and network telemetry.`,
+  icon: Key,
+  color: "text-yellow-400",
+  platform,
+});
+
 const PRIVILEGE_ESCALATION_ENTRIES: MitreDef[] = [
   privilegeEscalationEntry("T1548", "Abuse Elevation Control Mechanism", "Cross-Platform"),
   privilegeEscalationEntry("T1134", "Access Token Manipulation", "Windows"),
@@ -275,6 +287,70 @@ const DEFENSE_IMPAIRMENT_CATALOG: Array<[string, string, Platform, string?]> = [
 
 const DEFENSE_IMPAIRMENT_ENTRIES = DEFENSE_IMPAIRMENT_CATALOG.map(([id, name, platform, parentId]) =>
   defenseImpairmentEntry(id, name, platform, parentId),
+);
+
+const CREDENTIAL_ACCESS_CATALOG: Array<[string, string, Platform, string?]> = [
+  ["T1557", "Adversary-in-the-Middle", "Cross-Platform"],
+  ["T1557.001", "Name Resolution Poisoning and SMB Relay", "Windows", "T1557"],
+  ["T1557.002", "ARP Cache Poisoning", "Cross-Platform", "T1557"],
+  ["T1557.003", "DHCP Spoofing", "Cross-Platform", "T1557"],
+  ["T1557.004", "Evil Twin", "Cross-Platform", "T1557"],
+  ["T1110", "Brute Force", "Cross-Platform"],
+  ["T1110.001", "Password Guessing", "Cross-Platform", "T1110"],
+  ["T1110.002", "Password Cracking", "Cross-Platform", "T1110"],
+  ["T1110.003", "Password Spraying", "Cross-Platform", "T1110"],
+  ["T1110.004", "Credential Stuffing", "Cross-Platform", "T1110"],
+  ["T1555", "Credentials from Password Stores", "Cross-Platform"],
+  ["T1555.001", "Keychain", "macOS", "T1555"],
+  ["T1555.002", "Securityd Memory", "macOS", "T1555"],
+  ["T1555.003", "Credentials from Web Browsers", "Cross-Platform", "T1555"],
+  ["T1555.004", "Windows Credential Manager", "Windows", "T1555"],
+  ["T1555.005", "Password Managers", "Cross-Platform", "T1555"],
+  ["T1555.006", "Cloud Secrets Management Stores", "Cross-Platform", "T1555"],
+  ["T1212", "Exploitation for Credential Access", "Cross-Platform"],
+  ["T1187", "Forced Authentication", "Cross-Platform"],
+  ["T1606", "Forge Web Credentials", "Cross-Platform"],
+  ["T1606.001", "Web Cookies", "Cross-Platform", "T1606"],
+  ["T1606.002", "SAML Tokens", "Cross-Platform", "T1606"],
+  ["T1056", "Input Capture", "Cross-Platform"],
+  ["T1056.001", "Keylogging", "Cross-Platform", "T1056"],
+  ["T1056.002", "GUI Input Capture", "Cross-Platform", "T1056"],
+  ["T1056.003", "Web Portal Capture", "Cross-Platform", "T1056"],
+  ["T1056.004", "Credential API Hooking", "Cross-Platform", "T1056"],
+  ["T1111", "Multi-Factor Authentication Interception", "Cross-Platform"],
+  ["T1621", "Multi-Factor Authentication Request Generation", "Cross-Platform"],
+  ["T1040", "Network Sniffing", "Cross-Platform"],
+  ["T1003", "OS Credential Dumping", "Cross-Platform"],
+  ["T1003.001", "LSASS Memory", "Windows", "T1003"],
+  ["T1003.002", "Security Account Manager", "Windows", "T1003"],
+  ["T1003.003", "NTDS", "Windows", "T1003"],
+  ["T1003.004", "LSA Secrets", "Windows", "T1003"],
+  ["T1003.005", "Cached Domain Credentials", "Windows", "T1003"],
+  ["T1003.006", "DCSync", "Windows", "T1003"],
+  ["T1003.007", "Proc Filesystem", "Linux", "T1003"],
+  ["T1003.008", "/etc/passwd and /etc/shadow", "Linux", "T1003"],
+  ["T1528", "Steal Application Access Token", "Cross-Platform"],
+  ["T1649", "Steal or Forge Authentication Certificates", "Cross-Platform"],
+  ["T1558", "Steal or Forge Kerberos Tickets", "Windows"],
+  ["T1558.001", "Golden Ticket", "Windows", "T1558"],
+  ["T1558.002", "Silver Ticket", "Windows", "T1558"],
+  ["T1558.003", "Kerberoasting", "Windows", "T1558"],
+  ["T1558.004", "AS-REP Roasting", "Windows", "T1558"],
+  ["T1558.005", "Ccache Files", "Linux", "T1558"],
+  ["T1539", "Steal Web Session Cookie", "Cross-Platform"],
+  ["T1552", "Unsecured Credentials", "Cross-Platform"],
+  ["T1552.001", "Credentials In Files", "Cross-Platform", "T1552"],
+  ["T1552.002", "Credentials in Registry", "Windows", "T1552"],
+  ["T1552.003", "Shell History", "Cross-Platform", "T1552"],
+  ["T1552.004", "Private Keys", "Cross-Platform", "T1552"],
+  ["T1552.005", "Cloud Instance Metadata API", "Cross-Platform", "T1552"],
+  ["T1552.006", "Group Policy Preferences", "Windows", "T1552"],
+  ["T1552.007", "Container API", "Cross-Platform", "T1552"],
+  ["T1552.008", "Chat Messages", "Cross-Platform", "T1552"],
+];
+
+const CREDENTIAL_ACCESS_ENTRIES = CREDENTIAL_ACCESS_CATALOG.map(([id, name, platform, parentId]) =>
+  credentialAccessEntry(id, name, platform, parentId),
 );
 
 // The entries below are the remaining Enterprise Persistence objects in v19.2.
@@ -652,6 +728,7 @@ export const MITRE_DB: MitreDef[] = [
   ,...PRIVILEGE_ESCALATION_ENTRIES
   ,...STEALTH_ENTRIES
   ,...DEFENSE_IMPAIRMENT_ENTRIES
+  ,...CREDENTIAL_ACCESS_ENTRIES
 ];
 
 // A few Stealth entries already exist because they are also part of another
@@ -706,4 +783,13 @@ const DEFENSE_IMPAIRMENT_SHARED_IDS = new Set([
 for (const definition of MITRE_DB) {
   if (!DEFENSE_IMPAIRMENT_SHARED_IDS.has(definition.id)) continue;
   definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Defense Impairment"]));
+}
+
+const CREDENTIAL_ACCESS_SHARED_IDS = new Set([
+  "T1556", "T1556.001", "T1556.002", "T1556.003", "T1556.004", "T1556.005", "T1556.006", "T1556.007", "T1556.008", "T1556.009",
+]);
+
+for (const definition of MITRE_DB) {
+  if (!CREDENTIAL_ACCESS_SHARED_IDS.has(definition.id)) continue;
+  definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Credential Access"]));
 }

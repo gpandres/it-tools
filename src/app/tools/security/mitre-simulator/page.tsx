@@ -314,6 +314,46 @@ const VECTORS = [
     ]
   },
   {
+    name: "Credential Access Hunt",
+    desc: "A credential-theft investigation spanning password stores, credential dumping, Kerberos abuse, MFA pressure and unsecured files.",
+    windows_phases: [
+      [
+        { desc: "A suspicious process reads browser credential databases from a user profile.", mitre: "T1555.003", event: "Sysmon 11" },
+        { desc: "A process accesses LSASS memory from an unexpected administrative tool.", mitre: "T1003.001", event: "Sysmon 10" },
+      ],
+      [
+        { desc: "A service account ticket is requested and prepared for offline password cracking.", mitre: "T1558.003", event: "4769" },
+        { desc: "Repeated authentication attempts target many accounts with one common password.", mitre: "T1110.003", event: "4625" },
+      ],
+      [
+        { desc: "An attacker accesses a domain controller replication interface from an unusual host.", mitre: "T1003.006", event: "4662" },
+        { desc: "A malicious process captures credentials through an API hook.", mitre: "T1056.004", event: "Sysmon 7" },
+      ],
+      [
+        { desc: "A private key and configuration file containing credentials are read from a project directory.", mitre: "T1552.004", event: "4663" },
+        { desc: "A stolen web session cookie is replayed to access a SaaS application.", mitre: "T1539", event: "Cloud Audit" },
+      ],
+    ],
+    linux_phases: [
+      [
+        { desc: "A process reads `/etc/shadow` and nearby account files outside a normal administration workflow.", mitre: "T1003.008", event: "auditd SYSCALL" },
+        { desc: "A command searches shell history for passwords and tokens.", mitre: "T1552.003", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "A process inspects `/proc/<pid>/mem` to collect credential material.", mitre: "T1003.007", event: "auditd SYSCALL" },
+        { desc: "A Kerberos ccache file is copied from a user profile for reuse.", mitre: "T1558.005", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "A malicious PAM module is introduced into the authentication path.", mitre: "T1556.003", event: "auditd SYSCALL" },
+        { desc: "Network traffic is captured from an interface in promiscuous mode.", mitre: "T1040", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "A container API is queried for environment variables and service credentials.", mitre: "T1552.007", event: "auditd EXECVE" },
+        { desc: "An attacker-in-the-middle position relays name-resolution authentication traffic.", mitre: "T1557.001", event: "auditd SYSCALL" },
+      ],
+    ],
+  },
+  {
     name: "Defense Impairment",
     desc: "A blue-team exercise focused on detecting firewall tampering, logging gaps, tool degradation and trust-control changes.",
     windows_phases: [
