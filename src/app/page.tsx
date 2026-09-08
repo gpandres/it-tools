@@ -13,6 +13,18 @@ const HOME_JSON_LD = serializeJsonLd(catalogStructuredData(toolsRegistry));
 const TOOL_DATA_FLOW = new Map(toolsRegistry.map(tool => [tool.id, toolDataFlow(tool)]));
 const HOME_FILTERS_KEY = "it_tools_home_filters";
 
+function ToolCardsSkeleton() {
+  return <div aria-label="Loading tools" className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4" role="status">
+    {Array.from({ length: 9 }, (_, index) => <article key={index} aria-hidden="true" className="flex min-h-[190px] flex-col border border-zinc-800 bg-[#050505] p-5">
+      <div className="mb-4 h-2 w-24 animate-pulse bg-[#163b2d]" />
+      <div className="mb-3 h-4 w-3/4 animate-pulse bg-[#101b17]" />
+      <div className="h-3 w-full animate-pulse bg-[#101b17]" />
+      <div className="mt-2 h-3 w-5/6 animate-pulse bg-[#101b17]" />
+      <div className="mt-auto h-3 w-28 animate-pulse bg-[#101b17]" />
+    </article>)}
+  </div>;
+}
+
 const HomeToolCard = memo(function HomeToolCard({
   tool,
   favorite,
@@ -93,6 +105,7 @@ export default function Home() {
     const tool = toolsRegistry.find(item => item.id === id);
     return tool ? [tool] : [];
   });
+  const catalogueReady = isLoaded && filtersReady;
   const onToggleFavorite = useCallback((toolId: string, isFavorite: boolean) => {
     if (!preferencesReady.current) return;
     if (isFavorite) removeFavorite(toolId);
@@ -168,12 +181,12 @@ export default function Home() {
           </div>
         </div>
         <div className="flex flex-wrap gap-5 items-center py-4 text-xs text-zinc-300">
-          {!isLoaded ? <div role="status" className="flex items-center gap-2 text-zinc-500"><span className="h-3 w-3 animate-pulse bg-[#163b2d]" />Loading saved preferences...</div> : <label className="flex items-center gap-2"><input type="checkbox" checked={favoritesOnly} onChange={event => setFavoritesOnly(event.target.checked)} className="accent-[#00ff9c]" />Favorites only</label>}
-          <label className="flex items-center gap-2"><input type="checkbox" checked={localOnly} onChange={event => setLocalOnly(event.target.checked)} className="accent-[#00ff9c]" />No external services</label>
-          <span role="status" className="text-zinc-400">{filtered.length} tools found</span>
-          {(query || category || favoritesOnly || localOnly) && <button className="underline text-[#00ff9c]" onClick={() => { setQuery(""); setCategory(""); setFavoritesOnly(false); setLocalOnly(false); }}>Reset filters</button>}
+          {!catalogueReady ? <div role="status" className="flex items-center gap-2 text-zinc-500"><span className="h-3 w-3 animate-pulse bg-[#163b2d]" />Loading saved preferences...</div> : <label className="flex items-center gap-2"><input type="checkbox" checked={favoritesOnly} onChange={event => setFavoritesOnly(event.target.checked)} className="accent-[#00ff9c]" />Favorites only</label>}
+          <label className={catalogueReady ? "flex items-center gap-2" : "flex items-center gap-2 opacity-60"}><input type="checkbox" checked={localOnly} disabled={!catalogueReady} onChange={event => setLocalOnly(event.target.checked)} className="accent-[#00ff9c]" />No external services</label>
+          <span role="status" className="text-zinc-400">{catalogueReady ? `${filtered.length} tools found` : "Preparing catalogue..."}</span>
+          {catalogueReady && (query || category || favoritesOnly || localOnly) && <button className="underline text-[#00ff9c]" onClick={() => { setQuery(""); setCategory(""); setFavoritesOnly(false); setLocalOnly(false); }}>Reset filters</button>}
         </div>
-        {filtered.length === 0 ? <p className="p-8 border border-zinc-800 text-sm text-zinc-400">No matching tools. Try another search or reset the filters.</p> : <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {!catalogueReady ? <ToolCardsSkeleton /> : filtered.length === 0 ? <p className="p-8 border border-zinc-800 text-sm text-zinc-400">No matching tools. Try another search or reset the filters.</p> : <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(tool => <HomeToolCard key={tool.id} tool={tool} favorite={favorites.includes(tool.id)} onToggleFavorite={onToggleFavorite} />)}
         </div>}
       </section>
