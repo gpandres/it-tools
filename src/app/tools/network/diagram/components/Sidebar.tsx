@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToolActionButton } from "@/components/tool-action-panel";
-import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Download, Eye, EyeOff, FileJson, Globe2, Group, HardDriveDownload, KeyRound, Laptop, LayoutDashboard, Maximize2, Minimize2, Network, Redo2, Router, Search, Server, ServerCog, Shield, ShieldCheck, Sparkles, Undo2, Ungroup, Upload, Wifi, X, Zap } from 'lucide-react';
+import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Download, Eye, EyeOff, FileJson, Globe2, Group, HardDriveDownload, KeyRound, Laptop, LayoutDashboard, Maximize2, Minimize2, Network, Redo2, Router, ScanSearch, Search, Server, ServerCog, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Undo2, Ungroup, Upload, Wifi, X, Zap } from 'lucide-react';
 import type { DiagramIssue } from '@/lib/diagram-validation';
 import type { NetworkConnectionType, NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, NetworkStatus, NetworkZone } from '../types';
 
@@ -74,6 +74,7 @@ type SidebarProps = {
 export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount, selectedEdgeCount, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, groupSelected, ungroupSelected, canGroup, canUngroup, autoLayout, fitView, validationIssues, validate, exportDiagram, exportSvg, exportInventory, importDiagram, loadTemplate, exportImage, showMinimap, toggleMinimap, focusMode, toggleFocusMode }: SidebarProps) {
   const [query, setQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<string[]>(['Network', 'Security', 'Compute', 'Services']);
+  const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const filteredItems = useMemo(() => NODE_TYPES.filter(item => `${item.label} ${item.category}`.toLowerCase().includes(query.toLowerCase().trim())), [query]);
   const categories = Array.from(new Set(filteredItems.map(item => item.category)));
@@ -94,21 +95,36 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
     <aside className="flex h-full w-[19rem] shrink-0 flex-col overflow-hidden border-r border-[#1a1a1a] bg-[#050505]" aria-label="Diagram toolbox">
       <div className="flex shrink-0 items-start justify-between gap-2 border-b border-[#1a1a1a] p-3">
         <h2 className="flex items-center gap-2 font-bold"><Network className="h-4 w-4 text-[#00ff9c]" /> Diagram toolbox</h2>
-        <div className="flex max-w-[9rem] flex-wrap justify-end gap-1">
-          <ToolActionButton type="button" onClick={undo} disabled={!canUndo} aria-label="Undo" title="Undo (Ctrl+Z)"><Undo2 /></ToolActionButton>
-          <ToolActionButton type="button" onClick={redo} disabled={!canRedo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)"><Redo2 /></ToolActionButton>
-          <ToolActionButton type="button" onClick={autoLayout} aria-label="Auto layout" title="Auto layout"><LayoutDashboard /></ToolActionButton>
-          <ToolActionButton type="button" onClick={fitView} aria-label="Fit view" title="Fit view"><Maximize2 /></ToolActionButton>
-          <ToolActionButton type="button" onClick={toggleMinimap} aria-label={showMinimap ? 'Hide minimap' : 'Show minimap'} title={showMinimap ? 'Hide minimap' : 'Show minimap'}>{showMinimap ? <EyeOff /> : <Eye />}</ToolActionButton>
-          <ToolActionButton type="button" onClick={toggleFocusMode} aria-label={focusMode ? 'Exit focus mode' : 'Enter focus mode'} title={focusMode ? 'Exit focus mode (Esc)' : 'Enter focus mode'}>{focusMode ? <Minimize2 /> : <Maximize2 />}</ToolActionButton>
-          {selectedNodeCount > 0 && <ToolActionButton type="button" onClick={duplicateSelected} aria-label="Duplicate selection" title="Duplicate selection"><Sparkles /></ToolActionButton>}
-          {canGroup && <ToolActionButton type="button" onClick={groupSelected} aria-label="Group selected nodes" title="Group selected nodes"><Group /></ToolActionButton>}
-          {canUngroup && <ToolActionButton type="button" onClick={ungroupSelected} aria-label="Ungroup selected nodes" title="Ungroup selected nodes"><Ungroup /></ToolActionButton>}
-          {(selectedNodeCount > 0 || selectedEdgeCount > 0) && <ToolActionButton type="button" onClick={deleteSelected} tone="danger" aria-label="Delete selection" title="Delete selection (Delete)"><X /></ToolActionButton>}
+        <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 border-r border-[#1a1a1a] pr-1.5" aria-label="History actions">
+            <ToolActionButton type="button" onClick={undo} disabled={!canUndo} aria-label="Undo" title="Undo (Ctrl+Z)"><Undo2 /></ToolActionButton>
+            <ToolActionButton type="button" onClick={redo} disabled={!canRedo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)"><Redo2 /></ToolActionButton>
+          </div>
+          <div className="flex items-center gap-1 border-r border-[#1a1a1a] pr-1.5" aria-label="Layout actions">
+            <ToolActionButton type="button" onClick={autoLayout} aria-label="Auto layout" title="Auto layout"><LayoutDashboard /></ToolActionButton>
+            <ToolActionButton type="button" onClick={fitView} aria-label="Fit diagram" title="Fit diagram"><ScanSearch /></ToolActionButton>
+          </div>
+          <div className="relative">
+            <ToolActionButton type="button" onClick={() => setViewMenuOpen(current => !current)} aria-expanded={viewMenuOpen} aria-haspopup="true" aria-label="View options" title="View options"><SlidersHorizontal /></ToolActionButton>
+            {viewMenuOpen && <div className="absolute right-0 top-9 z-30 w-44 rounded border border-[#2a2a2a] bg-[#080808] p-2 shadow-2xl" role="menu" aria-label="View options">
+              <div className="mb-2 px-1 text-[9px] font-bold uppercase tracking-widest text-zinc-600">View</div>
+              <button type="button" role="menuitem" onClick={toggleMinimap} className="flex w-full items-center gap-2 rounded px-2 py-2 text-left font-mono text-[10px] text-zinc-300 hover:bg-[#00ff9c]/10 hover:text-[#00ff9c]">{showMinimap ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}{showMinimap ? 'Hide minimap' : 'Show minimap'}</button>
+              <button type="button" role="menuitem" onClick={toggleFocusMode} className="flex w-full items-center gap-2 rounded px-2 py-2 text-left font-mono text-[10px] text-zinc-300 hover:bg-[#00ff9c]/10 hover:text-[#00ff9c]">{focusMode ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}{focusMode ? 'Exit focus mode' : 'Focus mode'}</button>
+            </div>}
+          </div>
         </div>
       </div>
 
-      {(selectedNodeCount > 1 || selectedEdgeCount > 1) && <div className="flex shrink-0 items-center gap-2 border-b border-[#1a1a1a] bg-[#00ff9c]/5 px-3 py-2 font-mono text-[10px] text-zinc-400"><span className="text-[#00ff9c]">{selectedNodeCount} nodes</span>{selectedEdgeCount > 0 && <><span>·</span><span className="text-[#38bdf8]">{selectedEdgeCount} links</span></>}<span className="ml-auto text-zinc-600">Shift + drag</span></div>}
+      {(selectedNodeCount > 0 || selectedEdgeCount > 0) && <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[#1a1a1a] bg-[#00ff9c]/5 px-3 py-2 font-mono text-[10px] text-zinc-400">
+        <span className="text-[#00ff9c]">{selectedNodeCount} nodes</span>{selectedEdgeCount > 0 && <><span>·</span><span className="text-[#38bdf8]">{selectedEdgeCount} links</span></>}
+        {selectedNodeCount > 1 && <span className="text-zinc-600">Shift + drag</span>}
+        <div className="ml-auto flex flex-wrap justify-end gap-1">
+          {selectedNodeCount > 0 && <ToolActionButton type="button" onClick={duplicateSelected} aria-label="Duplicate selection" title="Duplicate selection"><Sparkles /></ToolActionButton>}
+          {canGroup && <ToolActionButton type="button" onClick={groupSelected} aria-label="Group selected nodes" title="Group selected nodes"><Group /></ToolActionButton>}
+          {canUngroup && <ToolActionButton type="button" onClick={ungroupSelected} aria-label="Ungroup selected nodes" title="Ungroup selected nodes"><Ungroup /></ToolActionButton>}
+          <ToolActionButton type="button" onClick={deleteSelected} tone="danger" aria-label="Delete selection" title="Delete selection (Delete)"><X /></ToolActionButton>
+        </div>
+      </div>}
 
       <div ref={scrollAreaRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
         <section className="border-b border-[#1a1a1a] pb-4">
