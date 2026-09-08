@@ -628,6 +628,59 @@ const EXFILTRATION_ENTRIES = EXFILTRATION_CATALOG.map(([id, name, platform, pare
   exfiltrationEntry(id, name, platform, parentId),
 );
 
+const impactEntry = (id: string, name: string, platform: Platform, parentId?: string): MitreDef => ({
+  id,
+  ...(parentId ? { parentId } : {}),
+  tactic: "Impact",
+  name,
+  description: `${name} can be abused to manipulate, interrupt, degrade, or destroy systems, services, data, or business operations.`,
+  example: `Investigating anomalous ${name.toLowerCase()} activity with endpoint, identity, cloud, storage, and service telemetry.`,
+  icon: AlertTriangle,
+  color: "text-red-500",
+  platform,
+});
+
+// Enterprise Impact (TA0040), ATT&CK v19.2.
+const IMPACT_CATALOG: Array<[string, string, Platform, string?]> = [
+  ["T1531", "Account Access Removal", "Cross-Platform"],
+  ["T1485", "Data Destruction", "Cross-Platform"],
+  ["T1485.001", "Lifecycle-Triggered Deletion", "Cross-Platform", "T1485"],
+  ["T1486", "Data Encrypted for Impact", "Cross-Platform"],
+  ["T1565", "Data Manipulation", "Cross-Platform"],
+  ["T1565.001", "Stored Data Manipulation", "Cross-Platform", "T1565"],
+  ["T1565.002", "Transmitted Data Manipulation", "Cross-Platform", "T1565"],
+  ["T1565.003", "Runtime Data Manipulation", "Cross-Platform", "T1565"],
+  ["T1491", "Defacement", "Cross-Platform"],
+  ["T1491.001", "Internal Defacement", "Cross-Platform", "T1491"],
+  ["T1491.002", "External Defacement", "Cross-Platform", "T1491"],
+  ["T1561", "Disk Wipe", "Cross-Platform"],
+  ["T1561.001", "Disk Content Wipe", "Cross-Platform", "T1561"],
+  ["T1561.002", "Disk Structure Wipe", "Cross-Platform", "T1561"],
+  ["T1667", "Email Bombing", "Cross-Platform"],
+  ["T1499", "Endpoint Denial of Service", "Cross-Platform"],
+  ["T1499.001", "OS Exhaustion Flood", "Cross-Platform", "T1499"],
+  ["T1499.002", "Service Exhaustion Flood", "Cross-Platform", "T1499"],
+  ["T1499.003", "Application Exhaustion Flood", "Cross-Platform", "T1499"],
+  ["T1499.004", "Application or System Exploitation", "Cross-Platform", "T1499"],
+  ["T1657", "Financial Theft", "Cross-Platform"],
+  ["T1495", "Firmware Corruption", "Cross-Platform"],
+  ["T1490", "Inhibit System Recovery", "Cross-Platform"],
+  ["T1498", "Network Denial of Service", "Cross-Platform"],
+  ["T1498.001", "Direct Network Flood", "Cross-Platform", "T1498"],
+  ["T1498.002", "Reflection Amplification", "Cross-Platform", "T1498"],
+  ["T1496", "Resource Hijacking", "Cross-Platform"],
+  ["T1496.001", "Compute Hijacking", "Cross-Platform", "T1496"],
+  ["T1496.002", "Bandwidth Hijacking", "Cross-Platform", "T1496"],
+  ["T1496.003", "SMS Pumping", "Cross-Platform", "T1496"],
+  ["T1496.004", "Cloud Service Hijacking", "Cross-Platform", "T1496"],
+  ["T1489", "Service Stop", "Cross-Platform"],
+  ["T1529", "System Shutdown/Reboot", "Cross-Platform"],
+];
+
+const IMPACT_ENTRIES = IMPACT_CATALOG.map(([id, name, platform, parentId]) =>
+  impactEntry(id, name, platform, parentId),
+);
+
 // The entries below are the remaining Enterprise Persistence objects in v19.2.
 // Names and hierarchy follow MITRE's TA0003 tactic page; descriptions are deliberately
 // concise but operational so the local reference remains usable without a remote feed.
@@ -1009,6 +1062,7 @@ export const MITRE_DB: MitreDef[] = [
   ,...COLLECTION_ENTRIES
   ,...COMMAND_AND_CONTROL_ENTRIES
   ,...EXFILTRATION_ENTRIES
+  ,...IMPACT_ENTRIES
 ];
 
 // A few Stealth entries already exist because they are also part of another
@@ -1109,4 +1163,11 @@ const EXFILTRATION_SHARED_IDS = new Set(EXFILTRATION_CATALOG.map(([id]) => id));
 for (const definition of MITRE_DB) {
   if (!EXFILTRATION_SHARED_IDS.has(definition.id)) continue;
   definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Exfiltration"]));
+}
+
+const IMPACT_SHARED_IDS = new Set(IMPACT_CATALOG.map(([id]) => id));
+
+for (const definition of MITRE_DB) {
+  if (!IMPACT_SHARED_IDS.has(definition.id)) continue;
+  definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Impact"]));
 }

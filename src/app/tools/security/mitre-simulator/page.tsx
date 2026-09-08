@@ -354,6 +354,46 @@ const VECTORS = [
     ],
   },
   {
+    name: "Impact & Business Disruption",
+    desc: "A destructive-activity investigation covering access denial, encryption, recovery inhibition, service disruption and cloud resource abuse.",
+    windows_phases: [
+      [
+        { desc: "Administrative access is removed from a group of critical user accounts before the destructive action.", mitre: "T1531", event: "4725" },
+        { desc: "A recovery service and its associated backup configuration are disabled.", mitre: "T1490", event: "7036" },
+      ],
+      [
+        { desc: "A ransomware process encrypts files across a workstation and its reachable shares.", mitre: "T1486", event: "Sysmon 11" },
+        { desc: "A critical service is stopped, causing an application outage.", mitre: "T1489", event: "7036" },
+      ],
+      [
+        { desc: "A cloud workload consumes unusual compute resources under a compromised identity.", mitre: "T1496.001", event: "Cloud Audit" },
+        { desc: "A large number of requests exhausts an exposed application endpoint.", mitre: "T1499.003", event: "IIS Log" },
+      ],
+      [
+        { desc: "Files are overwritten on a targeted disk, leaving the host unable to boot normally.", mitre: "T1561.002", event: "Sysmon 1" },
+        { desc: "Stored records are altered to corrupt operational decision-making.", mitre: "T1565.001", event: "4663" },
+      ],
+    ],
+    linux_phases: [
+      [
+        { desc: "Privileged accounts are locked or their credentials are changed to remove legitimate access.", mitre: "T1531", event: "auditd USER_CHAUTHTOK" },
+        { desc: "Local recovery services and backup targets are removed before encryption.", mitre: "T1490", event: "auditd EXECVE" },
+      ],
+      [
+        { desc: "A process encrypts files across mounted home directories and shared storage.", mitre: "T1486", event: "auditd SYSCALL" },
+        { desc: "A critical systemd service is stopped to interrupt application availability.", mitre: "T1489", event: "syslog" },
+      ],
+      [
+        { desc: "A container workload consumes excessive CPU on a shared cluster node.", mitre: "T1496.001", event: "Cloud Audit" },
+        { desc: "Repeated resource-intensive requests exhaust a public application service.", mitre: "T1499.003", event: "nginx access.log" },
+      ],
+      [
+        { desc: "Disk structures are corrupted so the host cannot boot into its normal operating system.", mitre: "T1561.002", event: "auditd EXECVE" },
+        { desc: "A database record is altered at rest to affect an operational workflow.", mitre: "T1565.001", event: "auditd SYSCALL" },
+      ],
+    ],
+  },
+  {
     name: "Collection to Exfiltration",
     desc: "A data-loss investigation follows sensitive files from staging to an external destination over web services, alternate protocols and scheduled transfers.",
     windows_phases: [
