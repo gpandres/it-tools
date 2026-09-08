@@ -3,23 +3,70 @@ import { validateIp } from './network.ts';
 export type DiagramData = { nodes: Record<string, unknown>[]; edges: Record<string, unknown>[] };
 export type DiagramIssue = { id: string; severity: 'error' | 'warning'; title: string; detail: string };
 
+const MAX_LABEL_LENGTH = 1000;
+const NODE_DATA_FIELDS = ['label', 'type', 'ip', 'vlan', 'hostname', 'vendor', 'model', 'role', 'zone', 'status', 'notes', 'interfaces'];
+const EDGE_DATA_FIELDS = ['connectionType', 'label', 'sourcePort', 'targetPort', 'bandwidth', 'vlanMode', 'vlans'];
+
+function safeString(value: unknown, maxLength = MAX_LABEL_LENGTH) {
+  return typeof value === 'string' ? value.slice(0, maxLength) : '';
+}
+
+function safeRecordFields(value: unknown, fields: string[]) {
+  const source = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+  const result: Record<string, unknown> = {};
+  for (const field of fields) {
+    if (typeof source[field] === 'string') result[field] = safeString(source[field]);
+  }
+  return result;
+}
+
 export function parseDiagram(value: unknown): DiagramData | null {
   if (!value || typeof value !== "object") return null;
   const item = value as { nodes?: unknown; edges?: unknown };
   if (!Array.isArray(item.nodes) || !Array.isArray(item.edges) || item.nodes.length > 500 || item.edges.length > 1000) return null;
-  const nodes = item.nodes.filter((node): node is Record<string, unknown> => {
-    if (!node || typeof node !== "object") return false;
-    const n = node as { id?: unknown; position?: { x?: unknown; y?: unknown } };
-    return typeof n.id === "string" && n.id.length <= 128 && !!n.position && Number.isFinite(n.position.x) && Number.isFinite(n.position.y);
+  const nodes = item.nodes.map((node) => {
+    if (!node || typeof node !== "object") return null;
+    const source = node as { id?: unknown; position?: { x?: unknown; y?: unknown }; width?: unknown; height?: unknown };
+    const id = safeString(source.id, 128).trim();
+    const x = source.position?.x;
+    const y = source.position?.y;
+    if (!id || !Number.isFinite(x) || !Number.isFinite(y) || Math.abs(x as number) > 1_000_000 || Math.abs(y as number) > 1_000_000) return null;
+    const normalized: Record<string, unknown> = {
+      id,
+      type: 'networkNode',
+      position: { x, y },
+      data: safeRecordFields((node as Record<string, unknown>).data, NODE_DATA_FIELDS),
+    };
+    if (typeof source.width === 'number' && Number.isFinite(source.width) && source.width >= 120 && source.width <= 2000) normalized.width = source.width;
+    if (typeof source.height === 'number' && Number.isFinite(source.height) && source.height >= 100 && source.height <= 2000) normalized.height = source.height;
+    return normalized;
   });
-  const edges = item.edges.filter((edge): edge is Record<string, unknown> => {
-    if (!edge || typeof edge !== "object") return false;
-    const e = edge as { id?: unknown; source?: unknown; target?: unknown };
-    return typeof e.id === "string" && e.id.length <= 128 && typeof e.source === "string" && typeof e.target === "string";
+  const edges = item.edges.map((edge) => {
+    if (!edge || typeof edge !== "object") return null;
+    const source = edge as Record<string, unknown>;
+    const id = safeString(source.id, 128).trim();
+    const sourceId = safeString(source.source, 128).trim();
+    const targetId = safeString(source.target, 128).trim();
+    if (!id || !sourceId || !targetId) return null;
+    const normalized: Record<string, unknown> = {
+      id,
+      source: sourceId,
+      target: targetId,
+      type: 'networkEdge',
+      data: safeRecordFields(source.data, EDGE_DATA_FIELDS),
+    };
+    const sourceHandle = safeString(source.sourceHandle, 64).trim();
+    const targetHandle = safeString(source.targetHandle, 64).trim();
+    if (sourceHandle) normalized.sourceHandle = sourceHandle;
+    if (targetHandle) normalized.targetHandle = targetHandle;
+    if (typeof source.animated === 'boolean') normalized.animated = source.animated;
+    return normalized;
   });
-  if (nodes.length !== item.nodes.length || edges.length !== item.edges.length) return null;
+  if (nodes.some((node) => node === null) || edges.some((edge) => edge === null)) return null;
+  const normalizedNodes = nodes as Record<string, unknown>[];
+  const normalizedEdges = edges as Record<string, unknown>[];
   const nodeIds = new Set<string>();
-  if (nodes.some((node) => {
+  if (normalizedNodes.some((node) => {
     const id = node.id as string;
     if (nodeIds.has(id)) return true;
     nodeIds.add(id);
@@ -28,7 +75,7 @@ export function parseDiagram(value: unknown): DiagramData | null {
 
   const edgeIds = new Set<string>();
   const edgeKeys = new Set<string>();
-  if (edges.some((edge) => {
+  if (normalizedEdges.some((edge) => {
     const id = edge.id as string;
     const key = [edge.source, edge.sourceHandle, edge.target, edge.targetHandle].map(String).join('|');
     if (edgeIds.has(id) || edgeKeys.has(key)) return true;
@@ -37,7 +84,7 @@ export function parseDiagram(value: unknown): DiagramData | null {
     return false;
   })) return null;
 
-  return edges.every((edge) => nodeIds.has(edge.source as string) && nodeIds.has(edge.target as string)) ? { nodes, edges } : null;
+  return normalizedEdges.every((edge) => nodeIds.has(edge.source as string) && nodeIds.has(edge.target as string)) ? { nodes: normalizedNodes, edges: normalizedEdges } : null;
 }
 
 function readNodeString(node: Record<string, unknown>, key: string) {
@@ -84,6 +131,14 @@ export function validateDiagram(diagram: DiagramData): DiagramIssue[] {
     seenEdges.add(key);
     if (edge.source === edge.target) {
       issues.push({ id: `edge-loop-${edge.id}`, severity: 'warning', title: 'Self-connection', detail: 'A link cannot normally connect a device to itself.' });
+    }
+    const sourceHandle = readNodeString(edge, 'sourceHandle');
+    const targetHandle = readNodeString(edge, 'targetHandle');
+    if (sourceHandle && !sourceHandle.endsWith('-source')) {
+      issues.push({ id: `source-handle-${edge.id}`, severity: 'error', title: 'Invalid source handle', detail: `${sourceHandle} is not a source handle.` });
+    }
+    if (targetHandle && !targetHandle.endsWith('-target')) {
+      issues.push({ id: `target-handle-${edge.id}`, severity: 'error', title: 'Invalid target handle', detail: `${targetHandle} is not a target handle.` });
     }
     const data = edge.data && typeof edge.data === 'object' ? edge.data as Record<string, unknown> : {};
     const connectionType = readNodeString(data, 'connectionType');

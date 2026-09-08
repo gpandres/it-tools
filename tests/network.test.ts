@@ -90,3 +90,26 @@ test("auto layout terminates for cyclic network topologies", () => {
   assert.ok(result.every(node => Number.isFinite(node.position.x) && Number.isFinite(node.position.y)));
   assert.ok(result.some(node => node.position.x !== 900 || node.position.y !== 900));
 });
+
+test("diagram imports keep only safe editable fields and preserve dimensions", () => {
+  const parsed = parseDiagram({
+    nodes: [{
+      id: "  router  ", position: { x: 10, y: 20 }, width: 320, height: 180,
+      data: { label: "Router", ip: "10.0.0.1", injected: "discard me" },
+      onClick: "discard me",
+    }],
+    edges: [{
+      id: "link", source: "router", target: "router2", sourceHandle: "bottom-source", targetHandle: "top-target",
+      data: { connectionType: "fiber", injected: "discard me" },
+    }],
+  });
+  assert.equal(parsed, null);
+
+  const valid = parseDiagram({
+    nodes: [{ id: "router", position: { x: 10, y: 20 }, width: 320, height: 180, data: { label: "Router", injected: "discard me" } }],
+    edges: [],
+  });
+  assert.deepEqual(valid?.nodes[0], {
+    id: "router", type: "networkNode", position: { x: 10, y: 20 }, width: 320, height: 180, data: { label: "Router" },
+  });
+});

@@ -101,6 +101,18 @@ function DiagramFlow() {
 
   const onConnect = useCallback(
     (params: Connection) => {
+      if (params.source === params.target) {
+        notify('A device cannot be connected to itself.', 'error');
+        return;
+      }
+      if (params.sourceHandle && !params.sourceHandle.endsWith('-source')) {
+        notify('Choose a source handle to start the connection.', 'error');
+        return;
+      }
+      if (params.targetHandle && !params.targetHandle.endsWith('-target')) {
+        notify('Choose a target handle to finish the connection.', 'error');
+        return;
+      }
       const isDuplicate = edgesRef.current.some(edge => edge.source === params.source && edge.target === params.target && edge.sourceHandle === params.sourceHandle && edge.targetHandle === params.targetHandle);
       if (isDuplicate) {
         notify('This exact connection already exists. Use different ports for a second link.', 'error');
