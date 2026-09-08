@@ -15,9 +15,11 @@ interface ParsedLog {
   raw: string;
   fields: Record<string, string>;
   isError: boolean;
+  sourceLine: number;
 }
 
 const MAX_LOG_INPUT_LENGTH = 5_000_000;
+const MAX_RENDERED_ROWS = 10_000;
 
 const PREDEFINED_REGEX = {
   // 127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
@@ -87,23 +89,25 @@ export default function LogParser() {
         return;
       }
       const regex = new RegExp(regexStr);
-      const lines = rawLogs.split(/\r?\n/).filter(l => l.trim() !== "");
+      const lines = rawLogs.split(/\r?\n/);
       
       const rows: ParsedLog[] = [];
       let unmatched = 0;
       
-      for (const line of lines) {
+      for (const [lineIndex, line] of lines.entries()) {
+        if (line.trim() === "") continue;
         const match = line.match(regex);
         if (match) {
           const fields: Record<string, string> = {};
           // match[0] is the full string, match[1...n] are capture groups
           for (let i = 0; i < columns.length; i++) {
-            fields[columns[i]] = match[i + 1] || "-";
+            fields[columns[i]] = match[i + 1] ?? "-";
           }
           rows.push({
             raw: line,
             fields,
-            isError: isErrorFn(fields)
+            isError: isErrorFn(fields),
+            sourceLine: lineIndex + 1,
           });
         } else unmatched += 1;
       }
@@ -125,13 +129,16 @@ export default function LogParser() {
       
       // Filter by IP (search all fields for IP)
       if (filterIp) {
-        const hasIp = Object.values(row.fields).some(val => val.includes(filterIp));
+        const term = filterIp.trim().toLowerCase();
+        const hasIp = Object.values(row.fields).some(val => val.toLowerCase().includes(term));
         if (!hasIp) return false;
       }
       
       return true;
     });
   }, [parsedData, showOnlyErrors, filterIp]);
+
+  const renderedRows = filteredRows.slice(0, MAX_RENDERED_ROWS);
 
   const handleFileUpload = (file: File) => {
     if (file.size > MAX_LOG_INPUT_LENGTH) {
@@ -354,15 +361,15 @@ export default function LogParser() {
                   </tr>
                 </thead>
                 <tbody className="font-mono text-xs divide-y divide-[#1a1a1a]">
-                  {filteredRows.map((row, idx) => (
+                  {renderedRows.map((row) => (
                     <tr 
-                      key={idx} 
+                      key={row.sourceLine}
                       className={`hover:bg-[#050505] transition-colors ${
                         row.isError ? "bg-red-500/5 hover:bg-red-500/10" : ""
                       }`}
                     >
                       <td className="px-4 py-2 text-zinc-600 border-r border-[#1a1a1a] text-center w-12">
-                        {idx + 1}
+                        {row.sourceLine}
                         {row.isError && <AlertCircle className="w-3 h-3 text-red-500 mt-1 mx-auto inline-block ml-1" />}
                       </td>
                       {parsedData.columns.map(col => {
@@ -391,7 +398,7 @@ export default function LogParser() {
           </div>
           {parsedData && (
             <footer className="shrink-0 px-4 py-2 bg-[#050505] border-t border-[#1a1a1a] flex justify-between items-center text-[10px] font-mono text-zinc-500">
-              <span>Showing {filteredRows.length} of {parsedData.rows.length} parsed logs{parsedData.unmatched ? ` · ${parsedData.unmatched} unmatched` : ""}</span>
+              <span>Showing {renderedRows.length}{filteredRows.length > renderedRows.length ? ` of ${filteredRows.length}` : ""} visible rows · {parsedData.rows.length} parsed logs{parsedData.unmatched ? ` · ${parsedData.unmatched} unmatched` : ""}{filteredRows.length > renderedRows.length ? ` · render limit ${MAX_RENDERED_ROWS}` : ""}</span>
               <span>100% Offline Engine</span>
             </footer>
           )}

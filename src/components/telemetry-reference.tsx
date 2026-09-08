@@ -67,20 +67,33 @@ export function TelemetryReference({
   const { notify } = useNotification();
   const styles = accentStyles[accent];
 
+  // Keep the reference resilient if a local data update accidentally repeats an ID.
+  // The first definition wins so the displayed result and filter counts stay stable.
+  const uniqueItems = useMemo(() => {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      const key = item.id.trim().toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [items]);
+  const duplicateCount = items.length - uniqueItems.length;
+
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return items.filter((item) => {
+    return uniqueItems.filter((item) => {
       if (filterType !== "All" && item.type !== filterType) return false;
       if (!term) return true;
       return [item.id, item.name, item.description, item.maliciousUse, item.type, ...item.fields, ...item.mitre]
         .some((value) => value.toLowerCase().includes(term));
     });
-  }, [items, search, filterType]);
+  }, [uniqueItems, search, filterType]);
 
   const typeCounts = useMemo(() => Object.fromEntries(types.map((type) => [
     type,
-    type === "All" ? items.length : items.filter((item) => item.type === type).length,
-  ])), [items, types]);
+    type === "All" ? uniqueItems.length : uniqueItems.filter((item) => item.type === type).length,
+  ])), [uniqueItems, types]);
   const visibleItems = filteredItems.slice(0, visibleLimit);
 
   const copyId = async (id: string) => {
@@ -135,7 +148,7 @@ export function TelemetryReference({
         </aside>
 
         <main className="space-y-4 lg:col-span-9">
-          <div className="flex items-end justify-between gap-4"><h2 className={`${styles.result} font-mono text-sm`}>Found {filteredItems.length} {itemLabel.toLowerCase()}{filteredItems.length === 1 ? "" : "s"}</h2><span className="text-[10px] font-mono uppercase tracking-widest text-zinc-600">Local reference</span></div>
+          <div className="flex items-end justify-between gap-4"><h2 className={`${styles.result} font-mono text-sm`}>Found {filteredItems.length} {itemLabel.toLowerCase()}{filteredItems.length === 1 ? "" : "s"}</h2><span className="text-right text-[10px] font-mono uppercase tracking-widest text-zinc-600">Local reference{duplicateCount > 0 ? ` · ${duplicateCount} duplicate${duplicateCount === 1 ? "" : "s"} suppressed` : ""}</span></div>
           {filteredItems.length === 0 ? (
             <div className="flex flex-col items-center border border-[#1a1a1a] bg-[#050505] p-8 text-center"><Search className="mx-auto mb-3 h-8 w-8 text-zinc-600" /><p className="font-mono text-sm text-zinc-500">{emptyMessage}</p></div>
           ) : (
@@ -152,9 +165,9 @@ export function TelemetryReference({
                         <button type="button" onClick={() => copyId(item.id)} className="flex w-fit items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-zinc-600 hover:text-zinc-200" aria-label={`Copy ${item.id}`}>{copiedId === item.id ? <><Check className="h-3 w-3 text-[#00ff9c]" /> Copied</> : <><Copy className="h-3 w-3" /> Copy ID</>}</button>
                       </div>
                       <p className="mb-4 text-sm leading-relaxed text-zinc-400">{item.description}</p>
-                      <div className="relative mb-2 overflow-hidden border border-zinc-800 bg-black p-3"><div className={`absolute bottom-0 left-0 top-0 w-1 ${styles.icon}`} /><p className="ml-2 break-words font-mono text-xs text-zinc-300"><span className={`${styles.icon} mr-2 font-bold`}>Useful Fields:</span>{item.fields.join(", ")}</p></div>
+                      <div className="relative mb-2 overflow-hidden border border-zinc-800 bg-black p-3"><div className={`absolute bottom-0 left-0 top-0 w-1 ${styles.icon}`} /><p className="ml-2 break-words font-mono text-xs text-zinc-300"><span className={`${styles.icon} mr-2 font-bold`}>Useful Fields:</span>{Array.from(new Set(item.fields)).join(", ")}</p></div>
                       <div className="relative mb-3 overflow-hidden border border-red-900/30 bg-red-900/10 p-3"><p className="break-words font-mono text-xs text-red-400"><span className="mr-2 font-bold">Malicious Use:</span>{item.maliciousUse}</p></div>
-                      <div className="flex flex-wrap gap-2"><span className="mr-1 flex items-center text-[10px] font-bold uppercase tracking-widest text-zinc-500">Related MITRE:</span>{item.mitre.map((technique) => <span key={technique} className="border border-[#00ff9c]/30 bg-[#00ff9c]/10 px-2 py-0.5 font-mono text-[10px] text-[#00ff9c]">{technique}</span>)}</div>
+                      <div className="flex flex-wrap gap-2"><span className="mr-1 flex items-center text-[10px] font-bold uppercase tracking-widest text-zinc-500">Related MITRE:</span>{Array.from(new Set(item.mitre)).map((technique) => <span key={technique} className="border border-[#00ff9c]/30 bg-[#00ff9c]/10 px-2 py-0.5 font-mono text-[10px] text-[#00ff9c]">{technique}</span>)}</div>
                     </div>
                   </div>
                 </article>;
