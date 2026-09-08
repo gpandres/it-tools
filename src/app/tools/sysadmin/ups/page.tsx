@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 
 import { ToolLayout } from "@/components/tool-layout";
 import { Battery, Zap, Clock, Info } from "lucide-react";
+import { UPS_PRESETS } from "@/lib/ups-presets";
 
 function UpsCalculatorContent() {
   const [voltage, setVoltage] = useState("12");
@@ -13,6 +14,7 @@ function UpsCalculatorContent() {
   const [efficiency, setEfficiency] = useState("85");
   const [topology, setTopology] = useState<"parallel" | "series">("parallel");
   const [batteryDerating, setBatteryDerating] = useState("80");
+  const [showPresets, setShowPresets] = useState(false);
 
   const v = Math.max(0, parseFloat(voltage) || 0);
   const ah = Math.max(0, parseFloat(capacityAh) || 0);
@@ -38,8 +40,16 @@ function UpsCalculatorContent() {
   const bankVoltage = topology === "series" ? v * qty : v;
   const batteryDrawAmps = bankVoltage > 0 ? batteryDrawWatts / bankVoltage : 0;
 
+  const applyPreset = (preset: (typeof UPS_PRESETS)[number]) => {
+    setVoltage(String(preset.voltage));
+    setCapacityAh(String(preset.capacityAh));
+    setBatteries(String(preset.batteries));
+    setTopology(preset.topology);
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl">
+    <div className="max-w-5xl space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
       
       {/* Controls */}
       <div className="lg:col-span-5 space-y-6">
@@ -184,7 +194,7 @@ function UpsCalculatorContent() {
           </div>
         </div>
 
-        <div className="border border-[#1a1a1a] bg-[#0a0a0a] p-4 flex gap-3 text-zinc-400 mt-auto">
+        <div className="border border-[#1a1a1a] bg-[#0a0a0a] p-4 flex gap-3 text-zinc-400">
           <Info className="w-5 h-5 shrink-0 text-zinc-500" />
           <p className="text-sm font-mono leading-relaxed opacity-80">
             <strong>Estimate:</strong> This model includes inverter efficiency and battery derating, but it still does not model Peukert&apos;s Law, temperature curves or the UPS&apos;s low-voltage cutoff. Confirm runtime with the manufacturer&apos;s load curve; if runtime is under 15 minutes, the estimate may be optimistic.
@@ -192,6 +202,30 @@ function UpsCalculatorContent() {
         </div>
 
       </div>
+      </div>
+      <section className="border border-[#1a1a1a] bg-[#050505] p-4">
+        <button type="button" onClick={() => setShowPresets(current => !current)} aria-expanded={showPresets} className="flex w-full items-center justify-between gap-4 text-left">
+          <div>
+            <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-zinc-500"><Battery className="h-4 w-4" /> Popular model presets</h3>
+            <p className="mt-1 text-[10px] font-mono text-zinc-600">Common manufacturer profiles · not a verified global sales ranking</p>
+          </div>
+          <span className="shrink-0 text-[10px] font-mono text-[#00ff9c]">{showPresets ? "Hide" : "Show"}</span>
+        </button>
+        {showPresets && <div className="mt-3 border-t border-[#1a1a1a] pt-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            {UPS_PRESETS.map(preset => (
+              <button key={preset.id} type="button" onClick={() => applyPreset(preset)} className="group border border-[#1a1a1a] bg-black p-3 text-left transition-colors hover:border-[#00ff9c]/60 hover:bg-[#00ff9c]/5">
+                <div className="flex items-start justify-between gap-2"><span className="text-[10px] font-bold uppercase tracking-wider text-[#00ff9c]">{preset.vendor}</span><span className="text-[9px] text-zinc-600">Apply</span></div>
+                <span className="mt-2 block font-mono text-xs text-zinc-200">{preset.model}</span>
+                <span className="mt-1 block font-mono text-[10px] text-zinc-500">{preset.rating}</span>
+                <span className="mt-2 block font-mono text-[10px] text-zinc-400">{preset.battery}</span>
+                <span className="mt-2 block text-[9px] leading-relaxed text-zinc-600">{preset.note}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-[10px] font-mono leading-relaxed text-zinc-600"><strong className="text-amber-400">Important:</strong> the runtime shown below is a browser-side estimate, not the manufacturer runtime curve. Actual runtime depends on load profile, battery age, temperature, cutoff voltage and regional SKU.</p>
+        </div>}
+      </section>
     </div>
   );
 }
