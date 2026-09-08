@@ -40,3 +40,39 @@ test("Kubernetes audit reports malformed YAML without throwing", () => {
   assert.equal(findings[0].id, "parse-error:document");
   assert.equal(findings[0].severity, "high");
 });
+
+test("Kubernetes audit covers workload hardening and decoded Secret values", () => {
+  const findings = analyzeKubernetesManifest(`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          image: example/api:1
+          securityContext:
+            readOnlyRootFilesystem: false
+            capabilities:
+              add: [NET_ADMIN]
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: basic
+  namespace: default
+type: Opaque
+data:
+  BASIC_AUTH: YWRtaW46YWRtaW4xMjM=
+  tls.key: c29tZS1rZXk=`);
+
+  assert.ok(findings.some(finding => finding.id.startsWith("writable-root-filesystem:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("missing-health-probes:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("reserved-namespace:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("capability-drop-missing:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("secret-governance:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("secret-value:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("secret-type-mismatch:")));
+});

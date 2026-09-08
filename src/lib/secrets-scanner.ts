@@ -40,7 +40,7 @@ const DETECTORS: Detector[] = [
   { id: "jwt", name: "JWT bearer token", severity: "medium", pattern: /\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\b/g, remediation: "Revoke/rotate the token and remove it from logs, source and tickets." },
 ];
 
-const ASSIGNMENT = /(?:^|[\s"'`])((?:[A-Z0-9]+[_-])*?(?:PASSWORD|PASSWD|SECRET|TOKEN|API[_-]?KEY|PRIVATE[_-]?KEY|CLIENT[_-]?SECRET)(?:[_-][A-Z0-9]+)*)\s*[:=]\s*["'`]?([A-Za-z0-9+/_=:.!@#$%^&*~-]{12,})["'`]?/g;
+const ASSIGNMENT = /(?:^|[\s"'`])((?:[A-Z0-9]+[_-])*?(?:PASSWORD|PASSWD|SECRET|TOKEN|AUTH(?:ORIZATION)?|API[_-]?KEY|PRIVATE[_-]?KEY|CLIENT[_-]?SECRET)(?:[_-][A-Z0-9]+)*)\s*[:=]\s*["'`]?([A-Za-z0-9+/_=:.!@#$%^&*~-]{12,})["'`]?/g;
 
 function shannonEntropy(value: string) {
   if (!value) return 0;
@@ -55,6 +55,17 @@ function mask(value: string) {
 }
 
 function isPlaceholder(value: string) { return PLACEHOLDERS.test(value.replace(/["'`]/g, "").trim()); }
+function decodeBase64(value: string) {
+  try {
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(value) || value.length % 4 !== 0) return null;
+    return atob(value);
+  } catch {
+    return null;
+  }
+}
+function isWeakDecodedCredential(value: string) {
+  return /^(?:basic\s+)?[^\s:]{1,64}:(?:admin|password|passw(?:o)?rd|changeme|test|default|secret|123456)/i.test(value.trim());
+}
 function lineNumber(text: string, index: number) { return text.slice(0, index).split("\n").length; }
 function columnNumber(text: string, index: number) { return index - text.lastIndexOf("\n", index - 1); }
 function contextFor(line: string, value?: string) {
@@ -77,11 +88,14 @@ const findings: SecretFinding[] = [];
   }
   for (const match of input.matchAll(ASSIGNMENT)) {
     const name = match[1]; const value = match[2]; const index = (match.index ?? 0) + match[0].indexOf(name); const sourceLine = input.split(/\r?\n/)[lineNumber(input, index) - 1] ?? "";
-    if (isPlaceholder(value) || /gitleaks:allow|secret-scanner:ignore/i.test(sourceLine)) continue;
+    const decoded = decodeBase64(value);
+    const weakDecoded = decoded !== null && isWeakDecodedCredential(decoded);
+    if (/gitleaks:allow|secret-scanner:ignore/i.test(sourceLine)) continue;
+    if (isPlaceholder(value) && !weakDecoded) continue;
     const entropy = shannonEntropy(value);
-    if (entropy < 2.8 && value.length < 20) continue;
+    if (entropy < 2.8 && value.length < 20 && !weakDecoded) continue;
     const line = lineNumber(input, index);
-    findings.push({ id: `generic:${name}:${line}:${index}`, detector: `Generic secret assignment (${name})`, severity: entropy >= 3.5 || value.length >= 32 ? "high" : "medium", line, column: columnNumber(input, index), maskedValue: mask(value), entropy: Number(entropy.toFixed(2)), context: contextFor(sourceLine, value), remediation: "Move the value to a secret manager, remove it from history and rotate it if it was real." });
+    findings.push({ id: `generic:${name}:${line}:${index}`, detector: weakDecoded ? `Decoded credential assignment (${name})` : `Generic secret assignment (${name})`, severity: weakDecoded || entropy >= 3.5 || value.length >= 32 ? "high" : "medium", line, column: columnNumber(input, index), maskedValue: mask(value), entropy: Number(entropy.toFixed(2)), context: contextFor(sourceLine, value), remediation: "Move the value to a secret manager, remove it from history and rotate it if it was real." });
   }
   const unique = new Map<string, SecretFinding>();
   for (const finding of findings) {

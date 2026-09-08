@@ -224,7 +224,7 @@ export default function InvestigationWorkspace() {
                 placeholder="Case Title"
               />
               <Input 
-                className="text-sm bg-transparent border-none text-zinc-400 h-auto py-1 px-0 mt-1 focus-visible:ring-0 placeholder:text-zinc-700" 
+                className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs bg-transparent border-none text-zinc-400 h-auto py-1 px-0 mt-1 focus-visible:ring-0 placeholder:text-zinc-700" 
                 value={activeCase.description}
                 onChange={e => setActiveCase({...activeCase, description: e.target.value})}
                 placeholder="Brief description or ticket ID..."

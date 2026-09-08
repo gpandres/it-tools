@@ -26,3 +26,9 @@ test("detects common CI and cloud provider credentials", () => {
   assert.equal(findings.length, 3);
   assert.deepEqual(findings.map(finding => finding.detector), ["GitLab token", "DigitalOcean token", "SendGrid API key"]);
 });
+
+test("decodes low-entropy Basic Auth values in assignments", () => {
+  const findings = scanSecrets('data:\n  BASIC_AUTH: "YWRtaW46YWRtaW4xMjM="');
+  assert.equal(findings.length, 1);
+  assert.match(findings[0].detector, /Decoded credential/);
+});

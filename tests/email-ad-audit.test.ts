@@ -21,3 +21,26 @@ test("AD audit only treats recognized relationship fields as evidence", () => {
   assert.ok(findings.some(finding => finding.id.startsWith("admin-count:")));
   assert.equal(analyzeAdPath("A user mentioned GenericAll in a note").length, 0);
 });
+
+test("email audit covers attachment, header and infrastructure indicators", () => {
+  const findings = analyzeEmailHeaders(`Date: Thu, 01 Jan 1970 00:00:00 +0000
+From: CEO <ceo@corp.example>
+Sender: attacker@evil.example
+X-Internal-Server-Auth: Basic YWRtaW46cGFzc3dvcmQxMjM=
+DKIM-Signature: v=1; a=rsa-sha1; d=corp.example;
+X-Mailer: PHPMailer 5.2.1
+Received: from [10.0.4.15]
+Content-Type: application/x-msdownload
+Content-Disposition: attachment; filename="invoice.pdf.exe"
+<a href="http://evil.example/factura.exe">download</a>`);
+
+  assert.ok(findings.some(finding => finding.id.startsWith("sender-from-mismatch:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("header-credential:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("weak-dkim-algorithm:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("suspicious-attachment:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("dangerous-mime:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("http-executable-link:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("suspicious-date:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("private-ip-disclosure:")));
+  assert.ok(findings.some(finding => finding.id.startsWith("outdated-mailer:")));
+});
