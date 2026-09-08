@@ -58,6 +58,47 @@ const persistenceEntry = (id: string, name: string, platform: Platform, parentId
   platform,
 });
 
+const privilegeEscalationEntry = (id: string, name: string, platform: Platform, parentId?: string): MitreDef => ({
+  id,
+  ...(parentId ? { parentId } : {}),
+  tactic: "Privilege Escalation",
+  name,
+  description: `${name} can be abused to obtain higher-level permissions or bypass access controls on a host, domain, or cloud environment.`,
+  example: `Investigating unexpected ${name.toLowerCase()} activity associated with a privilege change.`,
+  icon: ArrowUpCircle,
+  color: "text-amber-400",
+  platform,
+});
+
+const PRIVILEGE_ESCALATION_ENTRIES: MitreDef[] = [
+  privilegeEscalationEntry("T1548", "Abuse Elevation Control Mechanism", "Cross-Platform"),
+  privilegeEscalationEntry("T1134", "Access Token Manipulation", "Windows"),
+  privilegeEscalationEntry("T1484", "Domain or Tenant Policy Modification", "Cross-Platform"),
+  privilegeEscalationEntry("T1611", "Escape to Host", "Cross-Platform"),
+  privilegeEscalationEntry("T1068", "Exploitation for Privilege Escalation", "Cross-Platform"),
+  privilegeEscalationEntry("T1548.001", "Setuid and Setgid", "Linux", "T1548"),
+  privilegeEscalationEntry("T1548.004", "Elevated Execution with Prompt", "Cross-Platform", "T1548"),
+  privilegeEscalationEntry("T1548.005", "Temporary Elevated Cloud Access", "Cross-Platform", "T1548"),
+  privilegeEscalationEntry("T1548.006", "TCC Manipulation", "Cross-Platform", "T1548"),
+  privilegeEscalationEntry("T1134.001", "Token Impersonation/Theft", "Windows", "T1134"),
+  privilegeEscalationEntry("T1134.002", "Create Process with Token", "Windows", "T1134"),
+  privilegeEscalationEntry("T1134.003", "Make and Impersonate Token", "Windows", "T1134"),
+  privilegeEscalationEntry("T1134.004", "Parent PID Spoofing", "Windows", "T1134"),
+  privilegeEscalationEntry("T1134.005", "SID-History Injection", "Windows", "T1134"),
+  privilegeEscalationEntry("T1484.001", "Group Policy Modification", "Windows", "T1484"),
+  privilegeEscalationEntry("T1484.002", "Trust Modification", "Cross-Platform", "T1484"),
+  privilegeEscalationEntry("T1055.003", "Thread Execution Hijacking", "Cross-Platform", "T1055"),
+  privilegeEscalationEntry("T1055.004", "Asynchronous Procedure Call", "Windows", "T1055"),
+  privilegeEscalationEntry("T1055.005", "Thread Local Storage", "Windows", "T1055"),
+  privilegeEscalationEntry("T1055.008", "Ptrace System Calls", "Linux", "T1055"),
+  privilegeEscalationEntry("T1055.009", "Proc Memory", "Linux", "T1055"),
+  privilegeEscalationEntry("T1055.011", "Extra Window Memory Injection", "Windows", "T1055"),
+  privilegeEscalationEntry("T1055.012", "Process Hollowing", "Windows", "T1055"),
+  privilegeEscalationEntry("T1055.013", "Process Doppelgänging", "Windows", "T1055"),
+  privilegeEscalationEntry("T1055.014", "VDSO Hijacking", "Linux", "T1055"),
+  privilegeEscalationEntry("T1055.015", "ListPlanting", "Windows", "T1055"),
+];
+
 // The entries below are the remaining Enterprise Persistence objects in v19.2.
 // Names and hierarchy follow MITRE's TA0003 tactic page; descriptions are deliberately
 // concise but operational so the local reference remains usable without a remote feed.
@@ -430,4 +471,22 @@ export const MITRE_DB: MitreDef[] = [
   ,{ id: "T1127.002", parentId: "T1127", tactic: "Execution", name: "ClickOnce", description: "Adversaries may use ClickOnce applications to proxy execution through a trusted Windows utility.", example: "Launching a malicious .application deployment that runs through DFSVC.EXE.", icon: Terminal, color: "text-[#00ff9c]", platform: "Windows" }
   ,{ id: "T1127.003", parentId: "T1127", tactic: "Execution", name: "JamPlus", description: "Adversaries may use JamPlus to proxy execution of a malicious script.", example: "Using a JamPlus build file to invoke an attacker-controlled command.", icon: Terminal, color: "text-[#00ff9c]", platform: "Cross-Platform" }
   ,...PERSISTENCE_ENTRIES
+  ,...PRIVILEGE_ESCALATION_ENTRIES
 ];
+
+// ATT&CK intentionally maps several mechanisms to both Persistence and Privilege
+// Escalation. Keep one canonical definition per ID while exposing both tactic filters.
+const PRIVILEGE_ESCALATION_SHARED_IDS = new Set([
+  "T1098", "T1098.001", "T1098.002", "T1098.003", "T1098.004", "T1098.005", "T1098.006", "T1098.007",
+  "T1547", "T1547.001", "T1547.002", "T1547.003", "T1547.004", "T1547.005", "T1547.006", "T1547.007", "T1547.008", "T1547.009", "T1547.010", "T1547.012", "T1547.013", "T1547.014", "T1547.015",
+  "T1037", "T1037.001", "T1037.002", "T1037.003", "T1037.004", "T1037.005",
+  "T1543", "T1543.001", "T1543.002", "T1543.003", "T1543.004", "T1543.005",
+  "T1546", "T1546.001", "T1546.002", "T1546.003", "T1546.004", "T1546.005", "T1546.006", "T1546.007", "T1546.008", "T1546.009", "T1546.010", "T1546.011", "T1546.012", "T1546.013", "T1546.014", "T1546.015", "T1546.016", "T1546.017", "T1546.018",
+  "T1053", "T1053.002", "T1053.003", "T1053.005", "T1053.006", "T1053.007",
+  "T1078", "T1078.001", "T1078.002", "T1078.003", "T1078.004",
+]);
+
+for (const definition of MITRE_DB) {
+  if (!PRIVILEGE_ESCALATION_SHARED_IDS.has(definition.id)) continue;
+  definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Privilege Escalation"]));
+}

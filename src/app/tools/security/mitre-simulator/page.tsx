@@ -58,6 +58,46 @@ function localSubtechniques(def: MitreDef): MitreDef[] {
 // --- Procedural Generation Engine ---
 const VECTORS = [
   {
+    name: "Privilege Escalation Chain",
+    desc: "A focused escalation exercise covering token abuse, vulnerable services, scheduled execution and identity policy changes.",
+    windows_phases: [
+      [
+        { desc: "A low-integrity process starts a new process with an administrator token.", mitre: "T1134.002", event: "4688" },
+        { desc: "The attacker injects code into a higher-privileged process to inherit its context.", mitre: "T1055.002", event: "Sysmon 10" },
+      ],
+      [
+        { desc: "A vulnerable local service is exploited to execute code as SYSTEM.", mitre: "T1068", event: "Sysmon 1" },
+        { desc: "A writable scheduled task is modified to run an elevated payload.", mitre: "T1053.005", event: "4698" },
+      ],
+      [
+        { desc: "The attacker bypasses User Account Control without a consent prompt.", mitre: "T1548.002", event: "4688" },
+        { desc: "A domain Group Policy Object is changed to grant elevated rights.", mitre: "T1484.001", event: "5136" },
+      ],
+      [
+        { desc: "A compromised account is used to access an administrator-only resource.", mitre: "T1078.002", event: "4624" },
+        { desc: "A service account receives an additional role with administrative permissions.", mitre: "T1098.003", event: "Cloud Audit" },
+      ]
+    ],
+    linux_phases: [
+      [
+        { desc: "A setuid binary is abused to execute a command as its owning user.", mitre: "T1548.001", event: "auditd EXECVE" },
+        { desc: "The attacker uses sudo privileges and an unsafe sudoers rule to become root.", mitre: "T1548.003", event: "auditd USER_CMD" },
+      ],
+      [
+        { desc: "A vulnerable kernel or privileged service is exploited to obtain root access.", mitre: "T1068", event: "auditd EXECVE" },
+        { desc: "The attacker uses ptrace to inject code into a privileged process.", mitre: "T1055.008", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "A systemd service is modified so it starts a root-owned payload.", mitre: "T1543.002", event: "auditd SYSCALL" },
+        { desc: "A container escapes its isolation boundary and reaches the host namespace.", mitre: "T1611", event: "auditd SYSCALL" },
+      ],
+      [
+        { desc: "A PAM module is altered to grant access through the authentication path.", mitre: "T1556.003", event: "auditd SYSCALL" },
+        { desc: "A compromised domain account is used to access a privileged Linux service.", mitre: "T1078.002", event: "auth.log" },
+      ]
+    ]
+  },
+  {
     name: "Persistence & Identity Abuse",
     desc: "A persistence-focused investigation spanning autostart, services, cloud identity and authentication hooks.",
     windows_phases: [
