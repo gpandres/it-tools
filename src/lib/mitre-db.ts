@@ -420,6 +420,48 @@ const DISCOVERY_ENTRIES = DISCOVERY_CATALOG.map(([id, name, platform, parentId])
   discoveryEntry(id, name, platform, parentId),
 );
 
+const lateralMovementEntry = (id: string, name: string, platform: Platform, parentId?: string): MitreDef => ({
+  id,
+  ...(parentId ? { parentId } : {}),
+  tactic: "Lateral Movement",
+  name,
+  description: `${name} can be abused to enter, control, or transfer tools to remote systems and move through a compromised environment.`,
+  example: `Investigating unexpected ${name.toLowerCase()} activity across hosts, identities, and network boundaries.`,
+  icon: MoveHorizontal,
+  color: "text-indigo-400",
+  platform,
+});
+
+const LATERAL_MOVEMENT_CATALOG: Array<[string, string, Platform, string?]> = [
+  ["T1210", "Exploitation of Remote Services", "Cross-Platform"],
+  ["T1534", "Internal Spearphishing", "Cross-Platform"],
+  ["T1570", "Lateral Tool Transfer", "Cross-Platform"],
+  ["T1563", "Remote Service Session Hijacking", "Cross-Platform"],
+  ["T1563.001", "SSH Hijacking", "Linux", "T1563"],
+  ["T1563.002", "RDP Hijacking", "Windows", "T1563"],
+  ["T1021", "Remote Services", "Cross-Platform"],
+  ["T1021.001", "Remote Desktop Protocol", "Windows", "T1021"],
+  ["T1021.002", "SMB/Windows Admin Shares", "Cross-Platform", "T1021"],
+  ["T1021.003", "Distributed Component Object Model", "Windows", "T1021"],
+  ["T1021.004", "SSH", "Linux", "T1021"],
+  ["T1021.005", "VNC", "Cross-Platform", "T1021"],
+  ["T1021.006", "Windows Remote Management", "Windows", "T1021"],
+  ["T1021.007", "Cloud Services", "Cross-Platform", "T1021"],
+  ["T1021.008", "Direct Cloud VM Connections", "Cross-Platform", "T1021"],
+  ["T1091", "Replication Through Removable Media", "Cross-Platform"],
+  ["T1072", "Software Deployment Tools", "Cross-Platform"],
+  ["T1080", "Taint Shared Content", "Cross-Platform"],
+  ["T1550", "Use Alternate Authentication Material", "Cross-Platform"],
+  ["T1550.001", "Application Access Token", "Cross-Platform", "T1550"],
+  ["T1550.002", "Pass the Hash", "Windows", "T1550"],
+  ["T1550.003", "Pass the Ticket", "Windows", "T1550"],
+  ["T1550.004", "Web Session Cookie", "Cross-Platform", "T1550"],
+];
+
+const LATERAL_MOVEMENT_ENTRIES = LATERAL_MOVEMENT_CATALOG.map(([id, name, platform, parentId]) =>
+  lateralMovementEntry(id, name, platform, parentId),
+);
+
 // The entries below are the remaining Enterprise Persistence objects in v19.2.
 // Names and hierarchy follow MITRE's TA0003 tactic page; descriptions are deliberately
 // concise but operational so the local reference remains usable without a remote feed.
@@ -565,9 +607,9 @@ export const MITRE_DB: MitreDef[] = [
   { id: "T1069.002", parentId: "T1069", tactic: "Discovery", name: "Domain Groups", description: "Adversaries may attempt to find domain-level groups and permission settings.", example: "Querying LDAP to find all members of the Domain Admins group.", icon: SearchIcon, color: "text-teal-400", platform: "Windows" },
 
   // Lateral Movement
-  { id: "T1021.001", tactic: "Lateral Movement", name: "Remote Desktop Protocol", description: "Adversaries may use Valid Accounts to log into a service specifically designed to accept remote connections via RDP.", example: "Using RDP to connect to a domain controller using stolen credentials.", icon: MoveHorizontal, color: "text-indigo-400", platform: "Windows" },
-  { id: "T1021.004", tactic: "Lateral Movement", name: "SSH", description: "Adversaries may use Valid Accounts to log into remote machines using Secure Shell (SSH).", example: "Using SSH to pivot from a compromised web server to an internal database server.", icon: MoveHorizontal, color: "text-indigo-400", platform: "Linux" },
-  { id: "T1550.002", tactic: "Lateral Movement", name: "Pass the Hash", description: "Adversaries may use stolen password hashes to bypass normal authentication.", example: "Performing a Pass-the-Hash (PtH) attack to authenticate using an NTLM hash.", icon: MoveHorizontal, color: "text-indigo-400", platform: "Windows" },
+  { id: "T1021.001", parentId: "T1021", tactic: "Lateral Movement", name: "Remote Desktop Protocol", description: "Adversaries may use Valid Accounts to log into a service specifically designed to accept remote connections via RDP.", example: "Using RDP to connect to a domain controller using stolen credentials.", icon: MoveHorizontal, color: "text-indigo-400", platform: "Windows" },
+  { id: "T1021.004", parentId: "T1021", tactic: "Lateral Movement", name: "SSH", description: "Adversaries may use Valid Accounts to log into remote machines using Secure Shell (SSH).", example: "Using SSH to pivot from a compromised web server to an internal database server.", icon: MoveHorizontal, color: "text-indigo-400", platform: "Linux" },
+  { id: "T1550.002", parentId: "T1550", tactic: "Lateral Movement", name: "Pass the Hash", description: "Adversaries may use stolen password hashes to bypass normal authentication.", example: "Performing a Pass-the-Hash (PtH) attack to authenticate using an NTLM hash.", icon: MoveHorizontal, color: "text-indigo-400", platform: "Windows" },
 
   // Collection
   { id: "T1560", tactic: "Collection", name: "Archive Collected Data", description: "Adversaries may compress and/or encrypt data that is collected prior to exfiltration.", example: "Compressing a folder of sensitive documents into a password-protected ZIP/tar file.", icon: Archive, color: "text-yellow-600", platform: "Cross-Platform" },
@@ -602,7 +644,7 @@ export const MITRE_DB: MitreDef[] = [
   { id: "T1583.001", parentId: "T1583", tactic: "Resource Development", name: "Domains", description: "Adversaries may acquire domains that can be used during targeting.", example: "Registering a lookalike domain for phishing or command and control.", icon: Anchor, color: "text-violet-400", platform: "PRE" },
   { id: "T1588", tactic: "Resource Development", name: "Obtain Capabilities", description: "Adversaries may buy and/or steal capabilities that can be used during targeting.", example: "Acquiring malware, tools, certificates, exploits or vulnerability information.", icon: Key, color: "text-violet-400", platform: "PRE" },
   { id: "T1497", tactic: "Stealth", name: "Virtualization/Sandbox Evasion", description: "Adversaries may detect analysis environments and change or suppress malicious behavior.", example: "Checking for virtual-machine artifacts before executing the payload.", icon: ShieldOff, color: "text-red-300", platform: "Cross-Platform" },
-  { id: "T1021.002", tactic: "Lateral Movement", name: "SMB/Windows Admin Shares", description: "Adversaries may use SMB and Windows administrative shares to move laterally or execute tools.", example: "Writing a payload to ADMIN$ or accessing a remote share with stolen credentials.", icon: MoveHorizontal, color: "text-indigo-400", platform: "Windows" },
+  { id: "T1021.002", parentId: "T1021", tactic: "Lateral Movement", name: "SMB/Windows Admin Shares", description: "Adversaries may use SMB and Windows administrative shares to move laterally or execute tools.", example: "Writing a payload to ADMIN$ or accessing a remote share with stolen credentials.", icon: MoveHorizontal, color: "text-indigo-400", platform: "Windows" },
   { id: "T1055.001", parentId: "T1055", tactic: "Privilege Escalation", name: "Dynamic-link Library Injection", description: "Adversaries may inject a dynamic-link library into a process to execute code in its context.", example: "Injecting a DLL into a trusted process to evade controls.", icon: ArrowUpCircle, color: "text-amber-500", platform: "Windows" },
   { id: "T1055.002", parentId: "T1055", tactic: "Privilege Escalation", name: "Portable Executable Injection", description: "Adversaries may inject a portable executable image into a process.", example: "Reflectively loading a PE image into a running process.", icon: ArrowUpCircle, color: "text-amber-500", platform: "Windows" },
   { id: "T1110.001", tactic: "Credential Access", name: "Password Guessing", description: "Adversaries may guess passwords to gain access to accounts.", example: "Trying a small set of likely passwords against an exposed service.", icon: Key, color: "text-pink-500", platform: "Cross-Platform" },
@@ -797,6 +839,7 @@ export const MITRE_DB: MitreDef[] = [
   ,...DEFENSE_IMPAIRMENT_ENTRIES
   ,...CREDENTIAL_ACCESS_ENTRIES
   ,...DISCOVERY_ENTRIES
+  ,...LATERAL_MOVEMENT_ENTRIES
 ];
 
 // A few Stealth entries already exist because they are also part of another
@@ -869,4 +912,11 @@ const DISCOVERY_SHARED_IDS = new Set([
 for (const definition of MITRE_DB) {
   if (!DISCOVERY_SHARED_IDS.has(definition.id)) continue;
   definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Discovery"]));
+}
+
+const LATERAL_MOVEMENT_SHARED_IDS = new Set(LATERAL_MOVEMENT_CATALOG.map(([id]) => id));
+
+for (const definition of MITRE_DB) {
+  if (!LATERAL_MOVEMENT_SHARED_IDS.has(definition.id)) continue;
+  definition.tactics = Array.from(new Set([definition.tactic, ...(definition.tactics ?? []), "Lateral Movement"]));
 }
