@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToolActionButton } from "@/components/tool-action-panel";
-import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Download, FileJson, Globe2, HardDriveDownload, KeyRound, Laptop, LayoutDashboard, Maximize2, Network, Redo2, Router, Search, Server, ServerCog, Shield, ShieldCheck, Sparkles, Undo2, Upload, Wifi, X, Zap } from 'lucide-react';
+import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Download, FileJson, Globe2, Group, HardDriveDownload, KeyRound, Laptop, LayoutDashboard, Maximize2, Network, Redo2, Router, Search, Server, ServerCog, Shield, ShieldCheck, Sparkles, Undo2, Ungroup, Upload, Wifi, X, Zap } from 'lucide-react';
 import type { DiagramIssue } from '@/lib/diagram-validation';
 import type { NetworkConnectionType, NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, NetworkStatus, NetworkZone } from '../types';
 
@@ -40,6 +40,8 @@ const STATUSES: NetworkStatus[] = ['active', 'degraded', 'offline', 'maintenance
 type SidebarProps = {
   selectedNode: NetworkNode | null;
   selectedEdge: NetworkEdge | null;
+  selectedNodeCount: number;
+  selectedEdgeCount: number;
   updateNodeData: (nodeId: string, newData: Partial<NetworkNodeData>) => void;
   updateEdgeData: (edgeId: string, newData: Partial<NetworkEdge['data']>) => void;
   onAddNode: (type: NetworkNodeType, label: string) => void;
@@ -49,6 +51,10 @@ type SidebarProps = {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  groupSelected: () => void;
+  ungroupSelected: () => void;
+  canGroup: boolean;
+  canUngroup: boolean;
   autoLayout: () => void;
   fitView: () => void;
   validationIssues: DiagramIssue[];
@@ -61,7 +67,7 @@ type SidebarProps = {
   exportImage: (bgColor: 'black' | 'white' | 'transparent') => void;
 };
 
-export default function Sidebar({ selectedNode, selectedEdge, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, autoLayout, fitView, validationIssues, validate, exportDiagram, exportSvg, exportInventory, importDiagram, loadTemplate, exportImage }: SidebarProps) {
+export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount, selectedEdgeCount, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, groupSelected, ungroupSelected, canGroup, canUngroup, autoLayout, fitView, validationIssues, validate, exportDiagram, exportSvg, exportInventory, importDiagram, loadTemplate, exportImage }: SidebarProps) {
   const [query, setQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<string[]>(['Network', 'Security', 'Compute', 'Services']);
   const filteredItems = useMemo(() => NODE_TYPES.filter(item => `${item.label} ${item.category}`.toLowerCase().includes(query.toLowerCase().trim())), [query]);
@@ -82,10 +88,14 @@ export default function Sidebar({ selectedNode, selectedEdge, updateNodeData, up
           <ToolActionButton type="button" onClick={redo} disabled={!canRedo} aria-label="Redo" title="Redo (Ctrl+Shift+Z)"><Redo2 /></ToolActionButton>
           <ToolActionButton type="button" onClick={autoLayout} aria-label="Auto layout" title="Auto layout"><LayoutDashboard /></ToolActionButton>
           <ToolActionButton type="button" onClick={fitView} aria-label="Fit view" title="Fit view"><Maximize2 /></ToolActionButton>
-          {(selectedNode || selectedEdge) && <ToolActionButton type="button" onClick={duplicateSelected} aria-label="Duplicate selection" title="Duplicate selection"><Sparkles /></ToolActionButton>}
-          {(selectedNode || selectedEdge) && <ToolActionButton type="button" onClick={deleteSelected} tone="danger" aria-label="Delete selection" title="Delete selection (Delete)"><X /></ToolActionButton>}
+          {selectedNodeCount > 0 && <ToolActionButton type="button" onClick={duplicateSelected} aria-label="Duplicate selection" title="Duplicate selection"><Sparkles /></ToolActionButton>}
+          {canGroup && <ToolActionButton type="button" onClick={groupSelected} aria-label="Group selected nodes" title="Group selected nodes"><Group /></ToolActionButton>}
+          {canUngroup && <ToolActionButton type="button" onClick={ungroupSelected} aria-label="Ungroup selected nodes" title="Ungroup selected nodes"><Ungroup /></ToolActionButton>}
+          {(selectedNodeCount > 0 || selectedEdgeCount > 0) && <ToolActionButton type="button" onClick={deleteSelected} tone="danger" aria-label="Delete selection" title="Delete selection (Delete)"><X /></ToolActionButton>}
         </div>
       </div>
+
+      {(selectedNodeCount > 1 || selectedEdgeCount > 1) && <div className="flex shrink-0 items-center gap-2 border-b border-[#1a1a1a] bg-[#00ff9c]/5 px-3 py-2 font-mono text-[10px] text-zinc-400"><span className="text-[#00ff9c]">{selectedNodeCount} nodes</span>{selectedEdgeCount > 0 && <><span>·</span><span className="text-[#38bdf8]">{selectedEdgeCount} links</span></>}<span className="ml-auto text-zinc-600">Shift + drag</span></div>}
 
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         <section className="border-b border-[#1a1a1a] pb-4">

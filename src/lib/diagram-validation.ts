@@ -6,6 +6,8 @@ export type DiagramIssue = { id: string; severity: 'error' | 'warning'; title: s
 const MAX_LABEL_LENGTH = 1000;
 const NODE_DATA_FIELDS = ['label', 'type', 'ip', 'vlan', 'hostname', 'vendor', 'model', 'role', 'zone', 'status', 'notes', 'interfaces'];
 const EDGE_DATA_FIELDS = ['connectionType', 'label', 'sourcePort', 'targetPort', 'bandwidth', 'vlanMode', 'vlans'];
+const CONNECTION_TYPES = new Set(['ethernet', 'fiber', 'wireless', 'vpn']);
+const VLAN_MODES = new Set(['access', 'trunk', 'routed', 'unknown']);
 
 function safeString(value: unknown, maxLength = MAX_LABEL_LENGTH) {
   return typeof value === 'string' ? value.slice(0, maxLength) : '';
@@ -26,7 +28,7 @@ export function parseDiagram(value: unknown): DiagramData | null {
   if (!Array.isArray(item.nodes) || !Array.isArray(item.edges) || item.nodes.length > 500 || item.edges.length > 1000) return null;
   const nodes = item.nodes.map((node) => {
     if (!node || typeof node !== "object") return null;
-    const source = node as { id?: unknown; position?: { x?: unknown; y?: unknown }; width?: unknown; height?: unknown };
+    const source = node as { id?: unknown; position?: { x?: unknown; y?: unknown }; width?: unknown; height?: unknown; parentId?: unknown; extent?: unknown };
     const id = safeString(source.id, 128).trim();
     const x = source.position?.x;
     const y = source.position?.y;
@@ -39,6 +41,9 @@ export function parseDiagram(value: unknown): DiagramData | null {
     };
     if (typeof source.width === 'number' && Number.isFinite(source.width) && source.width >= 120 && source.width <= 2000) normalized.width = source.width;
     if (typeof source.height === 'number' && Number.isFinite(source.height) && source.height >= 100 && source.height <= 2000) normalized.height = source.height;
+    const parentId = safeString(source.parentId, 128).trim();
+    if (parentId) normalized.parentId = parentId;
+    if (source.extent === 'parent') normalized.extent = 'parent';
     return normalized;
   });
   const edges = item.edges.map((edge) => {
@@ -72,6 +77,26 @@ export function parseDiagram(value: unknown): DiagramData | null {
     nodeIds.add(id);
     return false;
   })) return null;
+  if (normalizedNodes.some((node) => {
+    const parentId = safeString(node.parentId, 128);
+    return Boolean(parentId) && (parentId === node.id || !nodeIds.has(parentId));
+  })) return null;
+  const nodesById = new Map(normalizedNodes.map((node) => [node.id as string, node]));
+  for (const node of normalizedNodes) {
+    const parentId = safeString(node.parentId, 128);
+    if (!parentId) continue;
+    const parent = nodesById.get(parentId);
+    const parentData = parent?.data && typeof parent.data === 'object' ? parent.data as Record<string, unknown> : {};
+    if (readNodeString(parentData, 'type') !== 'group') return null;
+    const ancestors = new Set<string>();
+    let currentId: string | undefined = parentId;
+    while (currentId) {
+      if (ancestors.has(currentId)) return null;
+      ancestors.add(currentId);
+      const ancestor = nodesById.get(currentId);
+      currentId = ancestor ? safeString(ancestor.parentId, 128) || undefined : undefined;
+    }
+  }
 
   const edgeIds = new Set<string>();
   const edgeKeys = new Set<string>();
@@ -94,6 +119,7 @@ function readNodeString(node: Record<string, unknown>, key: string) {
 export function validateDiagram(diagram: DiagramData): DiagramIssue[] {
   const issues: DiagramIssue[] = [];
   const connectedNodeIds = new Set(diagram.edges.flatMap((edge) => [edge.source, edge.target].filter((id): id is string => typeof id === 'string')));
+  const nodesById = new Map(diagram.nodes.map((node) => [readNodeString(node, 'id'), node]));
   const seenIps = new Map<string, string>();
   const seenEdges = new Set<string>();
 
@@ -144,6 +170,34 @@ export function validateDiagram(diagram: DiagramData): DiagramIssue[] {
     const connectionType = readNodeString(data, 'connectionType');
     const vlanMode = readNodeString(data, 'vlanMode');
     const vlans = readNodeString(data, 'vlans').trim();
+    const sourceNode = nodesById.get(readNodeString(edge, 'source'));
+    const targetNode = nodesById.get(readNodeString(edge, 'target'));
+    const sourceData = sourceNode?.data && typeof sourceNode.data === 'object' ? sourceNode.data as Record<string, unknown> : {};
+    const targetData = targetNode?.data && typeof targetNode.data === 'object' ? targetNode.data as Record<string, unknown> : {};
+    if (!CONNECTION_TYPES.has(connectionType)) {
+      issues.push({ id: `link-type-invalid-${edge.id}`, severity: 'error', title: 'Invalid connection type', detail: `${connectionType || 'No type'} is not a supported link type.` });
+    }
+    if (vlanMode && !VLAN_MODES.has(vlanMode)) {
+      issues.push({ id: `vlan-mode-invalid-${edge.id}`, severity: 'error', title: 'Invalid VLAN mode', detail: `${vlanMode} is not a supported VLAN mode.` });
+    }
+    const vlanValues = vlans ? vlans.split(',').map(value => value.trim()).filter(Boolean) : [];
+    if (vlanValues.some(value => !/^\d+$/.test(value) || Number(value) < 1 || Number(value) > 4094)) {
+      issues.push({ id: `vlan-list-invalid-${edge.id}`, severity: 'error', title: 'Invalid allowed VLANs', detail: 'Allowed VLANs must be comma-separated values from 1 to 4094.' });
+    }
+    if (vlanMode === 'access' && vlanValues.length > 1) {
+      issues.push({ id: `access-vlans-${edge.id}`, severity: 'error', title: 'Access link has multiple VLANs', detail: 'An access link should carry one VLAN; use trunk for multiple VLANs.' });
+    }
+    if (new Set(vlanValues).size !== vlanValues.length) {
+      issues.push({ id: `vlan-list-duplicate-${edge.id}`, severity: 'warning', title: 'Duplicate allowed VLAN', detail: 'Remove repeated VLAN numbers from this link.' });
+    }
+    const sourceType = readNodeString(sourceData, 'type');
+    const targetType = readNodeString(targetData, 'type');
+    if (connectionType === 'wireless' && sourceType !== 'wireless' && targetType !== 'wireless') {
+      issues.push({ id: `wireless-endpoints-${edge.id}`, severity: 'warning', title: 'Wireless link endpoints', detail: 'Wireless links normally include a WiFi access point or wireless bridge.' });
+    }
+    if (connectionType === 'vpn' && !['vpn', 'firewall', 'router', 'cloud', 'vpc'].includes(sourceType) && !['vpn', 'firewall', 'router', 'cloud', 'vpc'].includes(targetType)) {
+      issues.push({ id: `vpn-endpoints-${edge.id}`, severity: 'warning', title: 'VPN link endpoints', detail: 'A VPN link normally terminates at a VPN gateway, router, firewall, or cloud edge.' });
+    }
     if (vlanMode === 'trunk' && !vlans) {
       issues.push({ id: `trunk-vlans-${edge.id}`, severity: 'warning', title: 'Trunk without VLANs', detail: 'List the allowed VLANs or mark the link as unknown.' });
     }

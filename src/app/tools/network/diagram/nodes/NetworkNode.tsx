@@ -1,5 +1,6 @@
-import { Handle, NodeResizer, Position } from '@xyflow/react';
+import { Handle, NodeResizer, Position, type NodeProps } from '@xyflow/react';
 import { Server, Router, HardDrive, Wifi, Globe, Monitor, Shield, Box, Database, HardDriveDownload, Scale, ShieldCheck, KeyRound, Globe2, Boxes, ServerCog, Laptop, Zap } from 'lucide-react';
+import type { NetworkNode } from '../types';
 
 const ICON_MAP: Record<string, any> = {
   server: Server,
@@ -51,39 +52,38 @@ const COLOR_MAP: Record<string, string> = {
   default: "bg-zinc-800 text-zinc-300 border-zinc-700"
 };
 
-export default function NetworkNode({ data, selected }: any) {
+export default function NetworkNode({ data, selected }: NodeProps<NetworkNode>) {
   const Icon = ICON_MAP[data.type] || ICON_MAP.default;
   const colorClass = COLOR_MAP[data.type] || COLOR_MAP.default;
+  const isGroup = data.type === 'group';
 
   return (
-    <div className={`relative flex h-full min-h-[100px] min-w-[120px] flex-col items-center justify-center overflow-hidden rounded-xl border-2 p-3 backdrop-blur-md shadow-2xl transition-all ${colorClass} ${selected ? 'ring-2 ring-white shadow-white/20' : ''}`}>
+    <div className={`relative flex h-full min-h-[100px] min-w-[120px] flex-col ${isGroup ? 'items-start justify-start rounded-lg border border-dashed border-[#00ff9c]/50 bg-[#00ff9c]/5 p-3' : 'items-center justify-center overflow-hidden rounded-xl border-2 p-3 backdrop-blur-md shadow-2xl'} transition-all ${colorClass} ${selected ? 'ring-2 ring-white shadow-white/20' : ''}`}>
       <NodeResizer isVisible={selected} minWidth={120} minHeight={100} lineClassName="!border-[#00ff9c]/60" handleClassName="!h-2 !w-2 !border-[#00ff9c] !bg-[#050505]" />
-      
-      <Handle type="target" position={Position.Top} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="top-target" />
-      <Handle type="source" position={Position.Top} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="top-source" />
+      {!isGroup && <>
+        <Handle type="target" position={Position.Top} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="top-target" />
+        <Handle type="source" position={Position.Top} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="top-source" />
 
-      <div className="mb-2">
-        <Icon className="w-8 h-8" strokeWidth={1.5} />
-      </div>
-      
-      <div className="min-w-0 max-w-full text-center font-mono">
-        <div className="truncate text-xs font-bold" title={data.label}>{data.label}</div>
-        {data.hostname && <div className="truncate text-[9px] opacity-70" title={data.hostname}>{data.hostname}</div>}
-        {data.ip && <div className="truncate text-[9px] opacity-80" title={data.ip}>{data.ip}</div>}
-        <div className="mt-1 flex items-center justify-center gap-1 text-[9px] uppercase tracking-wide opacity-80">
-          {data.vlan && <span className="text-[#00ff9c]">VLAN {data.vlan}</span>}
-          {data.status && <span className={data.status === 'offline' ? 'text-red-300' : data.status === 'degraded' ? 'text-amber-300' : data.status === 'maintenance' ? 'text-blue-300' : 'text-[#72e6b4]'}>● {data.status}</span>}
+        <div className="mb-2"><Icon className="w-8 h-8" strokeWidth={1.5} /></div>
+
+        <div className="min-w-0 max-w-full text-center font-mono">
+          <div className="truncate text-xs font-bold" title={data.label}>{data.label}</div>
+          {data.hostname && <div className="truncate text-[9px] opacity-70" title={data.hostname}>{data.hostname}</div>}
+          {data.ip && <div className="truncate text-[9px] opacity-80" title={data.ip}>{data.ip}</div>}
+          <div className="mt-1 flex items-center justify-center gap-1 text-[9px] uppercase tracking-wide opacity-80">
+            {data.vlan && <span className="text-[#00ff9c]">VLAN {data.vlan}</span>}
+            {data.status && <span className={data.status === 'offline' ? 'text-red-300' : data.status === 'degraded' ? 'text-amber-300' : data.status === 'maintenance' ? 'text-blue-300' : 'text-[#72e6b4]'}>● {data.status}</span>}
+          </div>
         </div>
-      </div>
 
-      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="right-source" />
-      <Handle type="target" position={Position.Right} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="right-target" />
-      
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="bottom-source" />
-      <Handle type="target" position={Position.Bottom} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="bottom-target" />
-
-      <Handle type="source" position={Position.Left} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="left-source" />
-      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="left-target" />
+        <Handle type="source" position={Position.Right} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="right-source" />
+        <Handle type="target" position={Position.Right} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="right-target" />
+        <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="bottom-source" />
+        <Handle type="target" position={Position.Bottom} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="bottom-target" />
+        <Handle type="source" position={Position.Left} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="left-source" />
+        <Handle type="target" position={Position.Left} className="w-3 h-3 bg-zinc-400 border-2 border-black" id="left-target" />
+      </>}
+      {isGroup && <div className="font-mono"><div className="text-[10px] font-bold uppercase tracking-widest text-[#00ff9c]">{data.label}</div><div className="mt-1 text-[9px] text-zinc-500">Group container</div></div>}
     </div>
   );
 }

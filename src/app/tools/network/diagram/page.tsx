@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { ReactFlow, Controls, MiniMap, Panel, Background, applyNodeChanges, applyEdgeChanges, addEdge, BackgroundVariant, ReactFlowProvider, useReactFlow, getNodesBounds, getViewportForBounds, type Connection, type EdgeChange, type NodeChange } from '@xyflow/react';
+import { ReactFlow, Controls, MiniMap, Panel, Background, applyNodeChanges, applyEdgeChanges, addEdge, BackgroundVariant, ReactFlowProvider, SelectionMode, useReactFlow, getViewportForBounds, type Connection, type EdgeChange, type NodeChange } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { toPng, toSvg } from 'html-to-image';
 
@@ -22,8 +22,8 @@ const edgeTypes = { networkEdge: NetworkEdgeComponent };
 function DiagramFlow() {
   const [nodes, setNodes] = useState<NetworkNode[]>(() => cloneNodes(TEMPLATES["Small Office"].nodes as NetworkNode[]));
   const [edges, setEdges] = useState<NetworkEdge[]>(() => cloneEdges(TEMPLATES["Small Office"].edges as NetworkEdge[]));
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [history, setHistory] = useState<DiagramSnapshot[]>([]);
   const [future, setFuture] = useState<DiagramSnapshot[]>([]);
   const { notify } = useNotification();
@@ -31,10 +31,13 @@ function DiagramFlow() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<NetworkNode[]>(nodes);
   const edgesRef = useRef<NetworkEdge[]>(edges);
-  const { screenToFlowPosition, fitView } = useReactFlow();
+  const { screenToFlowPosition, fitView, getNodesBounds: getNodesBoundsFromFlow } = useReactFlow();
 
-  const selectedNode = useMemo(() => nodes.find(node => node.id === selectedNodeId) as NetworkNode | undefined ?? null, [nodes, selectedNodeId]);
-  const selectedEdge = useMemo(() => edges.find(edge => edge.id === selectedEdgeId) as NetworkEdge | undefined ?? null, [edges, selectedEdgeId]);
+  const selectedNode = useMemo(() => selectedNodeIds.length === 1 ? nodes.find(node => node.id === selectedNodeIds[0]) as NetworkNode | undefined ?? null : null, [nodes, selectedNodeIds]);
+  const selectedEdge = useMemo(() => selectedEdgeIds.length === 1 ? edges.find(edge => edge.id === selectedEdgeIds[0]) as NetworkEdge | undefined ?? null : null, [edges, selectedEdgeIds]);
+  const selectedNodes = useMemo(() => nodes.filter(node => selectedNodeIds.includes(node.id)), [nodes, selectedNodeIds]);
+  const canGroup = selectedNodes.length >= 2 && selectedNodes.every(node => !node.parentId && node.data.type !== 'group');
+  const canUngroup = selectedNodes.length === 1 && selectedNodes[0].data.type === 'group';
   const validationIssues = useMemo(() => validateDiagram({ nodes, edges }), [nodes, edges]);
 
   const recordHistory = useCallback(() => {
@@ -44,7 +47,7 @@ function DiagramFlow() {
 
   const replaceDiagram = useCallback((nextNodes: NetworkNode[], nextEdges: NetworkEdge[], remember = true) => {
     if (remember) recordHistory();
-    const safeNodes = cloneNodes(nextNodes);
+    const safeNodes = cloneNodes(nextNodes).map(node => ({ ...node, selected: false }));
     const safeEdges = cloneEdges(nextEdges);
     nodesRef.current = safeNodes;
     edgesRef.current = safeEdges;
@@ -162,8 +165,10 @@ function DiagramFlow() {
   );
 
   const onSelectionChange = useCallback(({ nodes: selectedNodes, edges: selectedEdges }: { nodes: NetworkNode[]; edges: NetworkEdge[] }) => {
-    setSelectedNodeId(selectedNodes.length === 1 ? selectedNodes[0].id : null);
-    setSelectedEdgeId(selectedEdges.length === 1 ? selectedEdges[0].id : null);
+    const nextNodeIds = selectedNodes.map(node => node.id).sort();
+    const nextEdgeIds = selectedEdges.map(edge => edge.id).sort();
+    setSelectedNodeIds(current => sameIds(current, nextNodeIds) ? current : nextNodeIds);
+    setSelectedEdgeIds(current => sameIds(current, nextEdgeIds) ? current : nextEdgeIds);
   }, []);
 
   const updateNodeData = useCallback((nodeId: string, newData: Partial<NetworkNodeData>) => {
@@ -181,30 +186,114 @@ function DiagramFlow() {
   }, [recordHistory]);
 
   const deleteSelected = useCallback(() => {
-    if (selectedNodeId) {
+    if (selectedNodeIds.length > 0) {
       recordHistory();
-      const nextNodes = nodesRef.current.filter(node => node.id !== selectedNodeId);
-      const nextEdges = edgesRef.current.filter(edge => edge.source !== selectedNodeId && edge.target !== selectedNodeId);
+      const nodeIds = new Set(selectedNodeIds);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const node of nodesRef.current) {
+          if (node.parentId && nodeIds.has(node.parentId) && !nodeIds.has(node.id)) {
+            nodeIds.add(node.id);
+            changed = true;
+          }
+        }
+      }
+      const nextNodes = nodesRef.current.filter(node => !nodeIds.has(node.id));
+      const nextEdges = edgesRef.current.filter(edge => !nodeIds.has(edge.source) && !nodeIds.has(edge.target));
       replaceDiagram(nextNodes, nextEdges, false);
-      setSelectedNodeId(null);
+      setSelectedNodeIds([]);
+      setSelectedEdgeIds([]);
       return;
     }
-    if (selectedEdgeId) {
+    if (selectedEdgeIds.length > 0) {
       recordHistory();
-      replaceDiagram(nodesRef.current, edgesRef.current.filter(edge => edge.id !== selectedEdgeId), false);
-      setSelectedEdgeId(null);
+      const edgeIds = new Set(selectedEdgeIds);
+      replaceDiagram(nodesRef.current, edgesRef.current.filter(edge => !edgeIds.has(edge.id)), false);
+      setSelectedEdgeIds([]);
     }
-  }, [recordHistory, replaceDiagram, selectedEdgeId, selectedNodeId]);
+  }, [recordHistory, replaceDiagram, selectedEdgeIds, selectedNodeIds]);
 
   const duplicateSelected = useCallback(() => {
-    if (!selectedNode) return;
+    const selected = nodesRef.current.filter(node => selectedNodeIds.includes(node.id));
+    if (selected.length === 0) return;
     recordHistory();
-    const copy = { ...selectedNode, id: `node_${Date.now()}_${nodesRef.current.length}`, position: { x: selectedNode.position.x + 48, y: selectedNode.position.y + 48 }, selected: false, data: { ...selectedNode.data, label: `${selectedNode.data.label} copy` } };
-    const nextNodes = [...nodesRef.current, copy];
+    const now = Date.now();
+    const copies: NetworkNode[] = [];
+    const idMap = new Map<string, string>();
+    selected.filter(node => node.data.type === 'group').forEach((group, index) => {
+      const copyId = `group_${now}_${index}`;
+      idMap.set(group.id, copyId);
+      copies.push({ ...group, id: copyId, position: { x: group.position.x + (group.width ?? 200) + 48, y: group.position.y + 48 }, selected: false, data: { ...group.data, label: `${group.data.label} copy` } });
+      nodesRef.current.filter(node => node.parentId === group.id).forEach((child, childIndex) => {
+        const childCopyId = `node_${now}_${index}_${childIndex}`;
+        idMap.set(child.id, childCopyId);
+        copies.push({ ...child, id: childCopyId, parentId: copyId, selected: false, position: { ...child.position }, data: { ...child.data } });
+      });
+    });
+    selected.filter(node => node.data.type !== 'group' && !node.parentId).forEach((node, index) => {
+      const copyId = `node_${now}_${index}_${copies.length}`;
+      idMap.set(node.id, copyId);
+      copies.push({ ...node, id: copyId, position: { x: node.position.x + 48, y: node.position.y + 48 }, selected: false, data: { ...node.data, label: `${node.data.label} copy` } });
+    });
+    if (copies.length === 0) {
+      notify('Select top-level nodes or a group to duplicate.', 'info');
+      return;
+    }
+    const copiedTopLevelIds = new Set(copies.filter(node => !node.parentId).map(node => node.id));
+    const nextNodes = [...nodesRef.current.map(node => ({ ...node, selected: false })), ...copies.map(node => ({ ...node, selected: copiedTopLevelIds.has(node.id) }))];
+    const copiedEdges = edgesRef.current.filter(edge => idMap.has(edge.source) && idMap.has(edge.target)).map((edge, index) => ({ ...edge, id: `edge_${now}_${index}`, source: idMap.get(edge.source) as string, target: idMap.get(edge.target) as string, selected: false, data: edge.data ? { ...edge.data } : edge.data }));
+    nodesRef.current = nextNodes;
+    const nextEdges = [...edgesRef.current, ...copiedEdges];
+    edgesRef.current = nextEdges;
+    setNodes(nextNodes);
+    setEdges(nextEdges);
+    setSelectedNodeIds(copies.filter(node => !node.parentId).map(node => node.id));
+    setSelectedEdgeIds([]);
+  }, [notify, recordHistory, selectedNodeIds]);
+
+  const groupSelected = useCallback(() => {
+    const groupable = nodesRef.current.filter(node => selectedNodeIds.includes(node.id));
+    if (groupable.length < 2 || groupable.some(node => node.parentId || node.data.type === 'group')) {
+      notify('Select at least two top-level nodes to create a group.', 'info');
+      return;
+    }
+    recordHistory();
+    const bounds = getNodeBounds(groupable);
+    const groupId = `group_${Date.now()}_${nodesRef.current.length}`;
+    const groupNode: NetworkNode = {
+      id: groupId,
+      type: 'networkNode',
+      position: { x: bounds.x - 40, y: bounds.y - 40 },
+      width: bounds.width + 80,
+      height: bounds.height + 80,
+      zIndex: -1,
+      selected: true,
+      data: { label: 'Network group', type: 'group', status: 'active', notes: 'Movable container for grouped topology nodes.' },
+    };
+    const selectedIds = new Set(selectedNodeIds);
+    const nextNodes = [groupNode, ...nodesRef.current.map(node => selectedIds.has(node.id) ? { ...node, selected: false, parentId: groupId, extent: 'parent' as const, position: { x: node.position.x - bounds.x + 40, y: node.position.y - bounds.y + 40 } } : { ...node, selected: false })];
     nodesRef.current = nextNodes;
     setNodes(nextNodes);
-    setSelectedNodeId(copy.id);
-  }, [recordHistory, selectedNode]);
+    setSelectedNodeIds([groupId]);
+    setSelectedEdgeIds([]);
+  }, [notify, recordHistory, selectedNodeIds]);
+
+  const ungroupSelected = useCallback(() => {
+    if (!canUngroup || !selectedNode) return;
+    recordHistory();
+    const group = selectedNode;
+    const children = nodesRef.current.filter(node => node.parentId === group.id);
+    const childIds = new Set(children.map(node => node.id));
+    const nextNodes = nodesRef.current.filter(node => node.id !== group.id).map(node => {
+      if (node.parentId !== group.id) return { ...node, selected: false };
+      return { ...node, selected: childIds.has(node.id), parentId: undefined, extent: undefined, position: { x: group.position.x + node.position.x, y: group.position.y + node.position.y } };
+    });
+    nodesRef.current = nextNodes;
+    setNodes(nextNodes);
+    setSelectedNodeIds(children.map(node => node.id));
+    setSelectedEdgeIds([]);
+  }, [canUngroup, recordHistory, selectedNode]);
 
   const undo = useCallback(() => {
     const previous = history.at(-1);
@@ -212,8 +301,8 @@ function DiagramFlow() {
     setFuture(current => [{ nodes: cloneNodes(nodesRef.current), edges: cloneEdges(edgesRef.current) }, ...current].slice(0, 30));
     setHistory(current => current.slice(0, -1));
     replaceDiagram(previous.nodes, previous.edges, false);
-    setSelectedNodeId(null);
-    setSelectedEdgeId(null);
+    setSelectedNodeIds([]);
+    setSelectedEdgeIds([]);
   }, [history, replaceDiagram]);
 
   const redo = useCallback(() => {
@@ -222,8 +311,8 @@ function DiagramFlow() {
     setHistory(current => [...current, { nodes: cloneNodes(nodesRef.current), edges: cloneEdges(edgesRef.current) }].slice(-30));
     setFuture(current => current.slice(1));
     replaceDiagram(next.nodes, next.edges, false);
-    setSelectedNodeId(null);
-    setSelectedEdgeId(null);
+    setSelectedNodeIds([]);
+    setSelectedEdgeIds([]);
   }, [future, replaceDiagram]);
 
   useEffect(() => {
@@ -251,8 +340,8 @@ function DiagramFlow() {
     const template = TEMPLATES[templateName as keyof typeof TEMPLATES];
     if (!template) return;
     replaceDiagram(template.nodes as NetworkNode[], template.edges as NetworkEdge[]);
-    setSelectedNodeId(null);
-    setSelectedEdgeId(null);
+    setSelectedNodeIds([]);
+    setSelectedEdgeIds([]);
     setTimeout(() => fitView({ padding: 0.2 }), 100);
   };
 
@@ -277,8 +366,8 @@ function DiagramFlow() {
         const parsed = parseDiagram(JSON.parse(content));
         if (parsed) {
           replaceDiagram(parsed.nodes as NetworkNode[], parsed.edges as NetworkEdge[]);
-          setSelectedNodeId(null);
-          setSelectedEdgeId(null);
+          setSelectedNodeIds([]);
+          setSelectedEdgeIds([]);
           setTimeout(() => fitView({ padding: 0.2 }), 100);
         } else {
           notify("Invalid diagram JSON format.", "error");
@@ -296,7 +385,7 @@ function DiagramFlow() {
       notify('Add at least one node before exporting an image.', 'error');
       return;
     }
-    const nodesBounds = getNodesBounds(nodes);
+    const nodesBounds = getNodesBoundsFromFlow(nodes);
     
     // Default image width/height (will scale based on bounds)
     const imageWidth = 1920;
@@ -332,7 +421,7 @@ function DiagramFlow() {
       return;
     }
 
-    const nodesBounds = getNodesBounds(nodes);
+    const nodesBounds = getNodesBoundsFromFlow(nodes);
     const imageWidth = 1920;
     const imageHeight = 1080;
     const viewport = getViewportForBounds(nodesBounds, imageWidth, imageHeight, 0.5, 2, 0.1);
@@ -388,6 +477,8 @@ function DiagramFlow() {
       <Sidebar 
         selectedNode={selectedNode}
         selectedEdge={selectedEdge}
+        selectedNodeCount={selectedNodeIds.length}
+        selectedEdgeCount={selectedEdgeIds.length}
         updateNodeData={updateNodeData}
         updateEdgeData={updateEdgeData}
         onAddNode={addNode}
@@ -397,6 +488,10 @@ function DiagramFlow() {
         redo={redo}
         canUndo={history.length > 0}
         canRedo={future.length > 0}
+        groupSelected={groupSelected}
+        ungroupSelected={ungroupSelected}
+        canGroup={canGroup}
+        canUngroup={canUngroup}
         autoLayout={runAutoLayout}
         fitView={fitDiagram}
         validationIssues={validationIssues}
@@ -419,6 +514,9 @@ function DiagramFlow() {
           onDrop={onDrop}
           onDragOver={onDragOver}
           onSelectionChange={onSelectionChange}
+          selectionKeyCode="Shift"
+          multiSelectionKeyCode="Shift"
+          selectionMode={SelectionMode.Partial}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
@@ -464,4 +562,16 @@ function cloneNodes(nodes: NetworkNode[]): NetworkNode[] {
 
 function cloneEdges(edges: NetworkEdge[]): NetworkEdge[] {
   return edges.map(edge => ({ ...edge, data: edge.data ? { ...edge.data } : edge.data }));
+}
+
+function sameIds(left: string[], right: string[]) {
+  return left.length === right.length && left.every((id, index) => id === right[index]);
+}
+
+function getNodeBounds(nodes: NetworkNode[]) {
+  const left = Math.min(...nodes.map(node => node.position.x));
+  const top = Math.min(...nodes.map(node => node.position.y));
+  const right = Math.max(...nodes.map(node => node.position.x + (node.width ?? 120)));
+  const bottom = Math.max(...nodes.map(node => node.position.y + (node.height ?? 100)));
+  return { x: left, y: top, width: right - left, height: bottom - top };
 }

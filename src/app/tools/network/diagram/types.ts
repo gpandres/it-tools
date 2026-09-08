@@ -6,7 +6,7 @@ export const NETWORK_NODE_TYPES = [
   'vm', 'identity', 'endpoint', 'vpc',
 ] as const;
 
-export type NetworkNodeType = (typeof NETWORK_NODE_TYPES)[number];
+export type NetworkNodeType = (typeof NETWORK_NODE_TYPES)[number] | 'group';
 export type NetworkConnectionType = 'ethernet' | 'fiber' | 'wireless' | 'vpn';
 export type NetworkZone = 'internet' | 'wan' | 'lan' | 'dmz' | 'management' | 'server' | 'cloud';
 export type NetworkStatus = 'active' | 'degraded' | 'offline' | 'maintenance';

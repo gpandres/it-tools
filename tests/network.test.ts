@@ -91,6 +91,30 @@ test("auto layout terminates for cyclic network topologies", () => {
   assert.ok(result.some(node => node.position.x !== 900 || node.position.y !== 900));
 });
 
+test("auto layout keeps grouped children in their parent coordinate space", () => {
+  const nodes = [
+    { id: "group", position: { x: 100, y: 100 }, width: 400, height: 300 },
+    { id: "child", position: { x: 40, y: 40 }, parentId: "group" },
+    { id: "router", position: { x: 900, y: 900 } },
+  ];
+  const result = autoLayout(nodes, [{ source: "child", target: "router" }]);
+  assert.deepEqual(result.find(node => node.id === "child")?.position, { x: 40, y: 40 });
+  assert.notDeepEqual(result.find(node => node.id === "group")?.position, { x: 100, y: 100 });
+});
+
+test("validates connection semantics and VLAN lists", () => {
+  const issues = validateDiagram({
+    nodes: [
+      { id: "ap", position: { x: 0, y: 0 }, data: { type: "wireless", label: "AP" } },
+      { id: "server", position: { x: 100, y: 0 }, data: { type: "server", label: "Server" } },
+    ],
+    edges: [{ id: "link", source: "ap", target: "server", sourceHandle: "top-target", targetHandle: "bottom-source", data: { connectionType: "unknown", vlanMode: "access", vlans: "10,20,5000,20" } }],
+  });
+  assert.deepEqual(issues.map(issue => issue.title), [
+    "Invalid source handle", "Invalid target handle", "Invalid connection type", "Invalid allowed VLANs", "Access link has multiple VLANs", "Duplicate allowed VLAN",
+  ]);
+});
+
 test("diagram imports keep only safe editable fields and preserve dimensions", () => {
   const parsed = parseDiagram({
     nodes: [{
@@ -106,10 +130,14 @@ test("diagram imports keep only safe editable fields and preserve dimensions", (
   assert.equal(parsed, null);
 
   const valid = parseDiagram({
-    nodes: [{ id: "router", position: { x: 10, y: 20 }, width: 320, height: 180, data: { label: "Router", injected: "discard me" } }],
+    nodes: [{ id: "group", type: "networkNode", position: { x: 0, y: 0 }, width: 320, height: 180, data: { label: "Group", type: "group" } }, { id: "router", position: { x: 10, y: 20 }, parentId: "group", extent: "parent", data: { label: "Router", injected: "discard me" } }],
     edges: [],
   });
-  assert.deepEqual(valid?.nodes[0], {
-    id: "router", type: "networkNode", position: { x: 10, y: 20 }, width: 320, height: 180, data: { label: "Router" },
+  assert.deepEqual(valid?.nodes[1], {
+    id: "router", type: "networkNode", position: { x: 10, y: 20 }, parentId: "group", extent: "parent", data: { label: "Router" },
   });
+  assert.equal(parseDiagram({
+    nodes: [{ id: "router", position: { x: 10, y: 20 }, parentId: "missing", extent: "parent", data: { label: "Router" } }],
+    edges: [],
+  }), null);
 });
