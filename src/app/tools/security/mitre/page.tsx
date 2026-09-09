@@ -131,7 +131,7 @@ export default function MitreLookup() {
                 placeholder="Search T-code, technique..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-black border-[#1a1a1a] focus:border-[#00ff9c] text-zinc-300 font-mono"
+                className="pl-9 rounded-none bg-black border-[#1a1a1a] focus-visible:ring-1 focus-visible:ring-[#00ff9c] text-zinc-300 font-mono"
               />
             </div>
 
@@ -181,7 +181,7 @@ export default function MitreLookup() {
               <div className="border border-[#1a1a1a] bg-[#050505] p-3 space-y-3">
                 <div className="flex items-center gap-3">
                   <label className="text-[10px] text-zinc-500 uppercase tracking-widest shrink-0">Filters</label>
-                  <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search technique or T-code..." className="h-8 bg-black border-[#1a1a1a] text-xs font-mono focus:border-[#00ff9c]" />
+                  <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search technique or T-code..." className="h-8 rounded-none bg-black border-[#1a1a1a] text-xs font-mono text-zinc-300 focus-visible:ring-1 focus-visible:ring-[#00ff9c]" />
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
                   {TACTICS.map((tactic) => (
