@@ -1,10 +1,10 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
+import { useNotification } from "@/components/notification-provider";
+import { ToolField, ToolPanel, ToolPanelBody, ToolPanelHeader, ToolPanelTitle, ToolStatus } from "@/components/tool-design";
 import { calculateSubnet, validateIp } from "@/lib/network";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -12,16 +12,17 @@ import { useState, useMemo } from "react";
 function SubnetCalculatorContent() {
   const [state, _setState] = useState({ ip: "192.168.1.0", cidr: "24" });
   const setState = (u: Partial<typeof state>) => _setState(s => ({ ...s, ...u }));
-  
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const { notify } = useNotification();
 
   const copyToClipboard = async (text: string, key: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedKey(key);
+      notify("Copied to clipboard");
       setTimeout(() => setCopiedKey(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy", err);
+    } catch {
+      notify("Unable to copy this value", "error");
     }
   };
 
@@ -36,31 +37,40 @@ function SubnetCalculatorContent() {
     return null;
   }, [state.ip, cidrNum, isValidIp, isValidCidr]);
 
+  const cidrProgress = isValidCidr ? (cidrNum / 32) * 100 : 0;
   return (
     <ToolLayout 
       title="Subnetting Calculator" 
       description="Calculate network address, broadcast, host range, and wildcard mask from an IP and CIDR."
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <article className="border border-[#1a1a1a] bg-[#050505]">
-          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-[#00ff9c] text-xs">[IN]</span>
-            <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Input Config</span>
-          </header>
-          <div className="p-6 space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="ip" className="text-zinc-500 font-mono text-xs uppercase tracking-wider">IP Address</Label>
+      <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-6 md:grid-cols-2">
+        <ToolPanel>
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="IN" className="text-[#ffb000] glow-amber">Input config</ToolPanelTitle>
+          </ToolPanelHeader>
+          <ToolPanelBody className="space-y-6">
+            <ToolField
+              htmlFor="ip"
+              label="IP address"
+              helper="IPv4 address in dotted-decimal notation."
+              error={!isValidIp && state.ip ? "Enter a valid IPv4 address, for example 192.168.1.0." : undefined}
+            >
               <Input
                 id="ip"
                 value={state.ip}
                 onChange={(e) => setState({ ip: e.target.value })}
-                className={`font-mono bg-black border-[#1a1a1a] text-zinc-300 rounded-none focus-visible:ring-[#00ff9c] ${!isValidIp && state.ip ? "border-red-500 text-red-400 focus-visible:ring-red-500" : ""}`}
+                aria-invalid={!isValidIp && Boolean(state.ip)}
+                className={`bg-black font-mono text-zinc-300 rounded-none focus-visible:ring-[#00ff9c] ${!isValidIp && state.ip ? "border-red-500 text-red-400 focus-visible:ring-red-500" : "border-[#1a1a1a]"}`}
                 placeholder="192.168.1.0"
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="cidr" className="text-zinc-500 font-mono text-xs uppercase tracking-wider">CIDR Prefix (/{state.cidr})</Label>
+            </ToolField>
+
+            <ToolField
+              htmlFor="cidr"
+              label={`CIDR prefix (/${state.cidr || "?"})`}
+              helper="Use the slider or enter a prefix from 0 to 32."
+              error={!isValidCidr ? "CIDR prefix must be a whole number from 0 to 32." : undefined}
+            >
               <div className="flex items-center gap-4">
                 <input
                   id="cidr"
@@ -69,7 +79,8 @@ function SubnetCalculatorContent() {
                   max="32"
                   value={state.cidr}
                   onChange={(e) => setState({ cidr: e.target.value })}
-                  className="flex-1 accent-[#00ff9c] cursor-pointer"
+                  className="tool-range flex-1"
+                  style={{ "--tool-range-progress": `${cidrProgress}%` } as React.CSSProperties}
                 />
                 <Input
                   type="number"
@@ -77,40 +88,38 @@ function SubnetCalculatorContent() {
                   max="32"
                   value={state.cidr}
                   onChange={(e) => setState({ cidr: e.target.value })}
-                  className={`w-20 font-mono bg-black border-[#1a1a1a] text-zinc-300 text-center rounded-none focus-visible:ring-[#00ff9c] ${!isValidCidr ? "border-red-500 text-red-400 focus-visible:ring-red-500" : ""}`}
+                  aria-invalid={!isValidCidr}
+                  className={`w-20 bg-black text-center font-mono text-zinc-300 rounded-none focus-visible:ring-[#00ff9c] ${!isValidCidr ? "border-red-500 text-red-400 focus-visible:ring-red-500" : "border-[#1a1a1a]"}`}
                 />
               </div>
-            </div>
-          </div>
-        </article>
+            </ToolField>
+          </ToolPanelBody>
+        </ToolPanel>
 
-        <article className="border border-[#1a1a1a] bg-[#050505]">
-          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-[#00ff9c] text-xs">[OUT]</span>
-            <span className="text-[#00ff9c] text-sm font-semibold glow flex items-center gap-2 uppercase tracking-widest">
-              Results <span className="cursor-blink">_</span>
-            </span>
-          </header>
-          <div className="p-6">
+        <ToolPanel>
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="OUT">Results <span className="cursor-blink">_</span></ToolPanelTitle>
+          </ToolPanelHeader>
+          <ToolPanelBody>
             {!result || result.error ? (
-              <div className="flex gap-2 leading-relaxed text-sm">
-                <span className="text-red-500 shrink-0 select-none">[ERR]</span>
-                <span className="text-red-400 font-mono">{result?.error || "Awaiting valid input..."}</span>
-              </div>
+              <ToolStatus tone="error" title="Awaiting valid input">{result?.error || "Provide a valid IP address and CIDR prefix to calculate the subnet."}</ToolStatus>
             ) : (
-              <div className="space-y-3 font-mono text-sm">
+              <div className="space-y-4 font-mono text-sm">
+                <div className="space-y-3">
                 <ResultRow label="Network Address" value={result.network!} onCopy={() => copyToClipboard(result.network!, "net")} copied={copiedKey === "net"} />
                 <ResultRow label="Broadcast Address" value={result.broadcast!} onCopy={() => copyToClipboard(result.broadcast!, "bcast")} copied={copiedKey === "bcast"} />
                 <ResultRow label="Subnet Mask" value={result.mask!} onCopy={() => copyToClipboard(result.mask!, "mask")} copied={copiedKey === "mask"} />
                 <ResultRow label="Wildcard Mask" value={result.wildcard!} onCopy={() => copyToClipboard(result.wildcard!, "wild")} copied={copiedKey === "wild"} />
-                <div className="border-t border-[#1a1a1a] my-3"></div>
+                </div>
+                <div className="border-t border-[#1a1a1a] pt-3">
                 <ResultRow label="First Host" value={result.firstHost!} onCopy={() => copyToClipboard(result.firstHost!, "first")} copied={copiedKey === "first"} />
                 <ResultRow label="Last Host" value={result.lastHost!} onCopy={() => copyToClipboard(result.lastHost!, "last")} copied={copiedKey === "last"} />
                 <ResultRow label="Total Hosts" value={result.totalHosts.toLocaleString()} onCopy={() => copyToClipboard(result.totalHosts.toString(), "hosts")} copied={copiedKey === "hosts"} />
-              </div>
+                </div>
+                </div>
             )}
-          </div>
-        </article>
+          </ToolPanelBody>
+        </ToolPanel>
       </div>
     </ToolLayout>
   );
@@ -124,14 +133,16 @@ export default function SubnetCalculator() {
 
 function ResultRow({ label, value, onCopy, copied }: { label: string, value: string, onCopy: () => void, copied: boolean }) {
   return (
-    <div className="flex justify-between items-center group">
-      <span className="text-zinc-500">{label}:</span>
-      <div className="flex items-center gap-2">
-        <span className="text-zinc-200">{value}</span>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-zinc-400">{label}</span>
+      <div className="flex min-w-0 items-center gap-2">
+        <code className="truncate text-zinc-200" title={value}>{value}</code>
         <Button 
           variant="ghost" 
-          size="icon" 
-          className="h-6 w-6 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity hover:text-[var(--phosphor)] hover:bg-zinc-900"
+          size="icon-xs"
+          aria-label={`Copy ${label}`}
+          title={`Copy ${label}`}
+          className="shrink-0 rounded-none text-zinc-500 hover:bg-zinc-900 hover:text-[var(--phosphor)]"
           onClick={onCopy}
         >
           {copied ? <Check className="h-3 w-3 text-[var(--phosphor)]" /> : <Copy className="h-3 w-3" />}
