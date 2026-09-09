@@ -86,28 +86,28 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 bg-[#0a0a0a] p-4 border border-[#1a1a1a] rounded-lg">
+      <div className="grid gap-4 bg-[#050505] p-4 border border-[#1a1a1a] rounded-none">
         <div>
-          <Label className="mb-2 block">Runbook Title</Label>
+          <Label className="mb-2 block uppercase tracking-widest text-xs text-zinc-400">Runbook Title</Label>
           <Input 
             value={runbook.title} 
             onChange={(e) => onChange({ ...runbook, title: e.target.value })}
-            className="bg-black border-[#1a1a1a] text-lg font-bold"
+            className="rounded-none bg-black border-[#1a1a1a] text-sm font-bold text-zinc-200 focus-visible:ring-[#00ff9c]"
           />
         </div>
         <div>
-          <Label className="mb-2 block">Description</Label>
+          <Label className="mb-2 block uppercase tracking-widest text-xs text-zinc-400">Description</Label>
           <Textarea 
             value={runbook.description} 
             onChange={(e) => onChange({ ...runbook, description: e.target.value })}
-            className="bg-black border-[#1a1a1a]"
+            className="rounded-none bg-black border-[#1a1a1a] text-sm text-zinc-300 focus-visible:ring-[#00ff9c]"
           />
         </div>
         
         <div>
-          <Label className="flex justify-between items-center mb-2">
+          <Label className="flex justify-between items-center mb-2 uppercase tracking-widest text-xs text-zinc-400">
             <span>Variables</span>
-            <Button size="sm" variant="outline" className="h-6 px-2 bg-[#1a1a1a] border-0" onClick={() => {
+            <Button size="sm" variant="outline" className="h-7 px-3 rounded-none bg-[#1a1a1a] border border-[#2a2a2a] hover:bg-[#2a2a2a] text-white" onClick={() => {
               onChange({
                 ...runbook,
                 variables: [...runbook.variables, { name: 'NEW_VAR', description: '' }]
@@ -130,7 +130,7 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
                       onChange({ ...runbook, variables: newVars });
                     }}
                     placeholder="NAME"
-                    className="w-1/4 bg-black border-[#1a1a1a] font-mono text-xs"
+                    className="w-1/4 rounded-none bg-black border-[#1a1a1a] font-mono text-xs focus-visible:ring-[#00ff9c]"
                   />
                   <Input 
                     value={v.description} 
@@ -140,7 +140,7 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
                       onChange({ ...runbook, variables: newVars });
                     }}
                     placeholder="Description"
-                    className="flex-1 bg-black border-[#1a1a1a] text-xs"
+                    className="flex-1 rounded-none bg-black border-[#1a1a1a] text-xs focus-visible:ring-[#00ff9c]"
                   />
                   <Input 
                     value={v.defaultValue || ''} 
@@ -150,13 +150,13 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
                       onChange({ ...runbook, variables: newVars });
                     }}
                     placeholder="Default Value"
-                    className="w-1/4 bg-black border-[#1a1a1a] text-xs"
+                    className="w-1/4 rounded-none bg-black border-[#1a1a1a] text-xs focus-visible:ring-[#00ff9c]"
                   />
                   <Button variant="ghost" size="icon" onClick={() => {
                     const newVars = [...runbook.variables];
                     newVars.splice(i, 1);
                     onChange({ ...runbook, variables: newVars });
-                  }} className="text-zinc-500 hover:text-red-500">
+                  }} className="rounded-none text-zinc-500 hover:text-red-500 hover:bg-[#1a1a1a]">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -167,15 +167,15 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
       </div>
 
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="font-bold text-lg text-zinc-300">Steps ({runbook.steps.length})</h3>
-          <div className="flex gap-2">
+        <div className="flex justify-between items-center border-b border-[#1a1a1a] pb-2">
+          <h3 className="font-bold text-sm uppercase tracking-widest text-[#ffb000]">Steps ({runbook.steps.length})</h3>
+          <div className="flex flex-wrap gap-2">
             {(Object.keys(STEP_ICONS) as StepType[]).map(type => {
               const Icon = STEP_ICONS[type];
               return (
-                <Button key={type} size="sm" variant="outline" className="bg-black border-[#1a1a1a]" onClick={() => addStep(type)}>
-                  <Icon className="w-4 h-4 mr-1" />
-                  <span className="capitalize">{type}</span>
+                <Button key={type} size="sm" variant="outline" className="h-8 rounded-none bg-black border-[#1a1a1a] hover:border-[#00ff9c] hover:bg-[#00ff9c]/10 hover:text-[#00ff9c] text-xs font-bold uppercase tracking-widest text-zinc-400" onClick={() => addStep(type)}>
+                  <Icon className="w-3.5 h-3.5 mr-1.5" />
+                  <span>{type}</span>
                 </Button>
               )
             })}
@@ -183,7 +183,7 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
         </div>
 
         {runbook.steps.length === 0 ? (
-          <div className="p-8 text-center text-zinc-500 border border-dashed border-[#2a2a2a] rounded-lg">
+          <div className="p-8 text-center text-xs uppercase tracking-widest text-zinc-500 border border-dashed border-[#2a2a2a] rounded-none">
             No steps defined. Add a step using the buttons above.
           </div>
         ) : (
@@ -191,7 +191,7 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
             {runbook.steps.map((step, index) => {
               const Icon = STEP_ICONS[step.type];
               return (
-                <div key={step.id} className="flex gap-3 bg-[#0a0a0a] p-4 border border-[#1a1a1a] rounded-lg relative group">
+                <div key={step.id} className="flex gap-3 bg-[#050505] p-4 border border-[#1a1a1a] rounded-none relative group">
                   
                   <div className="flex flex-col items-center justify-start gap-2 pt-2 text-zinc-500">
                     <button onClick={() => moveStep(index, -1)} disabled={index === 0} className="hover:text-white disabled:opacity-30">▲</button>
@@ -206,10 +206,10 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
                         <Input 
                           value={step.title}
                           onChange={(e) => updateStep(step.id, { title: e.target.value })}
-                          className="bg-transparent border-0 font-bold px-1 h-auto py-1 focus-visible:ring-0 text-md text-[#00ff9c]"
+                          className="bg-transparent border-0 font-bold px-1 h-auto py-1 focus-visible:ring-0 text-md text-[#00ff9c] rounded-none focus-visible:bg-[#00ff9c]/10"
                         />
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => removeStep(step.id)} className="text-zinc-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="icon" onClick={() => removeStep(step.id)} className="rounded-none text-zinc-500 hover:text-red-500 hover:bg-[#1a1a1a] opacity-0 group-hover:opacity-100 transition-opacity">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -218,11 +218,11 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
 
                     {(step.type === 'information' || step.type === 'warning' || step.type === 'verification' || step.type === 'command') && (
                       <div>
-                        <Label className="text-xs text-zinc-400">Description / Content</Label>
+                        <Label className="text-xs text-zinc-400 uppercase tracking-widest block mb-2">Description / Content</Label>
                         <Textarea 
                           value={step.type === 'command' ? step.description : step.content}
                           onChange={(e) => updateStep(step.id, step.type === 'command' ? { description: e.target.value } : { content: e.target.value })}
-                          className="bg-black border-[#1a1a1a] mt-1 text-xs min-h-[60px]"
+                          className="rounded-none bg-black border-[#1a1a1a] text-sm text-zinc-300 focus-visible:ring-[#00ff9c] min-h-[60px]"
                           placeholder="Markdown supported..."
                         />
                       </div>
@@ -230,11 +230,11 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
 
                     {step.type === 'command' && (
                       <div>
-                        <Label className="text-xs text-zinc-400">Command</Label>
+                        <Label className="text-xs text-zinc-400 uppercase tracking-widest block mb-2">Command</Label>
                         <Textarea 
                           value={step.command}
                           onChange={(e) => updateStep(step.id, { command: e.target.value })}
-                          className="bg-zinc-900 border-[#333] font-mono text-[#00ff9c] mt-1 text-xs min-h-[60px]"
+                          className="rounded-none bg-black border-[#1a1a1a] font-mono text-[#00ff9c] text-sm focus-visible:ring-[#00ff9c] min-h-[60px]"
                           placeholder="e.g. ping {{TARGET_HOST}}"
                         />
                       </div>
@@ -242,48 +242,48 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
 
                     {(step.type === 'command' || step.type === 'verification') && (
                       <div>
-                        <Label className="text-xs text-zinc-400">Expected Result</Label>
+                        <Label className="text-xs text-zinc-400 uppercase tracking-widest block mb-2">Expected Result</Label>
                         <Input 
                           value={step.expectedResult || ''}
                           onChange={(e) => updateStep(step.id, { expectedResult: e.target.value })}
-                          className="bg-black border-[#1a1a1a] mt-1 text-xs"
+                          className="rounded-none bg-black border-[#1a1a1a] text-sm text-zinc-300 focus-visible:ring-[#00ff9c]"
                           placeholder="e.g. 0% packet loss"
                         />
                       </div>
                     )}
 
                     {step.type === 'decision' && (
-                      <div className="space-y-3 bg-[#111] p-3 rounded border border-[#222]">
+                      <div className="space-y-4 bg-[#0a0a0a] p-4 border border-[#1a1a1a] rounded-none">
                         <div>
-                          <Label className="text-xs text-zinc-400">Decision Question</Label>
+                          <Label className="text-xs text-zinc-400 uppercase tracking-widest block mb-2">Decision Question</Label>
                           <Input 
                             value={step.decisionQuestion || ''}
                             onChange={(e) => updateStep(step.id, { decisionQuestion: e.target.value })}
-                            className="bg-black border-[#1a1a1a] mt-1 text-xs"
+                            className="rounded-none bg-black border-[#1a1a1a] text-sm text-zinc-300 focus-visible:ring-[#00ff9c]"
                             placeholder="e.g. Did the ping succeed?"
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <Label className="text-xs text-[#00ff9c]">If YES, jump to Step ID:</Label>
+                            <Label className="text-[10px] font-bold uppercase tracking-widest text-[#00ff9c] block mb-2">If YES, jump to Step ID:</Label>
                             <Select value={step.decisionTrueNext || ''} onValueChange={(v) => updateDecisionTarget(step, 'yes', v)}>
-                              <SelectTrigger className="bg-black border-[#1a1a1a] mt-1 text-xs">
+                              <SelectTrigger className="rounded-none bg-black border-[#1a1a1a] text-sm focus:ring-[#00ff9c]">
                                 <SelectValue placeholder="Select step..." />
                               </SelectTrigger>
-                              <SelectContent className="bg-black border-[#1a1a1a]">
+                              <SelectContent className="rounded-none bg-black border-[#1a1a1a]">
                                 {runbook.steps.filter(s => s.id !== step.id).map(s => (
-                                  <SelectItem key={s.id} value={s.id}>{s.title} ({s.id})</SelectItem>
+                                  <SelectItem key={s.id} value={s.id} className="focus:bg-[#1a1a1a]">{s.title} ({s.id})</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
                           <div>
-                            <Label className="text-xs text-red-500">If NO, jump to Step ID:</Label>
+                            <Label className="text-[10px] font-bold uppercase tracking-widest text-red-500 block mb-2">If NO, jump to Step ID:</Label>
                             <Select value={step.decisionFalseNext || ''} onValueChange={(v) => updateDecisionTarget(step, 'no', v)}>
-                              <SelectTrigger className="bg-black border-[#1a1a1a] mt-1 text-xs">
+                              <SelectTrigger className="rounded-none bg-black border-[#1a1a1a] text-sm focus:ring-[#00ff9c]">
                                 <SelectValue placeholder="Select step..." />
                               </SelectTrigger>
-                              <SelectContent className="bg-black border-[#1a1a1a]">
+                              <SelectContent className="rounded-none bg-black border-[#1a1a1a]">
                                 {runbook.steps.filter(s => s.id !== step.id).map(s => (
                                   <SelectItem key={s.id} value={s.id}>{s.title} ({s.id})</SelectItem>
                                 ))}
@@ -297,7 +297,7 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
 
                     {step.type === 'checklist' && (
                       <div>
-                         <Label className="mb-3 block text-xs leading-relaxed text-zinc-400">Checklist Items</Label>
+                         <Label className="mb-3 block text-xs uppercase tracking-widest text-zinc-400">Checklist Items</Label>
                          <div className="space-y-3">
                           {(step.items || []).map((item, itemIdx) => (
                              <div key={itemIdx} className="flex min-w-0 items-center gap-3">
@@ -308,19 +308,19 @@ export default function Builder({ runbook, onChange }: BuilderProps) {
                                   newItems[itemIdx] = e.target.value;
                                   updateStep(step.id, { items: newItems });
                                 }}
-                                 className="min-w-0 flex-1 bg-black border-[#1a1a1a] text-xs"
+                                 className="min-w-0 flex-1 rounded-none bg-black border-[#1a1a1a] text-sm text-zinc-300 focus-visible:ring-[#00ff9c]"
                                 placeholder="Item description..."
                               />
                               <Button variant="ghost" size="icon" onClick={() => {
                                 const newItems = [...(step.items || [])];
                                 newItems.splice(itemIdx, 1);
                                 updateStep(step.id, { items: newItems });
-                              }} className="text-zinc-500 hover:text-red-500 h-9 w-9">
+                              }} className="rounded-none text-zinc-500 hover:text-red-500 hover:bg-[#1a1a1a] h-10 w-10">
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
                           ))}
-                          <Button size="sm" variant="outline" className="bg-[#1a1a1a] border-0" onClick={() => {
+                          <Button size="sm" variant="outline" className="h-8 rounded-none bg-[#1a1a1a] border border-[#2a2a2a] hover:bg-[#2a2a2a] text-white" onClick={() => {
                             updateStep(step.id, { items: [...(step.items || []), ''] });
                           }}>
                             <Plus className="w-3 h-3 mr-1" /> Add Item

@@ -11,7 +11,7 @@ import Runner from "@/app/tools/sysadmin/runbook/components/Runner";
 import DiagramBuilder from "@/app/tools/sysadmin/runbook/components/DiagramBuilder";
 import RunbookPdfExport from "@/app/tools/sysadmin/runbook/components/RunbookPdfExport";
 import type { Runbook } from "@/app/tools/sysadmin/runbook/components/types";
-import { ToolActionButton, ToolActionPanel } from "@/components/tool-action-panel";
+import { ToolPanel, ToolPanelHeader, ToolActionButton, ToolActionPanel } from "@/components/tool-design";
 import { useNotification } from "@/components/notification-provider";
 import { downloadTextFile, safeDownloadName } from "@/lib/browser-download";
 import { createEvidenceBundle } from "@/lib/evidence-bundle";
@@ -119,33 +119,40 @@ export default function PlaybookPage() {
 
   return <ToolLayout title="Incident Response Playbook" description="Coordinate phases, ownership, decisions, and evidence for a security incident.">
     <div className="mx-auto w-full max-w-6xl space-y-6">
-      <section className="border border-[#1a1a1a] bg-[#0a0a0a] p-4" aria-label="Playbook controls">
-        <div className="flex flex-wrap items-center gap-3">
+      <ToolPanel>
+        <ToolPanelHeader className="flex-wrap items-center gap-3">
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => setMode("build")} variant={mode === "build" ? "default" : "outline"} className={mode === "build" ? "bg-white text-black" : "border-[#1a1a1a] bg-black text-zinc-400 hover:text-white"}><PenTool className="mr-2 h-4 w-4" />Builder Mode</Button>
-            <Button onClick={() => setMode("run")} variant={mode === "run" ? "default" : "outline"} className={mode === "run" ? "bg-[#00ff9c] text-black hover:bg-[#00cc7a]" : "border-[#1a1a1a] bg-black text-[#00ff9c] hover:bg-[#00ff9c]/10"}><Play className="mr-2 h-4 w-4" />Execute</Button>
-            {mode === "build" && <div className="ml-1 flex overflow-hidden border border-[#1a1a1a] bg-black"><button type="button" onClick={() => setBuildView("list")} className={`px-3 py-2 text-[10px] font-bold ${buildView === "list" ? "bg-[#1a1a1a] text-white" : "text-zinc-500 hover:text-white"}`}>LIST</button><button type="button" onClick={() => setBuildView("diagram")} className={`px-3 py-2 text-[10px] font-bold ${buildView === "diagram" ? "bg-[#1a1a1a] text-white" : "text-zinc-500 hover:text-white"}`}>DIAGRAM</button></div>}
+            <Button onClick={() => setMode("build")} variant={mode === "build" ? "default" : "outline"} className={`h-8 rounded-none px-3 font-bold ${mode === "build" ? "bg-white text-black hover:bg-zinc-200" : "border-[#1a1a1a] bg-black text-zinc-400 hover:border-[#00ff9c] hover:text-[#00ff9c]"}`}><PenTool className="mr-2 h-4 w-4" />Builder Mode</Button>
+            <Button onClick={() => setMode("run")} variant={mode === "run" ? "default" : "outline"} className={`h-8 rounded-none px-3 font-bold ${mode === "run" ? "bg-[#00ff9c] text-black hover:bg-[#00cc7a]" : "border-[#1a1a1a] bg-black text-[#00ff9c] hover:border-[#00ff9c] hover:bg-[#00ff9c]/10"}`}><Play className="mr-2 h-4 w-4" />Execute</Button>
+            {mode === "build" && <div className="ml-1 flex overflow-hidden border border-[#1a1a1a] bg-black"><button type="button" onClick={() => setBuildView("list")} className={`h-8 px-3 text-[10px] font-bold ${buildView === "list" ? "bg-[#1a1a1a] text-white" : "text-zinc-500 hover:bg-[#1a1a1a]/50 hover:text-white"}`}>LIST</button><button type="button" onClick={() => setBuildView("diagram")} className={`h-8 px-3 text-[10px] font-bold ${buildView === "diagram" ? "bg-[#1a1a1a] text-white" : "text-zinc-500 hover:bg-[#1a1a1a]/50 hover:text-white"}`}>DIAGRAM</button></div>}
           </div>
           {mode === "build" && <div className="ml-auto flex min-w-0 flex-wrap items-center gap-2">
-            <Button onClick={sharePlaybook} variant="outline" size="sm" className="border-[#1a1a1a] bg-black text-blue-400 hover:bg-blue-900/20 hover:text-blue-300">{shareStatus === "copied" ? "Copied" : shareStatus === "failed" ? "Copy failed" : "Share URL"}</Button>
-            <Select value={playbook.title} onValueChange={templateTitle => { const template = Object.values(PLAYBOOK_TEMPLATES).find(item => item.playbook.title === templateTitle); if (template) setDocument(copyDocument(template)); }}><SelectTrigger className="h-9 w-[210px] border-[#1a1a1a] bg-black text-xs"><SelectValue placeholder="Load template" /></SelectTrigger><SelectContent className="border-[#1a1a1a] bg-black">{Object.entries(PLAYBOOK_TEMPLATES).map(([name, template]) => <SelectItem key={name} value={template.playbook.title}>{name}</SelectItem>)}</SelectContent></Select>
+            <Button onClick={sharePlaybook} variant="outline" className="h-8 rounded-none border-[#1a1a1a] bg-black px-3 font-bold text-sky-400 hover:border-sky-400 hover:bg-sky-400/10 hover:text-sky-300">{shareStatus === "copied" ? "Copied" : shareStatus === "failed" ? "Copy failed" : "Share URL"}</Button>
+            <Select value={playbook.title} onValueChange={templateTitle => { const template = Object.values(PLAYBOOK_TEMPLATES).find(item => item.playbook.title === templateTitle); if (template) setDocument(copyDocument(template)); }}><SelectTrigger className="h-8 w-[210px] rounded-none border-[#1a1a1a] bg-black text-xs focus:ring-[#00ff9c]"><SelectValue placeholder="Load template" /></SelectTrigger><SelectContent className="rounded-none border-[#1a1a1a] bg-black">{Object.entries(PLAYBOOK_TEMPLATES).map(([name, template]) => <SelectItem key={name} value={template.playbook.title} className="focus:bg-[#1a1a1a]">{name}</SelectItem>)}</SelectContent></Select>
           </div>}
-        </div>
-      </section>
+        </ToolPanelHeader>
+      </ToolPanel>
 
       {mode === "build" ? <>
         <IncidentCommandPanel incident={incident} onChange={updateIncident} />
         {buildView === "list" ? <Builder runbook={playbook} onChange={updatePlaybook} /> : <DiagramBuilder runbook={playbook} onChange={updatePlaybook} />}
         <ToolActionPanel label="Export / Import" className="justify-end bg-[#080808]">
-          <ToolActionButton onClick={() => downloadTextFile(JSON.stringify(document, null, 2), `playbook-${safeDownloadName(playbook.id, "workflow")}.json`, "application/json;charset=utf-8")} variant="outline"><Download className="mr-2 h-4 w-4" />JSON</ToolActionButton>
-          <ToolActionButton variant="outline" className="relative overflow-hidden"><Upload className="mr-2 h-4 w-4" />Load<input type="file" accept="application/json,.json" className="absolute inset-0 cursor-pointer opacity-0" onChange={event => { const file = event.target.files?.[0]; if (file) importPlaybook(file); event.currentTarget.value = ""; }} /></ToolActionButton>
-          <ToolActionButton onClick={() => downloadTextFile(playbookMarkdown(document), `playbook-${safeDownloadName(playbook.id, "workflow")}.md`, "text/markdown;charset=utf-8")} variant="outline"><FileText className="mr-2 h-4 w-4" />Markdown</ToolActionButton>
-          <ToolActionButton onClick={exportEvidenceBundle} variant="outline"><ShieldAlert className="mr-2 h-4 w-4" />Evidence bundle</ToolActionButton>
+          <ToolActionButton onClick={() => downloadTextFile(JSON.stringify(document, null, 2), `playbook-${safeDownloadName(playbook.id, "workflow")}.json`, "application/json;charset=utf-8")} tone="neutral"><Download className="mr-2 h-4 w-4" />JSON</ToolActionButton>
+          <ToolActionButton tone="neutral" asChild>
+            <label className="relative cursor-pointer">
+              <Upload className="mr-2 h-4 w-4" />Load
+              <input type="file" accept="application/json,.json" className="absolute inset-0 cursor-pointer opacity-0 w-full h-full" onChange={event => { const file = event.target.files?.[0]; if (file) importPlaybook(file); event.currentTarget.value = ""; }} />
+            </label>
+          </ToolActionButton>
+          <ToolActionButton onClick={() => downloadTextFile(playbookMarkdown(document), `playbook-${safeDownloadName(playbook.id, "workflow")}.md`, "text/markdown;charset=utf-8")} tone="neutral"><FileText className="mr-2 h-4 w-4" />Markdown</ToolActionButton>
+          <ToolActionButton onClick={exportEvidenceBundle} tone="neutral"><ShieldAlert className="mr-2 h-4 w-4" />Evidence bundle</ToolActionButton>
           <RunbookPdfExport runbook={playbook} />
         </ToolActionPanel>
       </> : <>
-        <section className="flex flex-wrap items-center gap-x-5 gap-y-2 border border-[#1a1a1a] bg-[#080808] px-4 py-3 text-xs text-zinc-400" aria-label="Active incident command"><span className="font-bold text-[#ffb000]">{incident.phase.toUpperCase()}</span><span className="text-zinc-600">/</span><span className={incident.priority === "Critical" ? "text-red-400" : "text-[#00ff9c]"}>{incident.priority} priority</span>{incidentOwners.length > 0 && <><span className="text-zinc-600">/</span><span>{incidentOwners.join(" · ")}</span></>}</section>
-        <Runner runbook={playbook} onExit={() => setMode("build")} />
+        <section className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-[#1a1a1a] bg-[#0a0a0a] px-4 py-3 text-xs text-zinc-400" aria-label="Active incident command"><span className="font-bold text-[#ffb000]">{incident.phase.toUpperCase()}</span><span className="text-zinc-600">/</span><span className={incident.priority === "Critical" ? "text-red-400" : "text-[#00ff9c]"}>{incident.priority} priority</span>{incidentOwners.length > 0 && <><span className="text-zinc-600">/</span><span>{incidentOwners.join(" · ")}</span></>}</section>
+        <div className="border border-[#1a1a1a] bg-[#050505]">
+          <Runner runbook={playbook} onExit={() => setMode("build")} />
+        </div>
       </>}
     </div>
   </ToolLayout>;
