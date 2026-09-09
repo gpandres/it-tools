@@ -35,7 +35,7 @@ export function toolDataFlow(tool: ToolDefinition): { label: string; description
   if (tool.dataFlow === "network" || tool.id === "headers-scorecard") {
     return { label: "Network request", description: "This tool sends the value you submit to a network service. Review the destination and response before using it with sensitive data." };
   }
-  if (tool.dataFlow === "mixed" || tool.id === "incident-report") {
+  if (tool.dataFlow === "mixed") {
     return { label: "Local processing · external service", description: "Most processing happens in your browser, but part of this tool uses an external service when you request it. Do not submit sensitive data unless you trust that service." };
   }
   return { label: "Local processing", description: "This tool processes your input in your browser." };

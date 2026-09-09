@@ -281,7 +281,6 @@ export const toolsRegistry: ToolDefinition[] = [
     aliases: ["Postmortem Builder", "RCA Generator"],
     technologies: ["Incident Response", "Documentation"],
     offline: true,
-    dataFlow: "mixed",
   },
   {
     id: "mitre-simulator",

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Clock3, Search, Star, X } from "lucide-react";
 import { toolsRegistry, CATEGORIES } from "@/lib/tools";
+import { searchTools } from "@/lib/tool-discovery";
 import { readLocalStorage, STORAGE_CHANGED, writeLocalStorage } from "@/lib/storage";
 import { useFavorites } from "./favorites-provider";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } from "./ui/dialog";
@@ -25,13 +26,6 @@ function readCollapsedCategories(): string[] {
   } catch {
     return [];
   }
-}
-
-function matchesTool(tool: typeof toolsRegistry[number], query: string) {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return true;
-  return [tool.name, tool.description, tool.category, ...tool.keywords, ...(tool.aliases ?? [])]
-    .some(value => value.toLowerCase().includes(normalized));
 }
 
 export function Sidebar() {
@@ -65,7 +59,7 @@ export function Sidebar() {
     };
   }, []);
 
-  const filteredTools = useMemo(() => toolsRegistry.filter(tool => matchesTool(tool, query)), [query]);
+  const filteredTools = useMemo(() => searchTools(query), [query]);
   const favoriteTools = useMemo(() => filteredTools.filter(tool => favorites.includes(tool.id)), [favorites, filteredTools]);
   const recentTools = useMemo(() => recent.flatMap(id => filteredTools.filter(tool => tool.id === id)), [recent, filteredTools]);
 
