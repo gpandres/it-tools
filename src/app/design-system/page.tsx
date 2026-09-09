@@ -8,6 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { NotificationDemo } from "./components/NotificationDemo";
+import { SliderDemo } from "./components/SliderDemo";
+import { DiagramDesignDemo } from "./components/DiagramDesignDemo";
+import { CliDesignDemo } from "./components/CliDesignDemo";
+import { PatternShowcase } from "./components/PatternShowcase";
 
 export const metadata: Metadata = {
   title: "Design System Reference | IT_TOOLS",
@@ -132,23 +136,8 @@ export default function DesignSystemPage() {
           <label htmlFor="design-system-checkbox" className="flex min-h-10 cursor-pointer items-center gap-3 text-xs text-zinc-300"><Checkbox id="design-system-checkbox" defaultChecked />Keep local processing enabled</label>
         </Section>
 
-        <Section title="Sliders and numeric controls" code={'<div className="flex items-center gap-4">\n  <input type="range" className="tool-range flex-1" />\n  <Input className="w-20 rounded-none text-center" />\n</div>'}>
-          <div className="max-w-2xl space-y-3">
-            <div className="flex items-end justify-between gap-4">
-              <Label htmlFor="design-system-slider" className="text-xs uppercase tracking-wider text-zinc-500">CIDR Prefix</Label>
-              <span className="font-mono text-sm font-bold text-[#00ff9c]">[/24]</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <input id="design-system-slider" type="range" min="0" max="32" defaultValue="24" className="tool-range flex-1" />
-              <Input aria-label="CIDR value" className="w-20 rounded-none text-center" defaultValue="24" inputMode="numeric" />
-            </div>
-            <p className="text-[10px] text-zinc-600">Use the green phosphor track for the primary value. Keep a numeric field beside it when precision matters, and keep both controls synchronized.</p>
-          </div>
-          <div className="max-w-2xl space-y-3 border-t border-[#1a1a1a] pt-4">
-            <div className="flex items-end justify-between gap-4"><Label htmlFor="design-system-warning-slider" className="text-xs uppercase tracking-wider text-zinc-500">Storage overhead</Label><span className="font-mono text-sm font-bold text-[#ffb000]">[15%]</span></div>
-            <input id="design-system-warning-slider" type="range" min="0" max="50" step="5" defaultValue="15" data-tone="amber" className="tool-range w-full" />
-            <p className="text-[10px] text-zinc-600">Amber is reserved for an attention value, not a second primary brand.</p>
-          </div>
+        <Section title="Sliders and numeric controls" code={'<input type="range" className="tool-range flex-1" style={{ "--tool-range-progress": "75%" }} />\n<Input className="w-20 rounded-none text-center" />'}>
+          <SliderDemo />
         </Section>
 
         <div className="grid gap-6 xl:grid-cols-2">
@@ -200,6 +189,20 @@ export default function DesignSystemPage() {
             <article className="border border-[#1a1a1a] bg-[#050505]"><header className="border-b border-[#1a1a1a] bg-[#0a0a0a] px-4 py-3"><span className="text-sm font-semibold uppercase tracking-widest text-[#00ff9c]">Empty / error state</span></header><div className="p-5 text-xs"><span className="text-red-400">[ERR]</span> <span className="text-zinc-500">Awaiting valid input...</span></div></article>
           </div>
           <p className="text-xs leading-relaxed text-zinc-500">A new tool should follow this order: `ToolLayout` header → input/config surface → primary action → output/result surface → inline empty/error state → optional export/help below. Start from this composition before adding specialized UI.</p>
+        </Section>
+
+        <Section title="Diagram workspace patterns" code={'<div className="grid grid-cols-[12rem_minmax(0,1fr)]">\n  <aside>{/* palette / inspector */}</aside>\n  <main>{/* canvas, groups, cables */}</main>\n</div>'}>
+          <DiagramDesignDemo />
+          <p className="text-xs leading-relaxed text-zinc-500">The canonical diagram language is demonstrated first. The compact and light variants are export-safe alternatives, not a second default product identity. Keep toolbox, inspector, group containers, connection handles, cable labels, directional controls and context menus discoverable without covering the canvas.</p>
+        </Section>
+
+        <Section title="CLI tool pattern" code={'<form className="flex items-center gap-2 border-t border-[#1a1a1a] p-2">\n  <span className="text-[#00ff9c]">›</span>\n  <Input aria-label="CLI command" />\n  <ToolActionButton type="submit">Run</ToolActionButton>\n</form>'}>
+          <CliDesignDemo />
+          <p className="text-xs leading-relaxed text-zinc-500">For command-oriented tools, keep the prompt, input, output and safe example commands in one bounded terminal surface. Destructive commands must use the existing risk warning flow and never execute implicitly.</p>
+        </Section>
+
+        <Section title="Complete UI patterns" code={'/* Use these patterns before inventing a new one. */'}>
+          <PatternShowcase />
         </Section>
       </div>
     </ToolLayout>

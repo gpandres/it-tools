@@ -748,9 +748,17 @@ function DeviceStyleOptions({ value, onChange }: { value: DiagramAppearance['dev
 }
 
 function DeviceStylePreview({ style }: { style: DiagramAppearance['deviceStyle'] }) {
-  const deviceClass = style === 'solid' ? 'border border-[#00ff9c]/60 bg-[#17191d] shadow-[0_4px_10px_rgba(0,0,0,.28)]' : style === 'outline' ? 'border border-[#00ff9c] bg-transparent' : 'border border-transparent bg-[#1d2025]';
-  const lightDeviceClass = style === 'solid' ? 'border border-slate-300 bg-white shadow-sm' : style === 'outline' ? 'border border-slate-700 bg-transparent' : 'border border-transparent bg-slate-100';
-  return <div className="relative h-16 overflow-hidden rounded-md border border-[#34353a] bg-[#f8fafc]"><div className="absolute inset-y-0 left-0 w-[58%] bg-[#0b0d10]" style={{ clipPath: 'polygon(0 0, 100% 0, 84% 100%, 0 100%)' }} /><span className="absolute left-1.5 top-1 text-[7px] font-semibold tracking-wider text-zinc-500">DARK</span><span className="absolute right-1.5 top-1 text-[7px] font-semibold tracking-wider text-slate-400">LIGHT</span><div className={`absolute left-2 top-6 flex h-6 w-[3.8rem] items-center gap-1 rounded px-1.5 ${deviceClass}`}><span className="h-2 w-2 rounded-sm bg-[#00ff9c]" /><span className="h-1 w-7 rounded bg-zinc-600" /></div><div className={`absolute right-2 top-6 flex h-6 w-[3.8rem] items-center gap-1 rounded px-1.5 ${lightDeviceClass}`}><span className="h-2 w-2 rounded-sm bg-emerald-500" /><span className="h-1 w-7 rounded bg-slate-400" /></div></div>;
+  return <div className="relative h-20 overflow-hidden rounded-md border border-[#34353a] bg-[#f8fafc]"><div className="absolute inset-y-0 left-0 w-[57%] bg-[#0b0d10]" style={{ clipPath: 'polygon(0 0, 100% 0, 82% 100%, 0 100%)' }} /><span className="absolute left-1.5 top-1.5 text-[7px] font-semibold tracking-wider text-zinc-500">DARK</span><span className="absolute right-1.5 top-1.5 text-[7px] font-semibold tracking-wider text-slate-400">LIGHT</span><PreviewDevice style={style} tone="dark" side="left" /><PreviewDevice style={style} tone="light" side="right" /></div>;
+}
+
+function PreviewDevice({ style, tone, side }: { style: DiagramAppearance['deviceStyle']; tone: 'dark' | 'light'; side: 'left' | 'right' }) {
+  const isDark = tone === 'dark';
+  const sideClass = side === 'left' ? 'left-2' : 'right-2';
+  const text = isDark ? 'bg-zinc-600' : 'bg-slate-400';
+  const icon = isDark ? 'bg-[#00e59a]' : 'bg-emerald-500';
+  if (style === 'solid') return <div className={`absolute top-6 ${sideClass} flex h-10 w-[4.3rem] flex-col justify-center rounded-md border border-l-2 border-l-[#00e59a] ${isDark ? 'border-zinc-700 bg-[#17191d] shadow-[0_4px_8px_rgba(0,0,0,.28)]' : 'border-slate-300 bg-white shadow-sm'} px-1.5`}><span className={`mb-1 h-2 w-2 rounded-sm ${icon}`} /><span className={`h-1 w-9 rounded ${text}`} /><span className={`mt-1 h-1 w-6 rounded ${isDark ? 'bg-zinc-700' : 'bg-slate-200'}`} /></div>;
+  if (style === 'outline') return <div className={`absolute top-6 ${sideClass} flex h-10 w-[4.3rem] flex-col justify-center border border-l-2 border-l-[#00e59a] ${isDark ? 'border-zinc-500 bg-[#0b0d10] shadow-[inset_0_0_0_3px_rgba(255,255,255,.04)]' : 'border-slate-600 bg-white shadow-[inset_0_0_0_3px_#f1f5f9]'} px-2`}><span className={`mb-1 h-2 w-2 ${icon}`} /><span className={`h-1 w-9 ${text}`} /><span className={`mt-1 h-1 w-6 ${isDark ? 'bg-zinc-700' : 'bg-slate-200'}`} /></div>;
+  return <div className={`absolute top-7 ${sideClass} flex h-7 w-[4.3rem] items-center gap-1.5 border-b ${isDark ? 'border-zinc-500 bg-gradient-to-r from-emerald-400/10 to-transparent' : 'border-slate-400 bg-gradient-to-r from-emerald-50 to-transparent'} px-1`}><span className={`h-3 w-3 rounded-sm ${icon}`} /><div><span className={`block h-1 w-8 ${text}`} /><span className={`mt-1 block h-1 w-5 ${isDark ? 'bg-zinc-700' : 'bg-slate-200'}`} /></div></div>;
 }
 
 function SettingsOption({ label, description, value, options, onChange }: { label: string; description: string; value: string; options: Array<[string, string]>; onChange: (value: string) => void }) {

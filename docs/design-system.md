@@ -118,6 +118,21 @@ Action semantics:
 
 Buttons must have visible text unless an icon-only button has an accessible `aria-label` and a `title`. Toolbars should not force horizontal scrolling.
 
+## Badges and direct access
+
+Badges are compact metadata, not miniature buttons. Use a thin border, short text and a semantic tone:
+
+```tsx
+<span className="inline-flex min-h-5 items-center border border-[#795c19] px-1.5 text-[9px] font-bold uppercase tracking-wider text-[#fbbf24]">
+  3 issues
+</span>
+<span className="border border-[#2a2a2a] bg-[#111111] px-1.5 py-0.5 text-[9px] text-zinc-500">
+  ⌘ K
+</span>
+```
+
+Use number badges for notifications, recent items and result counts. Use shortcut badges for keyboard hints. Direct-access rows may combine an icon, label and count badge; the icon must not be the only label. A `Show more` control follows the MITRE Reference pattern: text button, down chevron, thin border or bottom divider, no pill shape.
+
 ## Forms
 
 Use the shared controls from `src/components/ui`. Labels are selectable and must have enough separation from their control. Checkboxes are square, matching the tool panels. A field error belongs next to the field; it must not use a browser alert.
@@ -166,6 +181,20 @@ Inline status should use a compact border and a semantic colour:
 
 Do not hide important errors in colour, animation or a toast that disappears too quickly. Respect `prefers-reduced-motion` (already handled globally).
 
+## Modals, import/export and dropped files
+
+Modals are reserved for a focused decision, preview or edit flow. They use a dark backdrop, a square bordered panel, a clear title row, an explicit close button and footer actions. They must close with Escape, restore focus to the trigger and keep their own scroll area inside the viewport. Do not use a modal for a transient copy message or a simple validation error.
+
+Import and export are secondary to the main workflow and live in their own bordered group, below or beside the editor. Import areas should support keyboard activation and drag-and-drop:
+
+- dashed border, black surface and a cloud/upload icon;
+- clear accepted formats, size limit and local-processing statement;
+- visible file name and validation state after selection;
+- no automatic network upload and no silent overwrite;
+- export buttons use a separate group and describe the output format.
+
+The visual reference includes both the modal and dropzone states. Keep the actual file input visually hidden only when the dropzone remains a labelled keyboard target.
+
 ## Sliders and numeric controls
 
 Sliders follow the calculator pattern: a compact uppercase label, a phosphor or amber `accent-*` track, a visible current value, and a numeric input when precision matters. Keep the slider and numeric field synchronized and validate both paths.
@@ -178,7 +207,11 @@ Sliders follow the calculator pattern: a compact uppercase label, a phosphor or 
 </div>
 ```
 
-The canonical `.tool-range` has a thin dark track and a square phosphor thumb; use `data-tone="amber"` when the value represents attention or overhead. Use green for the primary value. Do not hide the current value in a tooltip or rely on the thumb colour alone.
+The canonical `.tool-range` has a thin dark track, a filled selected portion and a square phosphor thumb; use `data-tone="amber"` when the value represents attention or overhead. Use green for the primary value. Do not hide the current value in a tooltip or rely on the thumb colour alone.
+
+## Animation rules
+
+Animation is functional feedback, not decoration. Use 120–180ms transitions for border/colour changes, 180–240ms for panels entering or leaving, and the existing stepped cursor blink for terminal decoration. Loading indicators must be subtle and stop when work finishes. Avoid bouncing cards, perpetual background motion, layout-shifting animations and animation on every keystroke. Every animation must remain usable with `prefers-reduced-motion: reduce`.
 
 ## Disclosure, tabs and dense data
 
@@ -205,6 +238,63 @@ Canvas tools may use full width, React Flow or a custom workspace, but the surro
 - status and validation are visible inside the workspace or in the notification layer;
 - responsive layouts must provide an intentional mobile mode instead of merely shrinking the canvas;
 - keep third-party attribution when the library requires it (for example React Flow).
+
+### Diagram visual contract
+
+The current Network Diagram Generator is the reference for diagram-capable tools. The direct-only `/design-system` page renders the same relationships in a smaller example. A diagram workspace has:
+
+- a compact top toolbar for undo/redo, view, fit and canvas settings;
+- a left toolbox that can switch between device palette and selected-item inspector;
+- a searchable, collapsible palette grouped by Network, Security, Compute, Services, Cloud and Endpoints;
+- device cards with an icon, label, hostname/IP, VLAN or other metadata, status and visible-on-hover connection handles;
+- square dark cards as the canonical style, with a compact terminal variant and a light export variant available when the user needs a different output;
+- dashed group containers for office, DMZ, server zone or other visual boundaries, with editable label and colour;
+- cables with source/target direction, optional labels, semantic colour and enough contrast against the canvas;
+- a validation/review area, topology analysis, path finder and saved local snapshots outside the primary canvas;
+- import/export separated from editing, with PNG dark/light/alpha, SVG, JSON, CSV inventory and Markdown where the tool supports them;
+- React Flow attribution retained whenever React Flow is used.
+
+The three box treatments shown in the reference are intentional: the first is the product default, the second is a dense terminal alternative, and the third is for light/print exports. Do not silently change the default canvas to the export variant.
+
+Connection and movement affordances:
+
+- show handles on node hover/focus instead of permanently covering the card;
+- use arrow or direction icons for move up/down, ordering and directional cable semantics;
+- keep delete-line and destructive actions in the editing toolbox, not mixed into export controls;
+- use a non-invasive notification or inline canvas status for invalid connections;
+- never allow a decision/connection rule that the domain validator says is impossible, even if the visual editor can be manipulated.
+
+### CLI-oriented tools
+
+Tools that model a shell, command runner or command reference should use the CLI pattern shown in the reference page: a bounded black terminal surface, a visible `>` prompt, command input, explicit Run action, readable output history and safe example commands. The simulator is a UI pattern, not permission to execute arbitrary commands.
+
+Commands should be validated before processing, dangerous commands should use the shared warning/risk flow, and copy feedback should use the notification provider. Never execute on keystroke or hide command errors in a toast only.
+
+## Content-specific patterns
+
+### Code editors
+
+Use a dedicated no-wrap code field for YAML, JSON, JavaScript/TypeScript, Python, Shell/PowerShell, SQL, Terraform and similar formats. It should have a language label, line numbers, horizontal scrolling, copy/download actions and syntax-oriented colours. Keep code separate from prose: runbook descriptions, incident notes and explanations use a wrapping textarea with resize or a bounded scroll area. Never force code to wrap just to avoid horizontal scrolling.
+
+### Timelines
+
+Use the RPO/RTO-style timeline for ordered operational events: timestamp first, severity second, event title third and optional detail below. A thin vertical rule with square markers is easier to scan than a card per event. Use green for normal, amber for attention and red for failure; include a legend or text label so colour is not the only signal.
+
+### Stats and charts
+
+Stats panels follow the PCAP pattern: a compact grid of flat cells, small uppercase label, prominent value, delta/context line and consistent alignment. Charts sit below or beside the stats, use a restrained grid/axis treatment and one primary line colour. Use SVG/canvas only when it adds meaning; include a text summary and empty state. Do not use giant dashboard cards or gradients.
+
+### Tables
+
+Tables use a thin header divider, compact cells, stable column alignment and `overflow-x-auto` at the table boundary on small screens. Keep status text visible, allow row focus/selection, and provide an empty state. Do not let long identifiers expand the page or truncate data without a title/details path.
+
+### Checkbox variants
+
+The shared checkbox is square. Use binary checkboxes for independent choices, indeterminate checkboxes for partial selection, grouped checkboxes for multi-select filters, and a bordered destructive confirmation for irreversible actions. Use radios or tabs for mutually exclusive choices and a switch only for an immediate on/off setting. Labels remain selectable and form the click target.
+
+### Iconography
+
+Use Lucide icons with consistent 1.5–2px stroke and a 14–18px footprint. The reference icon set covers routers/switches, servers/VMs/containers, firewalls/IDS/VPN, databases/NAS/disks, Wi-Fi/cloud/DNS, PCs/endpoints, batteries/UPS, cables/links, upload/download and directional movement. Icons identify context; text still names the action or device. Keep semantic tones aligned with the product palette and give icon-only controls an accessible name.
 
 ## Anatomy of a new tool
 
