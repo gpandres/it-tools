@@ -68,7 +68,7 @@ export function ConfigAuditTool({ title, description, placeholder, rules = EMPTY
         
         <ToolPanel className="flex h-[min(680px,calc(100vh-240px))] min-h-[420px] flex-col">
           <ToolPanelHeader>
-            <ToolPanelTitle marker="IN">Input</ToolPanelTitle>
+            <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">Input</ToolPanelTitle>
           </ToolPanelHeader>
           <ToolPanelBody className="flex min-h-0 flex-1 flex-col p-4">
             <ToolField htmlFor="audit-input" label="CONFIGURATION / HEADERS" helper="Analysis runs locally. Do not paste live secrets into shared screens." className="flex min-h-0 flex-1 flex-col">
@@ -94,7 +94,7 @@ export function ConfigAuditTool({ title, description, placeholder, rules = EMPTY
           <ToolPanelHeader className="flex-col items-stretch gap-4">
             <div className="flex items-start justify-between gap-3 w-full">
               <div>
-                <ToolPanelTitle marker="OUT">Findings</ToolPanelTitle>
+                <ToolPanelTitle marker="OUT" className="text-sm">Findings <span className="cursor-blink">_</span></ToolPanelTitle>
                 <p className="mt-1 text-[11px] text-zinc-500">{input ? `${findings.length} rule${findings.length === 1 ? "" : "s"} matched` : "Paste a configuration to begin"}</p>
               </div>
               <div className="flex items-center gap-2">

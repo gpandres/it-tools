@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Copy, RefreshCw, AlertTriangle, ShieldCheck } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { dump } from "js-yaml";
 import { v4 as uuidv4 } from "uuid";
 import { ToolLayout } from "@/components/tool-layout";
@@ -45,7 +45,7 @@ export default function SigmaBuilderPage() {
           
           <ToolPanel>
             <ToolPanelHeader>
-              <ToolPanelTitle marker="IN">Rule inputs</ToolPanelTitle>
+              <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">Rule inputs</ToolPanelTitle>
             </ToolPanelHeader>
             <ToolPanelBody className="grid gap-4 sm:grid-cols-2">
               <ToolField htmlFor="sigma-title" label="TITLE" className="sm:col-span-2">
@@ -107,7 +107,7 @@ export default function SigmaBuilderPage() {
                 />
               </ToolField>
               <ToolField htmlFor="sigma-status" label="STATUS">
-                <Select value={status} onValueChange={setStatus}>
+                <Select value={status} onValueChange={value => { if (value !== null) setStatus(value); }}>
                   <SelectTrigger id="sigma-status" className="rounded-none border-[#1a1a1a] bg-black font-mono focus:ring-[#00ff9c]">
                     <SelectValue />
                   </SelectTrigger>
@@ -121,7 +121,7 @@ export default function SigmaBuilderPage() {
                 </Select>
               </ToolField>
               <ToolField htmlFor="sigma-level" label="LEVEL">
-                <Select value={level} onValueChange={setLevel}>
+                <Select value={level} onValueChange={value => { if (value !== null) setLevel(value); }}>
                   <SelectTrigger id="sigma-level" className="rounded-none border-[#1a1a1a] bg-black font-mono focus:ring-[#00ff9c]">
                     <SelectValue />
                   </SelectTrigger>
@@ -148,7 +148,7 @@ export default function SigmaBuilderPage() {
 
           <ToolPanel className="flex flex-col">
             <ToolPanelHeader>
-              <ToolPanelTitle marker="OUT">Sigma YAML</ToolPanelTitle>
+              <ToolPanelTitle marker="OUT" className="text-sm">Sigma YAML <span className="cursor-blink">_</span></ToolPanelTitle>
             </ToolPanelHeader>
             <div className="flex-1 min-h-[400px]">
               <ToolCodeField
