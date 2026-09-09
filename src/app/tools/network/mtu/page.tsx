@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, Suspense } from "react";
-
+import { useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
+import { ToolField, ToolPanel, ToolPanelBody, ToolPanelHeader, ToolPanelTitle, ToolStat, ToolStatGrid, ToolStatus } from "@/components/tool-design";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function MtuToolContent() {
   const [baseMtuStr, setBaseMtuStr] = useState("1500");
@@ -37,106 +40,97 @@ function MtuToolContent() {
       title="MTU & MSS Calculator"
       description="Calculate Effective MTU and TCP MSS based on network encapsulation."
     >
-      <div className="space-y-6">
-        {/* Input Section */}
-        <div className="p-4 border border-[#1a1a1a] bg-[#0a0a0a] space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Left Col: Basics */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Base Link MTU (Bytes)</label>
-                <input
+      <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6">
+        <ToolPanel>
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="IN" className="text-[#ffb000] glow-amber">Input config</ToolPanelTitle>
+          </ToolPanelHeader>
+          <ToolPanelBody>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-6">
+                <ToolField
+                  htmlFor="base-mtu"
+                  label="Base link MTU (bytes)"
+                  helper="Standard Ethernet is 1500; jumbo frames are commonly up to 9000."
+                  error={!isValidMtu ? "Enter a whole-number MTU from 68 to 9216 bytes." : undefined}
+                >
+                  <Input
+                    id="base-mtu"
                   type="number"
                   value={baseMtuStr}
                   onChange={(e) => setBaseMtuStr(e.target.value)}
                   min="68"
                   max="9216"
                   step="1"
-                  className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
+                    aria-invalid={!isValidMtu}
+                    className={`h-10 bg-black font-mono text-[#00ff9c] rounded-none focus-visible:ring-[#00ff9c] ${isValidMtu ? "border-[#1a1a1a]" : "border-red-500 text-red-400 focus-visible:ring-red-500"}`}
                 />
-                <p className="text-xs text-zinc-500 mt-2">Valid range: 68–9216 bytes. Standard Ethernet is 1500; jumbo frames are commonly up to 9000.</p>
+                </ToolField>
+
+                <ToolField htmlFor="ip-version" label="IP version" helper="Select the IP header used for the MSS calculation.">
+                  <Tabs value={ipVer} onValueChange={setIpVer}>
+                    <TabsList id="ip-version" variant="line" className="grid h-auto w-full grid-cols-2 gap-0 border border-[#1a1a1a] bg-black p-0">
+                      <TabsTrigger value="ipv4" className="h-9 rounded-none border-0 text-[10px] font-bold uppercase tracking-wider data-active:bg-[#00ff9c]/10 data-active:text-[#00ff9c] data-active:after:hidden">IPv4 · 20 B</TabsTrigger>
+                      <TabsTrigger value="ipv6" className="h-9 rounded-none border-0 border-l border-[#1a1a1a] text-[10px] font-bold uppercase tracking-wider data-active:bg-[#00ff9c]/10 data-active:text-[#00ff9c] data-active:after:hidden">IPv6 · 40 B</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </ToolField>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">IP Version</label>
-                <div className="flex border border-[#1a1a1a] rounded-sm overflow-hidden bg-black w-full">
-                  <button
-                    onClick={() => setIpVer("ipv4")}
-                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
-                      ipVer === "ipv4" ? "bg-[#00ff9c] text-black" : "text-zinc-500 hover:text-zinc-300"
-                    }`}
-                  >
-                    IPv4 (20 Bytes)
-                  </button>
-                  <button
-                    onClick={() => setIpVer("ipv6")}
-                    className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
-                      ipVer === "ipv6" ? "bg-[#00ff9c] text-black" : "text-zinc-500 hover:text-zinc-300"
-                    }`}
-                  >
-                    IPv6 (40 Bytes)
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Col: Toggles */}
-            <div>
-              <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">L2 / VPN Encapsulation</label>
-              <div className="space-y-3 p-4 bg-black border border-[#1a1a1a]">
+              <ToolField htmlFor="vlan-encapsulation" label="L2 / VPN encapsulation" helper="Enable every overhead layer present on the path.">
+                <div className="space-y-1 border border-[#1a1a1a] bg-black p-3">
                 <Toggle
+                  id="vlan-encapsulation"
                   label="802.1Q VLAN Tag (+4 Bytes)"
                   checked={hasVlan === "true"}
                   onChange={(c) => setHasVlan(c ? "true" : "false")}
                 />
                 <Toggle
+                  id="pppoe-encapsulation"
                   label="PPPoE (+8 Bytes)"
                   checked={hasPppoe === "true"}
                   onChange={(c) => setHasPppoe(c ? "true" : "false")}
                 />
                 <Toggle
+                  id="gre-encapsulation"
                   label="GRE Tunnel (+24 Bytes)"
                   checked={hasGre === "true"}
                   onChange={(c) => setHasGre(c ? "true" : "false")}
                 />
                 <Toggle
+                  id="ipsec-encapsulation"
                   label="IPsec ESP Tunnel (~56 Bytes)"
                   checked={hasIpsec === "true"}
                   onChange={(c) => setHasIpsec(c ? "true" : "false")}
                 />
-              </div>
+                </div>
+              </ToolField>
             </div>
-          </div>
-        </div>
+          </ToolPanelBody>
+        </ToolPanel>
 
         {(!isValidMtu || hasInsufficientIpMtu) && (
-          <div className="p-3 border border-amber-500/40 bg-amber-500/5 text-amber-300 text-xs font-mono">
+          <ToolStatus tone="attention" title={!isValidMtu ? "Invalid base MTU" : "Effective MTU below protocol minimum"}>
             {!isValidMtu
               ? "Enter an integer MTU between 68 and 9216 bytes."
               : `Effective MTU is below the ${ipVer === "ipv6" ? "IPv6" : "IPv4"} minimum of ${minimumIpMtu} bytes for this configuration.`}
-          </div>
+          </ToolStatus>
         )}
 
-        {/* Results Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-6 border border-[#1a1a1a] bg-[#050505] flex flex-col items-center justify-center text-center">
-            <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Effective MTU</div>
-            <div className="text-4xl font-mono text-white mb-1">{effectiveMtu}</div>
-            <div className="text-xs text-zinc-500">Bytes usable for IP packet</div>
-          </div>
-          <div className="p-6 border border-[#00ff9c]/30 bg-[#00ff9c]/5 flex flex-col items-center justify-center text-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-[#00ff9c]"></div>
-            <div className="text-xs font-bold text-[#00ff9c] uppercase tracking-wider mb-2">TCP MSS (Max Segment Size)</div>
-            <div className="text-4xl font-mono text-[#00ff9c] mb-1 glow">{mss}</div>
-            <div className="text-xs text-zinc-400">Bytes usable for TCP payload</div>
-          </div>
-        </div>
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="OUT">Results <span className="cursor-blink">_</span></ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody>
+            <ToolStatGrid className="sm:grid-cols-2">
+              <ToolStat label="Effective MTU" value={effectiveMtu} context="Bytes usable for IP packet" tone="info" />
+              <ToolStat label="TCP MSS" value={mss} context="Bytes usable for TCP payload" tone="success" />
+            </ToolStatGrid>
+          </ToolPanelBody>
+        </ToolPanel>
 
-        {/* Visualization / Explanation */}
-        <div className="p-4 border border-[#1a1a1a] bg-black">
-          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4 border-b border-[#1a1a1a] pb-2">Packet Structure Breakdown</h3>
-          
-          <div className="flex h-12 w-full rounded-sm overflow-hidden text-xs font-bold text-black border border-[#1a1a1a]">
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle>Packet structure</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody>
+          <div className="flex h-12 w-full overflow-hidden border border-[#1a1a1a] text-xs font-bold text-black">
             {encapOverhead > 0 && (
               <div 
                 className="bg-zinc-600 flex items-center justify-center border-r border-black" 
@@ -147,14 +141,14 @@ function MtuToolContent() {
               </div>
             )}
             <div 
-              className="bg-blue-500 flex items-center justify-center border-r border-black"
+              className="flex items-center justify-center border-r border-black bg-sky-400"
               style={{ width: `${Math.min(100, (ipHeader / Math.max(baseMtu, 1)) * 100)}%`, minWidth: '40px' }}
               title={`IP Header: ${ipHeader} Bytes`}
             >
               IP
             </div>
             <div 
-              className="bg-purple-500 flex items-center justify-center border-r border-black"
+              className="flex items-center justify-center border-r border-black bg-[#fbbf24]"
               style={{ width: `${Math.min(100, (tcpHeader / Math.max(baseMtu, 1)) * 100)}%`, minWidth: '40px' }}
               title="TCP Header: 20 Bytes"
             >
@@ -169,7 +163,7 @@ function MtuToolContent() {
             </div>
           </div>
           
-          <div className="mt-4 font-mono text-xs text-zinc-400 space-y-1">
+          <div className="mt-4 space-y-1 font-mono text-xs text-zinc-400">
             <div>Link MTU: {baseMtu}</div>
             <div>- Encapsulation Overhead: {encapOverhead}</div>
             <div>= Effective MTU: {effectiveMtu}</div>
@@ -177,28 +171,22 @@ function MtuToolContent() {
             <div>- TCP Header: {tcpHeader}</div>
             <div className="text-[#00ff9c]">= MSS: {mss}</div>
           </div>
-        </div>
+          </ToolPanelBody>
+        </ToolPanel>
       </div>
     </ToolLayout>
   );
 }
 
 export default function MtuTool() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
-      <MtuToolContent />
-    </Suspense>
-  );
+  return <MtuToolContent />;
 }
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (val: boolean) => void }) {
+function Toggle({ id, label, checked, onChange }: { id: string; label: string; checked: boolean; onChange: (val: boolean) => void }) {
   return (
-    <label className="flex items-center gap-3 cursor-pointer group">
-      <input type="checkbox" className="hidden" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <div className={`w-5 h-5 flex items-center justify-center border transition-colors ${checked ? 'bg-[#00ff9c] border-[#00ff9c]' : 'border-zinc-600 group-hover:border-[#00ff9c]'}`}>
-        {checked && <div className="w-2.5 h-2.5 bg-black" />}
-      </div>
-      <span className="text-sm text-zinc-300 font-mono select-none">{label}</span>
+    <label htmlFor={id} className="flex min-h-10 cursor-pointer items-center gap-3 text-xs text-zinc-300">
+      <Checkbox id={id} checked={checked} onCheckedChange={(value) => onChange(value === true)} />
+      <span>{label}</span>
     </label>
   );
 }
