@@ -20,6 +20,7 @@ The project is intentionally practical: calculators produce usable engineering v
 - Authorized red-team planning and analysis helpers that keep payloads and scope under user control.
 - DevOps security analysis for Dockerfiles, Kubernetes manifests, Terraform, SBOMs, secrets and GitHub Actions.
 - Interactive runbook and playbook builders with list and diagram views, validation, import/export and PDF/PNG support where applicable.
+- A private design-system reference that keeps the visual language consistent across calculators, editors, references, simulators and diagram tools.
 - Browser-side encoding, cryptography, text, SQL and developer utilities.
 - A shared registry that powers navigation, search, category counts, SEO metadata and related-tool links.
 
@@ -178,6 +179,21 @@ public/        Static assets and browser-served files
 The tool registry in `src/lib/tools.ts` is deliberately shared by the home page, sidebar, command palette, category filters, related tools and per-tool SEO metadata. A tool should be added to the registry and its route rather than duplicated in separate navigation lists.
 
 The application is a static-friendly Next.js client experience. Tool state is generally ephemeral, with opt-in browser persistence for supported preferences and drafts. There is no built-in authenticated multi-user backend, server-side job queue or infrastructure execution layer.
+
+## UI and design system
+
+The visual contract for new work lives in [docs/design-system.md](docs/design-system.md). It is based on the squared, terminal-style treatment used by the Subnetting Calculator and URL Defanger: near-black surfaces, thin structural borders, compact monospace labels, restrained spacing and clear state colours. New tools should reuse the shared shell and primitives instead of introducing a separate visual language.
+
+The internal [design-system reference](/design-system) renders the main patterns without exposing them as a public catalogue tool. The route is direct-only and noindexed; it is not added to the sidebar, home page or sitemap. It covers:
+
+- shared tokens, typography, tool shells, action panels, buttons, badges, shortcuts and square checkboxes;
+- non-blocking `info`, `attention`, `error` and success notifications, plus form validation and slider states;
+- modals, welcome/new-file flows, import/export dialogs and local drag-and-drop zones;
+- code fields for YAML, JSON, JavaScript, Python and PowerShell, CLI-style tool panels, tables, stats, charts and vertical or horizontal timelines;
+- diagram workspaces with toolbox/inspector patterns, groups, device icons, directional cables, context menus, resize handles and dark/light export variants;
+- responsive behaviour, keyboard focus, reduced-motion expectations and mobile-safe layouts.
+
+Reusable visual demos are kept in `src/app/design-system/components/`. Treat the page and the documentation as a reference implementation, not as a second tool catalogue. When a production tool needs a new pattern, add it to the reference first and then reuse the same component or documented tokens in the tool.
 
 ## Local development
 

@@ -206,7 +206,7 @@ export default function DesignSystemPage() {
           <PatternShowcase />
         </Section>
 
-        <Section title="Horizontal RPO / RTO timeline" code={'<div className="relative">\n  <div className="h-1 bg-gradient-to-r ..." />\n  <RecoveryMilestone />\n</div>'}>
+        <Section title="Horizontal timeline" code={'<div className="relative">\n  <div className="absolute ... h-px bg-[#2a2a2a]" />\n  <RecoveryMilestone />\n</div>'}>
           <HorizontalTimelineDemo />
         </Section>
       </div>
