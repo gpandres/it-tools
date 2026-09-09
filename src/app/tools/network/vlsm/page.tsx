@@ -2,13 +2,18 @@
 
 import { ToolLayout } from "@/components/tool-layout";
 import { calculateVlsm, validateIp } from "@/lib/network";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Copy, Check, Plus, Trash2 } from "lucide-react";
+import { Inbox, Plus, Trash2 } from "lucide-react";
 import { useState, useMemo } from "react";
+import {
+  ToolPanel,
+  ToolPanelHeader,
+  ToolPanelTitle,
+  ToolPanelBody,
+  ToolField,
+  ToolEmptyState,
+} from "@/components/tool-design";
 
 function VlsmCalculatorContent() {
   const [state, _setState] = useState({ 
@@ -18,8 +23,6 @@ function VlsmCalculatorContent() {
   });
   const setState = (u: Partial<typeof state>) => _setState(s => ({ ...s, ...u }));
   
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
   const parsedSubnets = useMemo(() => {
     try {
       return JSON.parse(state.subnets);
@@ -55,30 +58,29 @@ function VlsmCalculatorContent() {
     return [];
   }, [state.ip, cidrNum, isValidIp, isValidCidr, parsedSubnets]);
 
+  const toolRangeProgress = `${(cidrNum / 32) * 100}%`;
+
   return (
     <ToolLayout 
-      title="VLSM Calculator" 
+      title="VLSM CALCULATOR" 
       description="Variable Length Subnet Mask calculator. Split a major network into subnets of different sizes."
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <div className="lg:col-span-1 xl:col-span-1 space-y-6">
-          <article className="border border-[#1a1a1a] bg-[#050505]">
-            <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-              <span className="text-[#00ff9c] text-xs">[IN]</span>
-              <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Major Network</span>
-            </header>
-            <div className="p-4 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="ip" className="text-zinc-500 font-mono text-xs uppercase tracking-wider">Major IP Address</Label>
+          <ToolPanel>
+            <ToolPanelHeader>
+              <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">MAJOR NETWORK</ToolPanelTitle>
+            </ToolPanelHeader>
+            <ToolPanelBody className="space-y-4">
+              <ToolField htmlFor="ip" label="Major IP Address">
                 <Input
                   id="ip"
                   value={state.ip}
                   onChange={(e) => setState({ ip: e.target.value })}
-                  className={`font-mono bg-black border-[#1a1a1a] text-zinc-300 rounded-none focus-visible:ring-[#00ff9c] ${!isValidIp && state.ip ? "border-red-500 text-red-400 focus-visible:ring-red-500" : ""}`}
+                  className={`rounded-none font-mono ${!isValidIp && state.ip ? "border-red-500 text-red-400 focus-visible:ring-red-500" : "text-[#00ff9c]"}`}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cidr" className="text-zinc-500 font-mono text-xs uppercase tracking-wider">CIDR Prefix (/{state.cidr})</Label>
+              </ToolField>
+              <ToolField htmlFor="cidr" label={`CIDR Prefix (/${state.cidr})`}>
                 <div className="flex items-center gap-4">
                   <input
                     id="cidr"
@@ -87,7 +89,8 @@ function VlsmCalculatorContent() {
                     max="32"
                     value={state.cidr}
                     onChange={(e) => setState({ cidr: e.target.value })}
-                    className="flex-1 accent-[#00ff9c] cursor-pointer"
+                    className="tool-range flex-1"
+                    style={{ "--tool-range-progress": isValidCidr ? toolRangeProgress : "0%" } as React.CSSProperties}
                   />
                   <Input
                     type="number"
@@ -95,109 +98,109 @@ function VlsmCalculatorContent() {
                     max="32"
                     value={state.cidr}
                     onChange={(e) => setState({ cidr: e.target.value })}
-                    className={`w-20 font-mono bg-black border-[#1a1a1a] text-zinc-300 text-center rounded-none focus-visible:ring-[#00ff9c] ${!isValidCidr ? "border-red-500 text-red-400 focus-visible:ring-red-500" : ""}`}
+                    className={`w-20 rounded-none text-center font-mono ${!isValidCidr ? "border-red-500 text-red-400 focus-visible:ring-red-500" : "text-[#00ff9c]"}`}
                   />
                 </div>
-              </div>
-            </div>
-          </article>
+              </ToolField>
+            </ToolPanelBody>
+          </ToolPanel>
 
-          <article className="border border-[#1a1a1a] bg-[#050505]">
-            <header className="flex flex-row items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-              <div className="flex items-center gap-2">
-                <span className="text-[#00ff9c] text-xs">[REQ]</span>
-                <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Subnets</span>
-              </div>
-              <Button size="sm" variant="outline" className="h-7 border-[#1a1a1a] bg-black text-zinc-400 hover:text-[#00ff9c] hover:border-[#00ff9c] rounded-none transition-colors" onClick={addSubnet}>
-                <Plus className="w-3 h-3 mr-1" /> Add
+          <ToolPanel>
+            <ToolPanelHeader className="flex flex-row items-center justify-between border-b border-[#1a1a1a] bg-[#0a0a0a] px-3 py-2">
+              <ToolPanelTitle marker="REQ" className="text-sm text-[#ffb000] glow-amber">SUBNETS</ToolPanelTitle>
+              <Button size="sm" variant="outline" className="h-7 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]" onClick={addSubnet}>
+                <Plus className="mr-1 h-3 w-3" /> Add
               </Button>
-            </header>
-            <div className="p-4 space-y-3">
+            </ToolPanelHeader>
+            <ToolPanelBody className="space-y-3">
               {parsedSubnets.map((sub: any, i: number) => (
-                <div key={i} className="flex items-end gap-2 p-3 bg-black border border-[#1a1a1a]">
-                  <div className="space-y-1 flex-1 min-w-0">
-                    <Label className="text-[10px] text-zinc-500 uppercase tracking-widest">Name</Label>
-                    <Input 
-                      value={sub.name} 
-                      onChange={(e) => updateSubnet(i, "name", e.target.value)}
-                      className="h-7 bg-[#050505] border-[#1a1a1a] text-xs font-mono rounded-none text-zinc-300 focus-visible:ring-[#00ff9c]"
-                    />
+                <div key={i} className="flex items-end gap-2 border border-[#1a1a1a] bg-black p-3">
+                  <div className="min-w-0 flex-1">
+                    <ToolField htmlFor={`sub-name-${i}`} label="Name">
+                      <Input 
+                        id={`sub-name-${i}`}
+                        value={sub.name} 
+                        onChange={(e) => updateSubnet(i, "name", e.target.value)}
+                        className="h-7 rounded-none font-mono text-xs text-[#00ff9c]"
+                      />
+                    </ToolField>
                   </div>
-                  <div className="space-y-1 w-20 shrink-0">
-                    <Label className="text-[10px] text-zinc-500 uppercase tracking-widest">Hosts</Label>
-                    <Input 
-                      type="number"
-                      min="1"
-                      value={sub.hosts} 
-                      onChange={(e) => {
-                        const hosts = e.target.value === "" ? 0 : Number(e.target.value);
-                        updateSubnet(i, "hosts", Number.isInteger(hosts) ? hosts : 0);
-                      }}
-                      className="h-7 bg-[#050505] border-[#1a1a1a] text-xs font-mono text-center rounded-none text-zinc-300 focus-visible:ring-[#00ff9c]"
-                    />
+                  <div className="w-20 shrink-0">
+                    <ToolField htmlFor={`sub-hosts-${i}`} label="Hosts">
+                      <Input 
+                        id={`sub-hosts-${i}`}
+                        type="number"
+                        min="1"
+                        value={sub.hosts} 
+                        onChange={(e) => {
+                          const hosts = e.target.value === "" ? 0 : Number(e.target.value);
+                          updateSubnet(i, "hosts", Number.isInteger(hosts) ? hosts : 0);
+                        }}
+                        className="h-7 rounded-none text-center font-mono text-xs text-[#00ff9c]"
+                      />
+                    </ToolField>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-600 hover:text-red-400 hover:bg-red-950/20 rounded-none shrink-0" onClick={() => removeSubnet(i)}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 rounded-none text-zinc-600 hover:bg-red-950/20 hover:text-red-400" onClick={() => removeSubnet(i)}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               ))}
-            </div>
-          </article>
+            </ToolPanelBody>
+          </ToolPanel>
         </div>
 
         <div className="lg:col-span-2 xl:col-span-3">
-          <article className="border border-[#1a1a1a] bg-[#050505] h-full flex flex-col">
-            <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a] shrink-0">
-              <span className="text-[#00ff9c] text-xs">[OUT]</span>
-              <span className="text-[#00ff9c] text-sm font-semibold glow flex items-center gap-2 uppercase tracking-widest">
-                Allocation Plan <span className="cursor-blink">_</span>
-              </span>
-            </header>
-            <div className="flex-1 overflow-hidden flex flex-col p-4">
+          <ToolPanel className="flex h-full flex-col">
+            <ToolPanelHeader>
+              <ToolPanelTitle marker="OUT" className="text-sm">
+                ALLOCATION PLAN <span className="cursor-blink">_</span>
+              </ToolPanelTitle>
+            </ToolPanelHeader>
+            <ToolPanelBody className="flex-1 overflow-hidden p-4">
               {result.length === 0 ? (
-                <div className="text-zinc-600 text-sm font-mono p-8 text-center border border-dashed border-[#1a1a1a]">
+                <ToolEmptyState icon={Inbox} title="No results">
                   Configure major network and required subnets to see the allocation plan.
-                </div>
+                </ToolEmptyState>
               ) : (
-                <div className="border border-[#1a1a1a] overflow-x-auto">
-                  <Table className="w-full text-xs sm:text-sm">
-                    <TableHeader className="bg-[#0a0a0a] border-b border-[#1a1a1a]">
-                      <TableRow className="border-none hover:bg-transparent">
-                        <TableHead className="text-zinc-500 font-mono py-2 whitespace-nowrap">Name</TableHead>
-                        <TableHead className="text-zinc-500 font-mono py-2 whitespace-nowrap">Req/Alloc</TableHead>
-                        <TableHead className="text-[#00ff9c] font-mono py-2 whitespace-nowrap">Net / CIDR</TableHead>
-                        <TableHead className="text-zinc-500 font-mono py-2 whitespace-nowrap">Range</TableHead>
-                        <TableHead className="text-zinc-500 font-mono py-2 whitespace-nowrap">Bcast</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                <div role="region" aria-label="Allocation plan data table" tabIndex={0} className="overflow-x-auto border border-[#1a1a1a]">
+                  <table className="w-full min-w-[28rem] text-left text-[10px]">
+                    <thead className="border-b border-[#1a1a1a] text-zinc-400">
+                      <tr>
+                        <th className="px-3 py-2 uppercase tracking-widest">Name</th>
+                        <th className="px-3 py-2 uppercase tracking-widest">Req/Alloc</th>
+                        <th className="px-3 py-2 uppercase tracking-widest">Net / CIDR</th>
+                        <th className="px-3 py-2 uppercase tracking-widest">Range</th>
+                        <th className="px-3 py-2 uppercase tracking-widest">Bcast</th>
+                      </tr>
+                    </thead>
+                    <tbody>
                       {result.map((r, i) => (
-                        <TableRow key={i} className="border-b border-[#1a1a1a] hover:bg-[#0a0a0a] transition-colors border-none">
-                          <TableCell className="font-medium text-zinc-300 py-2 whitespace-nowrap">{r.name}</TableCell>
-                          <TableCell className="font-mono text-zinc-500 py-2 whitespace-nowrap">
+                        <tr key={i} className="border-b border-[#1a1a1a] text-zinc-300 transition-colors hover:bg-[#0a0a0a] last:border-0">
+                          <td className="px-3 py-2 font-medium">{r.name}</td>
+                          <td className="px-3 py-2 font-mono text-zinc-500">
                             {r.neededHosts} <span className="text-zinc-600">/</span> {r.allocatedHosts}
-                          </TableCell>
-                          <TableCell className="font-mono text-[#00ff9c] py-2 whitespace-nowrap">
+                          </td>
+                          <td className="px-3 py-2 font-mono text-[#00ff9c]">
                             {r.error ? (
                                <span className="text-red-500">{r.error}</span>
                             ) : (
                                `${r.network}/${r.cidr}`
                             )}
-                          </TableCell>
-                          <TableCell className="font-mono text-zinc-400 py-2 whitespace-nowrap">
+                          </td>
+                          <td className="px-3 py-2 font-mono text-zinc-400">
                             {r.error ? "-" : `${r.firstHost} - ${r.lastHost}`}
-                          </TableCell>
-                          <TableCell className="font-mono text-zinc-400 py-2 whitespace-nowrap">
+                          </td>
+                          <td className="px-3 py-2 font-mono text-zinc-400">
                             {r.error ? "-" : r.broadcast}
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </tbody>
+                  </table>
                 </div>
               )}
-            </div>
-          </article>
+            </ToolPanelBody>
+          </ToolPanel>
         </div>
       </div>
     </ToolLayout>
