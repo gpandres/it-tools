@@ -1,11 +1,11 @@
 "use client";
 import Link from "next/link";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eye, Star, ArrowRight, X } from "lucide-react";
+import { Eye, Star, ArrowRight, X, Boxes, Compass } from "lucide-react";
 import { CommandMenu } from "@/components/command-menu";
 import { useFavorites } from "@/components/favorites-provider";
 import { toolsRegistry, CATEGORIES } from "@/lib/tools";
-import { searchTools, toolDataFlow, workflows } from "@/lib/tool-discovery";
+import { featuredWorkspaces, roleRecommendations, searchTools, toolDataFlow, workflows } from "@/lib/tool-discovery";
 import { catalogStructuredData, serializeJsonLd, SITE_URL } from "@/lib/seo";
 import { readLocalStorage, STORAGE_CHANGED, writeLocalStorage } from "@/lib/storage";
 
@@ -38,6 +38,20 @@ function WorkflowSkeleton() {
   </div>;
 }
 
+function FeaturedWorkspaceCard({ workspace }: { workspace: typeof featuredWorkspaces[number] }) {
+  const tool = toolsRegistry.find(item => item.id === workspace.id);
+  if (!tool) return null;
+  return <article className="group flex min-h-[220px] flex-col border border-zinc-800 bg-[#050505] p-5 transition-colors hover:border-[#00ff9c]">
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-[10px] tracking-widest text-zinc-500">{workspace.eyebrow}</span>
+      <Boxes aria-hidden="true" className="h-4 w-4 text-[#1f7a5a] group-hover:text-[#00ff9c]" />
+    </div>
+    <h3 className="mt-7 text-base font-bold text-[#00ff9c]"><Link href={tool.path} className="hover:underline">{tool.name}</Link></h3>
+    <p className="mt-3 flex-1 text-xs leading-relaxed text-zinc-400">{workspace.summary}</p>
+    <Link href={tool.path} className="mt-6 inline-flex items-center gap-2 text-xs text-zinc-300 hover:text-[#00ff9c]">Open workspace <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" /></Link>
+  </article>;
+}
+
 const HomeToolCard = memo(function HomeToolCard({
   tool,
   favorite,
@@ -66,6 +80,7 @@ export default function Home() {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [localOnly, setLocalOnly] = useState(false);
   const [workflowsHidden, setWorkflowsHidden] = useState(false);
+  const [activeRole, setActiveRole] = useState<typeof roleRecommendations[number]["id"]>(roleRecommendations[0].id);
   const [filtersReady, setFiltersReady] = useState(false);
   const [visibleToolCount, setVisibleToolCount] = useState(INITIAL_TOOL_BATCH);
   const { favorites, recent, addFavorite, removeFavorite, clearRecent, isLoaded } = useFavorites();
@@ -118,6 +133,11 @@ export default function Home() {
     (!localOnly || TOOL_DATA_FLOW.get(tool.id)?.label === "Local processing")
   ), [query, category, favoritesOnly, localOnly, favorites]);
   const recentTools = recent.flatMap(id => {
+    const tool = toolsRegistry.find(item => item.id === id);
+    return tool ? [tool] : [];
+  });
+  const selectedRole = roleRecommendations.find(role => role.id === activeRole) ?? roleRecommendations[0];
+  const selectedRoleTools = selectedRole.toolIds.flatMap(id => {
     const tool = toolsRegistry.find(item => item.id === id);
     return tool ? [tool] : [];
   });
@@ -186,7 +206,7 @@ export default function Home() {
       <header className="py-6 sm:py-10 border-b border-[#1a1a1a]">
         <p className="text-xs text-[#00ff9c] tracking-widest mb-4">/ OPERATIONS TOOLKIT</p>
         <h1 className="text-3xl sm:text-5xl font-bold text-[#ffb000] tracking-tight">IT_TOOLS<span className="cursor-blink text-[#00ff9c]">_</span></h1>
-        <p className="mt-5 max-w-2xl text-zinc-300">Your everyday workspace for networks, infrastructure and incident response.</p>
+        <p className="mt-5 max-w-2xl text-zinc-300">Build, investigate and document — locally.</p>
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">Local processing by default. No tracking. Tools that use network services are labelled before you open them.</p>
         <div className="mt-6 flex flex-wrap items-center gap-4 text-xs">
           <span className="text-[#00ff9c]">{toolsRegistry.length} tools</span>
@@ -195,6 +215,41 @@ export default function Home() {
           <div className="w-full sm:w-64 sm:ml-auto"><CommandMenu /></div>
         </div>
       </header>
+
+      <section aria-labelledby="featured-heading">
+        <div className="flex items-center gap-3">
+          <Compass aria-hidden="true" className="h-4 w-4 text-[#ffb000]" />
+          <h2 id="featured-heading" className="text-sm text-[#ffb000]">Featured workspaces</h2>
+        </div>
+        <p className="mt-2 max-w-2xl text-xs text-zinc-400">Start with a focused workspace for the work that benefits from structure, context, and reusable output.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {featuredWorkspaces.map(workspace => <FeaturedWorkspaceCard key={workspace.id} workspace={workspace} />)}
+        </div>
+      </section>
+
+      <section aria-labelledby="roles-heading" className="border-y border-[#1a1a1a] py-8">
+        <div className="flex items-center gap-3">
+          <h2 id="roles-heading" className="text-sm text-[#ffb000]">Start by role</h2>
+          <span className="text-[10px] tracking-wider text-zinc-600">PICK A STARTING POINT</span>
+        </div>
+        <p className="mt-2 text-xs text-zinc-400">New here? Choose the work you do most and open one of the essential tools for it.</p>
+        <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Recommended tools by role">
+          {roleRecommendations.map(role => <button key={role.id} type="button" role="tab" aria-selected={role.id === activeRole} aria-controls={`role-panel-${role.id}`} onClick={() => setActiveRole(role.id)} className={`border px-3 py-2 text-xs transition-colors ${role.id === activeRole ? "border-[#00ff9c] bg-[#071710] text-[#00ff9c]" : "border-zinc-800 bg-[#050505] text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"}`}>{role.name}</button>)}
+        </div>
+        <div id={`role-panel-${selectedRole.id}`} role="tabpanel" className="mt-5 grid gap-4 border border-zinc-800 bg-[#050505] p-5 lg:grid-cols-[minmax(13rem,0.8fr)_repeat(3,minmax(0,1fr))]">
+          <div className="border-b border-zinc-800 pb-4 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-5">
+            <p className="text-[10px] tracking-widest text-zinc-500">{selectedRole.name.toUpperCase()}</p>
+            <p className="mt-3 text-sm leading-relaxed text-zinc-300">{selectedRole.description}</p>
+            <a href="#catalogue-heading" className="mt-5 inline-flex items-center gap-2 text-xs text-[#00ff9c] hover:underline">Explore all tools <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" /></a>
+          </div>
+          {selectedRoleTools.map(tool => <article key={tool.id} className="flex flex-col">
+            <p className="text-[10px] tracking-wide text-zinc-600">{toolDataFlow(tool).label.toUpperCase()}</p>
+            <h3 className="mt-3 text-sm font-bold text-[#00ff9c]"><Link href={tool.path} className="hover:underline">{tool.name}</Link></h3>
+            <p className="mt-2 flex-1 text-xs leading-relaxed text-zinc-400">{tool.description}</p>
+            <Link href={tool.path} className="mt-4 inline-flex items-center gap-2 text-xs text-zinc-300 hover:text-[#00ff9c]">Open tool <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" /></Link>
+          </article>)}
+        </div>
+      </section>
 
       {!isLoaded ? <section aria-label="Loading recently opened tools" className="space-y-3" role="status">
         <div className="flex items-center justify-between gap-4"><div className="h-4 w-40 animate-pulse bg-[#163b2d]" /><div className="h-3 w-28 animate-pulse bg-[#101b17]" /></div>

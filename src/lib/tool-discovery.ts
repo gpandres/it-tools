@@ -20,6 +20,58 @@ export const workflows = [
   { id: "recovery", name: "Plan recovery", description: "Set recovery targets, estimate storage and backup windows, then document the procedure.", toolIds: ["rpo-rto-calculator", "storage-calculator", "backup-calculator", "runbook-builder"] },
 ] as const;
 
+// Curated entry points for people who are seeing the catalogue for the first time.
+// Keep these IDs in the registry so the home page can retain one source of truth for tool metadata.
+export const featuredWorkspaces = [
+  {
+    id: "network-diagram",
+    eyebrow: "DESIGN",
+    summary: "Map infrastructure visually, shape a topology, and export a network plan.",
+  },
+  {
+    id: "runbook-builder",
+    eyebrow: "OPERATE",
+    summary: "Turn repeatable operational work into an executable, documented runbook.",
+  },
+  {
+    id: "investigation-workspace",
+    eyebrow: "INVESTIGATE",
+    summary: "Collect evidence, indicators, findings, and timelines in one local case workspace.",
+  },
+  {
+    id: "incident-playbook",
+    eyebrow: "RESPOND",
+    summary: "Build a clear incident-response process around roles, decisions, and actions.",
+  },
+] as const;
+
+export const roleRecommendations = [
+  {
+    id: "blue-team",
+    name: "Blue Team",
+    description: "Investigate incidents, build detections, and document the response.",
+    toolIds: ["investigation-workspace", "log-parser", "sigma-builder"],
+  },
+  {
+    id: "devops",
+    name: "DevOps",
+    description: "Review code and infrastructure before they reach production.",
+    toolIds: ["secrets-scanner", "kubernetes-auditor", "github-actions-auditor"],
+  },
+  {
+    id: "sysadmin",
+    name: "Sysadmin",
+    description: "Plan change, recovery, and day-to-day infrastructure operations.",
+    toolIds: ["runbook-builder", "backup-calculator", "rpo-rto-calculator"],
+  },
+  {
+    id: "network-engineer",
+    name: "Network Engineer",
+    description: "Design, size, and protect network infrastructure.",
+    toolIds: ["network-diagram", "vlsm-calculator", "acl-builder"],
+  },
+] as const;
+
 export function relatedToolsFor(id: string): ToolDefinition[] {
   const current = toolsRegistry.find(tool => tool.id === id);
   if (!current) return [];

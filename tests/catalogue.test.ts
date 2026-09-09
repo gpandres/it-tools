@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readdirSync } from "node:fs";
 import { toolsRegistry, CATEGORIES } from "../src/lib/tools.ts";
-import { searchTools, relatedToolsFor, workflows, toolDataFlow } from "../src/lib/tool-discovery.ts";
+import { featuredWorkspaces, roleRecommendations, searchTools, relatedToolsFor, workflows, toolDataFlow } from "../src/lib/tool-discovery.ts";
 import { parsePreferences, recordRecent } from "../src/lib/tool-preferences.ts";
 
 test("every tool route is registered once and every registry entry resolves to a page", () => {
@@ -28,6 +28,12 @@ test("workflows reuse real tools and related tools do not link to themselves", (
     assert.ok(relatedToolsFor(id).every(tool => tool.id !== id));
   }
   assert.ok(relatedToolsFor("acl-builder").some(tool => tool.id === "acl-simulator"));
+});
+test("featured workspaces and role recommendations reuse real tools", () => {
+  for (const workspace of featuredWorkspaces) assert.ok(toolsRegistry.some(tool => tool.id === workspace.id), workspace.id);
+  for (const role of roleRecommendations) for (const id of role.toolIds) {
+    assert.ok(toolsRegistry.some(tool => tool.id === id), `${role.id}:${id}`);
+  }
 });
 test("network and PDF dependencies are excluded from the no external services filter", () => {
   const exceptions = toolsRegistry.filter(tool => toolDataFlow(tool).label !== "Local processing").map(tool => tool.id);
