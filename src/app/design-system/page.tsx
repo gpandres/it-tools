@@ -77,14 +77,14 @@ export default function DesignSystemPage() {
           </div>
         </Section>
 
-        <Section title="Shared design API" code={'import {\n  ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody,\n  ToolField, ToolStatus, ToolProgress, ToolDialog,\n  ToolConfirmDialog, ToolFileDropzone, ToolCodeField,\n  ToolTimeline, ToolHorizontalTimeline, ToolStatGrid,\n  ToolStat, ToolBadge, ToolDisclosure\n} from "@/components/tool-design";'}>
+        <Section title="Shared design API" code={'import {\n  ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody,\n  ToolField, ToolStatus, ToolProgress, ToolDialog,\n  ToolConfirmDialog, ToolFileDropzone, ToolCodeField,\n  ToolTerminalOutput, ToolTimeline, ToolHorizontalTimeline,\n  ToolStatGrid, ToolStat, ToolBadge, ToolDisclosure\n} from "@/components/tool-design";'}>
           <p className="text-xs leading-relaxed text-zinc-400">Every rendered pattern below comes from the shared API when a reusable component exists. Tools provide labels, data, callbacks and domain validation; shared components own visual grammar, accessibility and responsive behavior.</p>
           <div className="grid gap-px border border-[#1a1a1a] bg-[#1a1a1a] text-[10px] sm:grid-cols-2 lg:grid-cols-4">
             {[
               ["Structure", "ToolPanel, header, body, footer and fields"],
               ["Feedback", "Badges, inline status and empty states"],
               ["Flows", "Dialogs, file dropzones and disclosures"],
-              ["Data", "Code fields, stats and vertical/horizontal timelines"],
+              ["Data", "Code fields, terminal output, stats and timelines"],
             ].map(([group, components]) => <div key={group} className="bg-[#050505] p-3"><p className="font-bold uppercase tracking-widest text-[#00ff9c]">{group}</p><p className="mt-2 leading-relaxed text-zinc-400">{components}</p></div>)}
           </div>
         </Section>
@@ -203,9 +203,9 @@ export default function DesignSystemPage() {
           <p className="text-xs leading-relaxed text-zinc-400">The canonical diagram language is demonstrated first. The compact and light variants are export-safe alternatives, not a second default product identity. Keep toolbox, inspector, group containers, connection handles, cable labels, directional controls and context menus discoverable without covering the canvas.</p>
         </Section>
 
-        <Section title="CLI tool pattern" code={'<form className="flex items-center gap-2 border-t border-[#1a1a1a] p-2">\n  <span className="text-[#00ff9c]">›</span>\n  <Input aria-label="CLI command" />\n  <ToolActionButton type="submit">Run</ToolActionButton>\n</form>'}>
+        <Section title="Terminal patterns" code={'<ToolTerminalOutput\n  title="Process output"\n  status="read only"\n  lines={outputLines}\n/>'}>
           <CliDesignDemo />
-          <p className="text-xs leading-relaxed text-zinc-400">For command-oriented tools, keep the prompt, input, output and safe example commands in one bounded terminal surface. Destructive commands must use the existing risk warning flow and never execute implicitly.</p>
+          <p className="text-xs leading-relaxed text-zinc-400">Use the interactive CLI only when the user enters commands. For generated logs, validation traces and process results, use the prompt-free `ToolTerminalOutput`; it must never imply that the output area accepts commands.</p>
         </Section>
 
         <Section title="Complete UI patterns" code={'/* Use these patterns before inventing a new one. */'}>

@@ -10,7 +10,7 @@ const segments = [
 ] as const;
 
 const events = [
-  { id: "backup", time: "09:00 UTC", offset: "T−04:00", position: 62.5, label: "Last backup", detail: "Latest recovery point", tone: "info", icon: Database },
+  { id: "backup", time: "13:00 UTC · previous day", offset: "T−24:00", position: 0, label: "Last backup", detail: "Recovery point anchoring this example window", tone: "info", icon: Database },
   { id: "incident", time: "13:00 UTC", offset: "T0", position: 75, label: "Disaster event", detail: "Service interruption", tone: "error", icon: ShieldAlert },
   { id: "restored", time: "17:00 UTC", offset: "T+04:00", position: 87.5, label: "System restored", detail: "Operations resumed", tone: "success", icon: Check },
 ] as const;
@@ -23,6 +23,6 @@ export function HorizontalTimelineDemo() {
     ticks={ticks}
     segments={[...segments]}
     events={[...events]}
-    summary={<><span className="text-zinc-400">Scale reading:</span> six 4-hour intervals make the 24-hour RPO window; one interval is the 4-hour RTO; the final interval shows the restored state. Each card marker matches its exact point on the scale.</>}
+    summary={<><span className="text-zinc-400">Scale reading:</span> the example starts at its last backup, six 4-hour intervals before the incident. One interval is the 4-hour RTO; the final interval shows the restored state. Only markers on the scale encode event position; cards provide readable detail.</>}
   />;
 }

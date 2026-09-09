@@ -98,6 +98,7 @@ import {
   ToolConfirmDialog,
   ToolFileDropzone,
   ToolCodeField,
+  ToolTerminalOutput,
   ToolTimeline,
   ToolHorizontalTimeline,
   ToolStatGrid,
@@ -120,6 +121,7 @@ import {
 | `ToolConfirmDialog` | Explicit confirmation, especially destructive work | trigger, exact consequence and confirmation callback |
 | `ToolFileDropzone` | Keyboard-accessible browse and drag/drop intake | accepted types, size limit and file/rejection callbacks |
 | `ToolCodeField` | No-wrap code with lines, copy and local download | language, code, filename and MIME type |
+| `ToolTerminalOutput` | Read-only logs, traces and process output without a fake prompt | title, status, stable line IDs, content and semantic tone |
 | `ToolTimeline` | Ordered operational events | stable IDs, timestamps, severity, title, detail and tone |
 | `ToolHorizontalTimeline` | Proportional milestones and target windows | ticks, 0–100 positions, segments, events and summary |
 | `ToolStatGrid` / `ToolStat` | Dense aligned metrics | label, value, context and tone |
@@ -191,9 +193,24 @@ Do not render a permanent `role="dialog"` inside a normal page section to imitat
 
 `ToolFileDropzone` handles selection, drag state, visible filename, size validation and local-processing copy. The tool still validates file type and contents before state replacement. `ToolCodeField` handles clipboard and file feedback through the notification provider.
 
+### Generic terminal output
+
+Use `ToolTerminalOutput` when a tool displays generated logs, validation traces or process results but does not accept shell input. It deliberately has no prompt, input or Run action. Lines need stable IDs and may use semantic tones; content wraps inside a bounded scroll area instead of widening the page.
+
+```tsx
+<ToolTerminalOutput
+  title="Validation output"
+  status="read only"
+  lines={[
+    { id: "start", content: "[INFO] Validation started", tone: "info" },
+    { id: "done", content: "[OK] 12 records checked", tone: "success" },
+  ]}
+/>
+```
+
 ### Generic timeline data
 
-Both timeline components are data-driven. Positions in `ToolHorizontalTimeline` are percentages on one elapsed-time scale and are clamped to 0–100. First and last labels anchor inside the track, so the final milestone is not clipped. Detail cards occupy non-overlapping temporal lanes around their event, and each card marker uses the same percentage coordinate as the marker on the scale. Keep stable event IDs and preserve chronological order. When the restored or completed state matters, leave scale after that milestone and represent it as a segment; do not stop the timeline at the restoration point.
+Both timeline components are data-driven. Positions in `ToolHorizontalTimeline` are percentages on one elapsed-time scale and are clamped to 0–100. First and last labels anchor inside the track, so the final milestone is not clipped. Only the square markers on the scale encode position; detail cards form a separate readable grid and must not add a second, misleading set of positional markers. Keep stable event IDs and preserve chronological order. When the restored or completed state matters, leave scale after that milestone and represent it as a segment; do not stop the timeline at the restoration point. A backup belongs at the start only when it actually anchors the displayed recovery window; otherwise place it at its real elapsed-time position.
 
 ```tsx
 <ToolTimeline items={events} />
@@ -396,7 +413,9 @@ Connection and movement affordances:
 
 ### CLI-oriented tools
 
-Tools that model a shell, command runner or command reference should use the CLI pattern shown in the reference page: a bounded black terminal surface, a visible `>` prompt, command input, explicit Run action, readable output history and safe example commands. The simulator is a UI pattern, not permission to execute arbitrary commands.
+Tools that model a shell, command runner or command reference should use the interactive CLI pattern shown in the reference page: a bounded black terminal surface, a visible `>` prompt, command input, explicit Run action, readable output history and safe example commands. The simulator is a UI pattern, not permission to execute arbitrary commands.
+
+Do not show a prompt when the user cannot type a command. Generated logs, validation traces and task output use `ToolTerminalOutput`, whose header identifies the stream as read-only and whose body owns wrapping and overflow. A prompt is an affordance, not terminal decoration.
 
 Commands should be validated before processing, dangerous commands should use the shared warning/risk flow, and copy feedback should use the notification provider. Never execute on keystroke or hide command errors in a toast only.
 
@@ -410,7 +429,7 @@ Use a dedicated no-wrap code field for YAML, JSON, JavaScript/TypeScript, Python
 
 Use the RPO/RTO-style timeline for ordered operational events: timestamp first, severity second, event title third and optional detail below. A thin vertical rule with square markers is easier to scan than a card per event. Use green for normal, amber for attention and red for failure; include a legend or text label so colour is not the only signal.
 
-For recovery planning, use the `Horizontal timeline` variant shown on `/design-system`: one continuous thin line, square milestone markers, compact event cards and labelled RPO/RTO windows below the sequence. The line should communicate order and target windows; the cards should contain the event detail. Keep it horizontally scrollable or stack the milestones intentionally on small screens rather than shrinking labels until they overlap. Do not copy circular dashboard widgets into the terminal UI.
+For recovery planning, use the `Horizontal timeline` variant shown on `/design-system`: one continuous thin line, square milestone markers, readable event cards and labelled RPO/RTO/state windows below the sequence. The line alone communicates position and target windows; cards are a detail legend and use equal columns so nearby milestones cannot collide. Narrow segments hide secondary detail, retain it in their title, and clip inside their own boundary. Keep the whole timeline horizontally scrollable on small screens rather than shrinking labels until they overlap. Do not copy circular dashboard widgets into the terminal UI.
 
 ### Stats and charts
 
@@ -493,5 +512,5 @@ Then exercise `/design-system` at desktop and 390px mobile widths. The minimum b
 2. `ToolDialog` opens from its trigger, closes with Escape and restores trigger focus after its exit transition.
 3. `ToolFileDropzone` exposes a labelled file input and keeps errors inside the flow.
 4. `ToolCodeField` copy produces notification feedback and its scroll region is keyboard focusable.
-5. `ToolHorizontalTimeline` fits at desktop width and owns horizontal overflow on mobile; the final 100% milestone remains inside the track.
+5. `ToolHorizontalTimeline` fits at desktop width, has no overlapping cards or segment text, and owns horizontal overflow on mobile; first and final markers remain inside the track.
 6. The main reference content has no automated WCAG A/AA violations. Manually review contrast where SVG text or layered demo backgrounds prevent an automated decision.

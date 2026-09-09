@@ -74,8 +74,8 @@ export function ToolHorizontalTimeline({ title, subtitle, scaleLabel, ticks, seg
             const end = clamp(segment.end);
             const tone = toneStyles[segment.tone ?? "neutral"];
             const isNarrow = Math.abs(end - start) < 20;
-            return <div key={segment.id} className={cn("absolute inset-y-0 flex min-w-0 border-r", isNarrow ? "flex-col items-start justify-center gap-1 px-3" : "items-center justify-between gap-3 px-4", tone.border)} style={{ left: `${Math.min(start, end)}%`, width: `${Math.abs(end - start)}%` }}>
-              <div className="min-w-0"><p className={cn("text-[9px] font-bold uppercase tracking-widest", tone.text)}>{segment.label}</p>{segment.detail && <p className="mt-1 truncate text-[9px] text-zinc-400" title={typeof segment.detail === "string" ? segment.detail : undefined}>{segment.detail}</p>}</div>
+            return <div key={segment.id} data-slot="tool-horizontal-timeline-segment" className={cn("absolute inset-y-0 flex min-w-0 overflow-hidden border-r", isNarrow ? "flex-col items-start justify-center gap-1 px-3" : "items-center justify-between gap-3 px-4", tone.border)} style={{ left: `${Math.min(start, end)}%`, width: `${Math.abs(end - start)}%` }} title={typeof segment.detail === "string" ? segment.detail : undefined}>
+              <div className="min-w-0"><p className={cn("truncate text-[9px] font-bold uppercase tracking-widest", tone.text)}>{segment.label}</p>{segment.detail && !isNarrow && <p className="mt-1 truncate text-[9px] text-zinc-400">{segment.detail}</p>}</div>
               {segment.value && <span className={cn("shrink-0 text-[10px] font-bold", tone.text)}>{segment.value}</span>}
             </div>;
           })}
@@ -93,21 +93,13 @@ export function ToolHorizontalTimeline({ title, subtitle, scaleLabel, ticks, seg
           })}
         </div>
 
-        <ol className="relative mt-4 min-h-32">
-          {events.map((event, index) => {
+        <ol className="mt-4 grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.max(events.length, 1)}, minmax(0, 1fr))` }}>
+          {events.map(event => {
             const Icon = event.icon;
             const tone = toneStyles[event.tone ?? "neutral"];
-            const position = clamp(event.position);
-            const previousPosition = clamp(events[index - 1]?.position ?? 0);
-            const nextPosition = clamp(events[index + 1]?.position ?? 100);
-            const start = index === 0 ? Math.max(0, position - (nextPosition - position) / 2) : (previousPosition + position) / 2;
-            const end = index === events.length - 1 ? Math.min(100, position + (position - previousPosition) / 2) : (position + nextPosition) / 2;
-            const width = Math.max(0, end - start);
-            const markerPosition = width === 0 ? 0 : ((position - start) / width) * 100;
-            return <li key={event.id} className={cn("absolute min-w-0 border bg-[#050505] p-2", tone.border)} style={{ left: `${start}%`, width: `${width}%` }}>
-              <span className={cn("absolute -top-[7px] h-3 w-3 -translate-x-1/2 border-2", tone.marker)} style={{ left: `${markerPosition}%` }} aria-hidden="true" />
-              <div className="space-y-1"><div className="flex min-w-0 items-center gap-1">{Icon && <Icon className={cn("h-3.5 w-3.5 shrink-0", tone.text)} aria-hidden={true} />}<h4 className="min-w-0 whitespace-nowrap text-[9px] font-bold text-zinc-200">{event.label}</h4></div>{event.offset && <span className={cn("block text-[9px] font-bold", tone.text)}>{event.offset}</span>}</div>
-              <div className={cn("mt-2 text-[10px]", tone.text)}>{event.time}</div>
+            return <li key={event.id} data-slot="tool-horizontal-timeline-card" className={cn("min-w-0 overflow-hidden border bg-[#050505] p-3", tone.border)}>
+              <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-2">{Icon && <Icon className={cn("h-3.5 w-3.5 shrink-0", tone.text)} aria-hidden={true} />}<h4 className="min-w-0 break-words text-[10px] font-bold text-zinc-200">{event.label}</h4></div>{event.offset && <span className={cn("shrink-0 text-[9px] font-bold", tone.text)}>{event.offset}</span>}</div>
+              <div className={cn("mt-3 text-[10px]", tone.text)}>{event.time}</div>
               {event.detail && <p className="mt-1 text-[9px] text-zinc-400">{event.detail}</p>}
             </li>;
           })}

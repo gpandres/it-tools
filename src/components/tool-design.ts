@@ -2,6 +2,7 @@ export { ToolActionButton, ToolActionPanel } from "@/components/tool-action-pane
 export { ToolCodeField } from "@/components/tool-code-field";
 export { ToolConfirmDialog, ToolDialog, type ToolDialogAction } from "@/components/tool-dialog";
 export { ToolFileDropzone } from "@/components/tool-file-dropzone";
+export { ToolTerminalOutput, type ToolTerminalLine } from "@/components/tool-terminal";
 export {
   ToolHorizontalTimeline,
   type ToolHorizontalTimelineEvent,
