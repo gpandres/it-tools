@@ -194,7 +194,7 @@ export default function MagicBytesDetector() {
                   <p className="text-zinc-500 text-xs font-mono">{formatSize(fileInfo.size)}</p>
                 </div>
               </div>
-              <Button onClick={reset} variant="outline" className="shrink-0 ml-4 border-[#1a1a1a] hover:bg-[#1a1a1a]">
+              <Button onClick={reset} variant="outline" className="shrink-0 ml-4 border-[#1a1a1a] hover:bg-[#1a1a1a] rounded-none">
                 <Trash2 className="w-4 h-4 mr-2" /> Clear
               </Button>
             </div>

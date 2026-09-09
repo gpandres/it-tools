@@ -112,7 +112,7 @@ export default function LogTimelineGenerator() {
                   variant="outline" 
                   size="sm" 
                   onClick={() => fileInputRef.current?.click()}
-                  className="h-7 text-xs border-[#1a1a1a] bg-black text-zinc-400 hover:text-zinc-200"
+                  className="h-7 text-xs border-[#1a1a1a] bg-black text-zinc-400 hover:text-zinc-200 rounded-none"
                 >
                   <Upload className="w-3 h-3 mr-2" /> Upload .log
                 </Button>
@@ -127,7 +127,7 @@ export default function LogTimelineGenerator() {
             </div>
             
             <textarea
-              className={`w-full min-h-[300px] border p-4 font-mono text-xs focus:outline-none transition-colors resize-y custom-scrollbar ${
+              className={`w-full min-h-[300px] border p-4 font-mono text-xs focus:outline-none transition-colors resize-y custom-scrollbar rounded-none ${
                 isDragging ? 'bg-transparent border-[#00ff9c]/50 text-[#00ff9c]' : 'bg-black border-[#1a1a1a] text-zinc-300 focus:border-[#00ff9c]'
               }`}
               placeholder="Paste logs here, or drag & drop a .log file...&#10;Oct 12 10:14:00 server sshd[123]: Accepted password for root...&#10;2023-10-12T10:14:01Z [INFO] User logged in...&#10;12/Oct/2023:10:14:05 +0000 GET /admin..."
@@ -137,7 +137,7 @@ export default function LogTimelineGenerator() {
             
             <div className="flex justify-between items-center mt-4">
                <p className="text-xs text-zinc-500 font-mono">Supports ISO 8601, Syslog, Apache/Nginx, and generic formats.</p>
-               <Button onClick={processLogs} className="bg-[#00ff9c] hover:bg-[#00cc7d] text-black">
+               <Button onClick={processLogs} className="bg-[#00ff9c] hover:bg-[#00cc7d] text-black rounded-none">
                  <ArrowDownUp className="w-4 h-4 mr-2" /> Extract & Sort
                </Button>
             </div>
@@ -164,13 +164,13 @@ export default function LogTimelineGenerator() {
                 )}
               </div>
               <div className="flex flex-wrap justify-end gap-2">
-                <Button onClick={() => exportTimeline("csv")} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a]">
+                <Button onClick={() => exportTimeline("csv")} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a] rounded-none">
                   <Download className="mr-2 h-4 w-4" /> CSV
                 </Button>
-                <Button onClick={() => exportTimeline("json")} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a]">
+                <Button onClick={() => exportTimeline("json")} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a] rounded-none">
                   <FileJson className="mr-2 h-4 w-4" /> JSON
                 </Button>
-                <Button onClick={() => setTimeline(null)} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a]">
+                <Button onClick={() => setTimeline(null)} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a] rounded-none">
                   New Analysis
                 </Button>
               </div>

@@ -207,11 +207,11 @@ export default function ExifAnalyzer() {
                     <p className="text-[#00ff9c] mt-4 font-mono text-sm animate-pulse">Analyzing EXIF data...</p>
                   ) : (
                     <div className="mt-4 flex gap-2">
-                      <span className={`px-2 py-1 text-xs font-mono rounded ${exifData && Object.keys(exifData).length > 0 ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-[#00ff9c]/10 text-[#00ff9c] border border-[#00ff9c]/30'}`}>
+                      <span className={`px-2 py-1 text-xs font-mono rounded-none ${exifData && Object.keys(exifData).length > 0 ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-[#00ff9c]/10 text-[#00ff9c] border border-[#00ff9c]/30'}`}>
                         {exifData && Object.keys(exifData).length > 0 ? `${Object.keys(exifData).length} Tags Found` : 'No Metadata Found'}
                       </span>
                       {exifData?.latitude && (
-                        <span className="px-2 py-1 text-xs font-mono rounded bg-red-500/20 text-red-500 border border-red-500/30 flex items-center gap-1">
+                        <span className="px-2 py-1 text-xs font-mono rounded-none bg-red-500/20 text-red-500 border border-red-500/30 flex items-center gap-1">
                           <MapPin className="w-3 h-3" /> GPS Detected
                         </span>
                       )}
@@ -221,23 +221,23 @@ export default function ExifAnalyzer() {
 
                 <div className="flex gap-4 mt-6">
                   {scrubStatus === "idle" && exifData && Object.keys(exifData).length > 0 && (
-                    <Button onClick={scrubMetadata} className="bg-amber-500 hover:bg-amber-600 text-black">
+                    <Button onClick={scrubMetadata} className="bg-amber-500 hover:bg-amber-600 text-black rounded-none">
                       <ShieldCheck className="w-4 h-4 mr-2" /> Scrub Metadata
                     </Button>
                   )}
                   {scrubStatus === "scrubbing" && (
-                    <Button disabled className="bg-amber-500/50 text-black">
+                    <Button disabled className="bg-amber-500/50 text-black rounded-none">
                       Scrubbing...
                     </Button>
                   )}
                   {scrubStatus === "done" && cleanFileUrl && (
                     <a href={cleanFileUrl} download={`clean_${fileInfo.name}`}>
-                      <Button className="bg-[#00ff9c] hover:bg-[#00cc7d] text-black">
+                      <Button className="bg-[#00ff9c] hover:bg-[#00cc7d] text-black rounded-none">
                         <Download className="w-4 h-4 mr-2" /> Download Clean Image
                       </Button>
                     </a>
                   )}
-                  <Button onClick={reset} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a]">
+                  <Button onClick={reset} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a] rounded-none">
                     <Trash2 className="w-4 h-4 mr-2" /> Clear
                   </Button>
                 </div>

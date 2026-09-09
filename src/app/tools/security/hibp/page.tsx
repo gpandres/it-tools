@@ -103,13 +103,13 @@ export default function HIBPChecker() {
                    setStatus("idle");
                 }}
                 onKeyDown={handleKeyDown}
-                className="pl-4 pr-24 py-6 text-lg bg-black border-[#1a1a1a] focus:border-[#00ff9c] text-zinc-200"
+                className="pl-4 pr-24 py-6 text-lg bg-black border-[#1a1a1a] focus:border-[#00ff9c] text-zinc-200 rounded-none"
               />
               <div className="absolute right-2 flex gap-2">
                 <Button 
                   onClick={checkPassword} 
                   disabled={!password || status === "loading"}
-                  className="bg-[#00ff9c] hover:bg-[#00cc7d] text-black h-9"
+                  className="bg-[#00ff9c] hover:bg-[#00cc7d] text-black h-9 rounded-none"
                 >
                   {status === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Check"}
                 </Button>

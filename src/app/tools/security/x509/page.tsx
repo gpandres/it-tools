@@ -113,7 +113,7 @@ export default function X509Analyzer() {
             ></textarea>
             
             <div className="flex justify-end mt-4">
-               <Button onClick={clear} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a] text-zinc-400">
+               <Button onClick={clear} variant="outline" className="border-[#1a1a1a] hover:bg-[#1a1a1a] text-zinc-400 rounded-none">
                  Clear
                </Button>
             </div>
@@ -244,7 +244,7 @@ export default function X509Analyzer() {
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {parsedCert.sans.map((san: string, idx: number) => (
-                          <span key={idx} className="bg-[#1a1a1a] text-zinc-300 px-2 py-1 text-xs font-mono rounded">
+                          <span key={idx} className="bg-[#1a1a1a] text-zinc-300 px-2 py-1 text-xs font-mono rounded-none">
                             {san}
                           </span>
                         ))}
