@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { Settings2 } from "lucide-react";
+import { ToolField, ToolPanel, ToolPanelBody, ToolPanelHeader, ToolPanelTitle, ToolStat, ToolStatGrid, ToolStatus } from "@/components/tool-design";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function BandwidthToolContent() {
   const [simpleMode, setSimpleMode] = useState(true);
@@ -23,6 +26,10 @@ function BandwidthToolContent() {
 
   const isValid = Number.isFinite(fileSize) && Number.isFinite(linkSpeed) && Number.isFinite(rtt) && Number.isFinite(windowSize) &&
                   fileSize >= 0 && linkSpeed > 0 && rtt > 0 && windowSize > 0;
+  const hasInvalidFileSize = !Number.isFinite(fileSize) || fileSize < 0;
+  const hasInvalidLinkSpeed = !Number.isFinite(linkSpeed) || linkSpeed <= 0;
+  const hasInvalidRtt = !Number.isFinite(rtt) || rtt <= 0;
+  const hasInvalidWindowSize = !Number.isFinite(windowSize) || windowSize <= 0;
 
   let theoreticalTimeStr = "-";
   let maxTcpThroughputStr = "-";
@@ -88,154 +95,112 @@ function BandwidthToolContent() {
       title="Bandwidth & Transfer Time Calculator"
       description="Calculate file transfer times and analyze the impact of latency (RTT) on TCP throughput."
     >
-      <div className="flex justify-end mb-4">
-        <button 
-          onClick={() => setSimpleMode(!simpleMode)}
-          className={`flex items-center gap-2 px-3 py-1.5 border text-xs font-mono uppercase tracking-widest transition-colors ${
-            !simpleMode ? 'border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10' : 'border-zinc-700 text-zinc-400 hover:border-zinc-500'
-          }`}
-        >
-          <Settings2 className="w-3 h-3" />
-          {simpleMode ? "Simple Mode" : "Advanced Mode"}
-        </button>
-      </div>
+      <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6">
+        <Tabs value={simpleMode ? "simple" : "advanced"} onValueChange={(value) => setSimpleMode(value === "simple")}>
+          <TabsList variant="line" className="grid h-auto w-full grid-cols-2 gap-0 border border-[#1a1a1a] bg-black p-0 sm:w-72">
+            <TabsTrigger value="simple" className="h-9 rounded-none border-0 text-[10px] font-bold uppercase tracking-wider data-active:bg-[#00ff9c]/10 data-active:text-[#00ff9c] data-active:after:hidden">Simple mode</TabsTrigger>
+            <TabsTrigger value="advanced" className="h-9 rounded-none border-0 border-l border-[#1a1a1a] text-[10px] font-bold uppercase tracking-wider data-active:bg-[#00ff9c]/10 data-active:text-[#00ff9c] data-active:after:hidden">Advanced mode</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-      <div className="space-y-6">
-        {/* Input Section */}
-        <div className="p-4 border border-[#1a1a1a] bg-[#0a0a0a] space-y-6">
-          <div className={`grid grid-cols-1 ${!simpleMode ? 'md:grid-cols-2' : ''} gap-6`}>
-            
-            {/* Theoretical Section */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-[#00ff9c] uppercase tracking-wider border-b border-[#1a1a1a] pb-2">
-                {simpleMode ? "Download Details" : "1. Transfer Size & Link Speed"}
-              </h3>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">File Size</label>
-                  <input
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="IN" className="text-[#ffb000] glow-amber">Transfer config</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody>
+            <div className={`grid gap-6 ${simpleMode ? "" : "md:grid-cols-2"}`}>
+              <div className="space-y-5">
+                <h3 className="border-b border-[#1a1a1a] pb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                  {simpleMode ? "Download details" : "Transfer size and link speed"}
+                </h3>
+                <ToolField htmlFor="file-size" label="File size" error={hasInvalidFileSize ? "Enter a file size of zero or greater." : undefined}>
+                  <div className="flex gap-2">
+                    <Input
+                      id="file-size"
                     type="number"
                     value={fileSizeStr}
                     onChange={(e) => setFileSizeStr(e.target.value)}
                     min="0"
-                    className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
-                  />
-                </div>
-                <div className="w-24">
-                  <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Unit</label>
-                  <select
-                    value={fileUnit}
-                    onChange={(e) => setFileUnit(e.target.value)}
-                    className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors appearance-none text-center"
-                  >
-                    <option>KB</option>
-                    <option>MB</option>
-                    <option>GB</option>
-                    <option>TB</option>
-                  </select>
-                </div>
-              </div>
+                      aria-invalid={hasInvalidFileSize}
+                      className="h-10 bg-black font-mono text-[#00ff9c] rounded-none"
+                    />
+                    <Select value={fileUnit} onValueChange={(value) => setFileUnit(value ?? "GB")}>
+                      <SelectTrigger aria-label="File size unit" className="h-10 w-24 rounded-none border-[#1a1a1a] bg-black font-mono text-[#00ff9c]"><SelectValue /></SelectTrigger>
+                      <SelectContent className="rounded-none border border-[#1a1a1a] bg-black text-zinc-200"><SelectItem value="KB">KB</SelectItem><SelectItem value="MB">MB</SelectItem><SelectItem value="GB">GB</SelectItem><SelectItem value="TB">TB</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                </ToolField>
 
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Internet / Link Speed</label>
-                  <input
+                <ToolField htmlFor="link-speed" label="Internet / link speed" error={hasInvalidLinkSpeed ? "Enter a link speed greater than zero." : undefined}>
+                  <div className="flex gap-2">
+                    <Input
+                      id="link-speed"
                     type="number"
                     value={linkSpeedStr}
                     onChange={(e) => setLinkSpeedStr(e.target.value)}
                     min="0.1"
-                    className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
-                  />
-                </div>
-                <div className="w-24">
-                  <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Unit</label>
-                  <select
-                    value={speedUnit}
-                    onChange={(e) => setSpeedUnit(e.target.value)}
-                    className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors appearance-none text-center"
-                  >
-                    <option>Kbps</option>
-                    <option>Mbps</option>
-                    <option>Gbps</option>
-                    <option>Tbps</option>
-                  </select>
-                </div>
+                      aria-invalid={hasInvalidLinkSpeed}
+                      className="h-10 bg-black font-mono text-[#00ff9c] rounded-none"
+                    />
+                    <Select value={speedUnit} onValueChange={(value) => setSpeedUnit(value ?? "Gbps")}>
+                      <SelectTrigger aria-label="Link speed unit" className="h-10 w-24 rounded-none border-[#1a1a1a] bg-black font-mono text-[#00ff9c]"><SelectValue /></SelectTrigger>
+                      <SelectContent className="rounded-none border border-[#1a1a1a] bg-black text-zinc-200"><SelectItem value="Kbps">Kbps</SelectItem><SelectItem value="Mbps">Mbps</SelectItem><SelectItem value="Gbps">Gbps</SelectItem><SelectItem value="Tbps">Tbps</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                </ToolField>
               </div>
-            </div>
 
-            {/* TCP / Latency Section */}
             {!simpleMode && (
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold text-[#00ff9c] uppercase tracking-wider border-b border-[#1a1a1a] pb-2">
-                  2. Latency Impact (TCP)
-                </h3>
-                <div>
-                  <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">Round Trip Time (RTT in ms)</label>
-                  <input
+              <div className="space-y-5">
+                <h3 className="border-b border-[#1a1a1a] pb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">Latency impact (TCP)</h3>
+                <ToolField htmlFor="rtt" label="Round-trip time (ms)" error={hasInvalidRtt ? "Enter an RTT greater than zero." : undefined}>
+                  <Input
+                    id="rtt"
                     type="number"
                     value={rttStr}
                     onChange={(e) => setRttStr(e.target.value)}
                     min="1"
-                    className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
+                    aria-invalid={hasInvalidRtt}
+                    className="h-10 bg-black font-mono text-[#00ff9c] rounded-none"
                   />
-                </div>
+                </ToolField>
 
-                <div>
-                  <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wider">TCP Window Size (KB)</label>
-                  <input
+                <ToolField htmlFor="tcp-window" label="TCP window size (KB)" helper="64 KB is a common baseline without window scaling; modern systems negotiate larger windows." error={hasInvalidWindowSize ? "Enter a TCP window size greater than zero." : undefined}>
+                  <Input
+                    id="tcp-window"
                     type="number"
                     value={windowSizeStr}
                     onChange={(e) => setWindowSizeStr(e.target.value)}
                     min="1"
-                    className="w-full bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
+                    aria-invalid={hasInvalidWindowSize}
+                    className="h-10 bg-black font-mono text-[#00ff9c] rounded-none"
                   />
-                  <p className="text-[10px] text-zinc-600 mt-1 uppercase tracking-wider">Without window scaling, 64 KB is a common baseline; modern systems negotiate larger windows.</p>
-                </div>
+                </ToolField>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Results Section */}
-        {simpleMode ? (
-          <div className="p-8 border border-[#00ff9c]/30 bg-[#00ff9c]/5 flex flex-col items-center justify-center text-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-[#00ff9c]"></div>
-            <div className="text-sm font-bold text-[#00ff9c] uppercase tracking-widest mb-4">Estimated Download Time</div>
-            <div className="text-4xl font-mono text-[#00ff9c] glow">{theoreticalTimeStr}</div>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-6 border border-[#1a1a1a] bg-[#050505] flex flex-col items-center justify-center text-center">
-                <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Theoretical Time (Perfect Link)</div>
-                <div className="text-2xl font-mono text-white">{theoreticalTimeStr}</div>
-              </div>
-              <div className="p-6 border border-[#00ff9c]/30 bg-[#00ff9c]/5 flex flex-col items-center justify-center text-center relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-[#00ff9c]"></div>
-                <div className="text-xs font-bold text-[#00ff9c] uppercase tracking-wider mb-2">Estimated Real Time (TCP Limited)</div>
-                <div className="text-2xl font-mono text-[#00ff9c] glow">{realTimeStr}</div>
-              </div>
             </div>
+          </ToolPanelBody>
+        </ToolPanel>
 
-            {/* Info Banner */}
-            <div className="p-4 border border-[#1a1a1a] bg-[#050505] flex flex-col gap-2">
-              <div className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Max TCP Throughput (Bandwidth-Delay Product)</div>
-              <div className="text-[#00ff9c] font-mono text-sm break-words">{maxTcpThroughputStr}</div>
-              <p className="text-xs text-zinc-400 mt-2">
-                TCP requires acknowledgements. High latency (RTT) limits throughput unless the TCP Window Size is scaled up. This is known as the Long Fat Network (LFN) problem.
-              </p>
-            </div>
-          </>
-        )}
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="OUT">Results <span className="cursor-blink">_</span></ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            {!isValid ? <ToolStatus tone="error" title="Awaiting valid input">Correct the highlighted values to calculate the transfer time.</ToolStatus> : simpleMode ? (
+              <ToolStatGrid className="sm:grid-cols-1"><ToolStat label="Estimated download time" value={theoreticalTimeStr} context="Assumes full use of the configured link" tone="success" /></ToolStatGrid>
+            ) : (
+              <>
+                <ToolStatGrid className="sm:grid-cols-2">
+                  <ToolStat label="Theoretical time" value={theoreticalTimeStr} context="Perfect link" tone="info" />
+                  <ToolStat label="Estimated real time" value={realTimeStr} context="TCP limited" tone="success" />
+                </ToolStatGrid>
+                <ToolStatus tone="info" title="Maximum TCP throughput">{maxTcpThroughputStr}. TCP acknowledgements make RTT and receive-window size relevant on long, fast links.</ToolStatus>
+              </>
+            )}
+          </ToolPanelBody>
+        </ToolPanel>
       </div>
     </ToolLayout>
   );
 }
 
 export default function BandwidthTool() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
-      <BandwidthToolContent />
-    </Suspense>
-  );
+  return <BandwidthToolContent />;
 }
