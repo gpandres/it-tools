@@ -1,9 +1,17 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { MultiVendorOutput, type VendorOutput } from "@/components/multi-vendor-output";
 import { ToolLayout } from "@/components/tool-layout";
 import { validateIp } from "@/lib/network";
+import {
+  ToolPanel,
+  ToolPanelHeader,
+  ToolPanelTitle,
+  ToolPanelBody,
+  ToolField,
+} from "@/components/tool-design";
+import { Input } from "@/components/ui/input";
 
 function cidrToMask(cidr: number): string {
   if (cidr < 0 || cidr > 32) return "Invalid";
@@ -72,40 +80,70 @@ exit`;
 
   return (
     <ToolLayout
-      title="Interface Config Generator"
+      title="INTERFACE CONFIG GENERATOR"
       description="Generate Layer 3 interface configurations for Cisco, MikroTik, FortiGate, Juniper, and Arista."
     >
-      <div className="space-y-6">
-        <div className="space-y-4 rounded border border-[#1a1a1a] bg-[#0a0a0a] p-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <label className="space-y-2">
-              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Interface Name</span>
-              <input type="text" value={iface} onChange={e => setIface(e.target.value)} placeholder="GigabitEthernet0/1 or ge-0/0/1" className="w-full border border-[#1a1a1a] bg-black p-3 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
-            </label>
-            <label className="space-y-2">
-              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">IP Address</span>
-              <input type="text" value={ip} onChange={e => setIp(e.target.value)} placeholder="192.168.1.1" className="w-full border border-[#1a1a1a] bg-black p-3 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
-            </label>
-            <label className="space-y-2">
-              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">CIDR Prefix</span>
+      <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6">
+        <ToolPanel>
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="IN">Interface Config</ToolPanelTitle>
+          </ToolPanelHeader>
+          <ToolPanelBody className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <ToolField
+              htmlFor="iface"
+              label="Interface name"
+              helper="Letters, numbers, periods, colons, slashes, underscores, and hyphens are supported."
+              error={!isValidInterface || !iface.trim() ? "Enter a valid interface name." : undefined}
+            >
+              <Input
+                id="iface"
+                value={iface}
+                onChange={e => setIface(e.target.value)}
+                placeholder="GigabitEthernet0/1 or ge-0/0/1"
+                aria-invalid={!isValidInterface || !iface.trim()}
+                className="rounded-none border-[#1a1a1a] bg-black font-mono"
+              />
+            </ToolField>
+
+            <ToolField htmlFor="ip" label="IP address" helper="IPv4 address in dotted-decimal notation." error={!isValidIp ? "Enter a valid IPv4 address." : undefined}>
+              <Input
+                id="ip"
+                value={ip}
+                onChange={e => setIp(e.target.value)}
+                placeholder="192.168.1.1"
+                aria-invalid={!isValidIp}
+                className="rounded-none border-[#1a1a1a] bg-black font-mono"
+              />
+            </ToolField>
+
+            <ToolField htmlFor="cidr" label="CIDR prefix" helper="Whole-number prefix from 0 to 32." error={!isValidCidr ? "CIDR prefix must be a whole number from 0 to 32." : undefined}>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-zinc-500">/</span>
-                <input type="number" value={cidr} onChange={e => setCidr(e.target.value)} min="0" max="32" className="w-full border border-[#1a1a1a] bg-black p-3 pl-7 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-zinc-500" aria-hidden="true">/</span>
+                <Input
+                  id="cidr"
+                  type="number"
+                  min="0"
+                  max="32"
+                  value={cidr}
+                  onChange={e => setCidr(e.target.value)}
+                  aria-invalid={!isValidCidr}
+                  className="rounded-none border-[#1a1a1a] bg-black pl-7 font-mono"
+                />
               </div>
-            </label>
-            <label className="space-y-2">
-              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Description</span>
-              <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="LAN Connection" className="w-full border border-[#1a1a1a] bg-black p-3 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
-            </label>
-          </div>
-        </div>
+            </ToolField>
 
-        {(!isValidIp || !isValidCidr || !isValidInterface || !description.trim()) && (
-          <div className="border border-amber-500/40 bg-amber-500/5 p-3 font-mono text-xs text-amber-300">
-            The preview uses placeholders until the IPv4 address, CIDR prefix, interface name, and description are valid.
-          </div>
-        )}
-
+            <ToolField htmlFor="description" label="Description" helper="Used as the interface description or comment." error={!description.trim() ? "Enter an interface description." : undefined}>
+              <Input
+                id="description"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="LAN Connection"
+                aria-invalid={!description.trim()}
+                className="rounded-none border-[#1a1a1a] bg-black font-mono"
+              />
+            </ToolField>
+          </ToolPanelBody>
+        </ToolPanel>
         <MultiVendorOutput outputs={outputs} activeId={activeTab} onActiveChange={id => setActiveTab(id as InterfaceVendor)} />
       </div>
     </ToolLayout>
@@ -113,9 +151,5 @@ exit`;
 }
 
 export default function InterfaceConfigGenerator() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center font-mono text-zinc-500 glow-amber">Loading...</div>}>
-      <InterfaceConfigGeneratorContent />
-    </Suspense>
-  );
+  return <InterfaceConfigGeneratorContent />;
 }
