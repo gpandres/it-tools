@@ -646,7 +646,7 @@ function DiagramFlow() {
               maskColor="rgba(0, 0, 0, 0.42)"
               style={{ backgroundColor: 'rgba(5, 5, 5, 0.68)', border: '1px solid rgba(26, 26, 26, 0.8)', opacity: 0.84 }}
             />}
-          <Panel position="bottom-left" className="!m-3 !rounded border border-[#1a1a1a] !bg-[#050505]/95 px-2.5 py-1.5 font-mono text-[10px] text-zinc-500" aria-live="polite">
+          <Panel position="bottom-left" className="!m-3 !max-w-[calc(100%-1.5rem)] !rounded border border-[#1a1a1a] !bg-[#050505]/95 px-2.5 py-1.5 font-mono text-[9px] text-zinc-500 sm:text-[10px]" aria-live="polite">
             <span className="text-[#00ff9c]">{nodes.length}</span> nodes · <span className="text-[#38bdf8]">{edges.length}</span> links · {validationIssues.length === 0 ? <span className="text-[#72e6b4]">topology ok</span> : <span className="text-amber-300">{validationIssues.length} issue{validationIssues.length === 1 ? '' : 's'}</span>}
           </Panel>
         </ReactFlow>

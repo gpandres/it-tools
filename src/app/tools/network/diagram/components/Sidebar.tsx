@@ -107,7 +107,7 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
   };
 
   return (
-    <aside className={`${mobileOpen ? 'flex' : 'hidden'} absolute inset-x-0 bottom-0 z-40 max-h-[78dvh] w-full flex-col overflow-hidden rounded-t-xl border-t border-[#1a1a1a] bg-[#050505] shadow-2xl md:relative md:flex md:inset-auto md:z-10 md:h-full md:max-h-none md:w-[19rem] md:rounded-none md:border-r md:border-t-0 md:shadow-none`} aria-label="Diagram toolbox">
+    <aside className={`${mobileOpen ? 'flex' : 'hidden'} absolute inset-x-0 bottom-0 z-40 h-[min(78dvh,42rem)] max-h-[78dvh] w-full flex-col overflow-hidden rounded-t-xl border-t border-[#1a1a1a] bg-[#050505] shadow-2xl md:relative md:flex md:inset-auto md:z-10 md:h-full md:max-h-none md:w-[19rem] md:rounded-none md:border-r md:border-t-0 md:shadow-none`} aria-label="Diagram toolbox">
       <div className="flex shrink-0 items-center gap-2 border-b border-[#1a1a1a] p-3">
         <Network className="h-4 w-4 shrink-0 text-[#00ff9c]" />
         <h2 className="truncate font-bold">Diagram toolbox</h2>
@@ -154,7 +154,7 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
             {categories.map(category => <div key={category}>
               <button type="button" onClick={() => toggleCategory(category)} aria-expanded={openCategories.includes(category)} className="flex w-full items-center gap-1 py-1 text-left text-[9px] font-bold uppercase tracking-widest text-zinc-600 hover:text-zinc-300"><ChevronDown className={`h-3 w-3 transition-transform ${openCategories.includes(category) ? '' : '-rotate-90'}`} />{category}<span className="ml-auto">{filteredItems.filter(item => item.category === category).length}</span></button>
               {openCategories.includes(category) && <div className="grid grid-cols-2 gap-1.5 pt-1">
-                {filteredItems.filter(item => item.category === category).map(item => { const Icon = item.icon; return <button key={item.type} type="button" draggable onClick={() => onAddNode(item.type, item.label)} onDragStart={event => onDragStart(event, item.type, item.label)} className="flex min-h-14 flex-col items-center justify-center gap-1 rounded border border-[#1a1a1a] bg-black p-2 text-zinc-400 transition-colors hover:border-[#00ff9c]/60 hover:bg-[#00ff9c]/5 hover:text-[#00ff9c]"><Icon className="h-4 w-4" /><span className="text-center font-mono text-[9px] leading-tight">{item.label}</span></button>; })}
+                {filteredItems.filter(item => item.category === category).map(item => { const Icon = item.icon; return <button key={item.type} type="button" draggable onClick={() => onAddNode(item.type, item.label)} onDragStart={event => onDragStart(event, item.type, item.label)} className="flex min-h-14 touch-manipulation flex-col items-center justify-center gap-1 rounded border border-[#1a1a1a] bg-black p-2 text-zinc-400 transition-colors hover:border-[#00ff9c]/60 hover:bg-[#00ff9c]/5 hover:text-[#00ff9c]"><Icon className="h-4 w-4" /><span className="text-center font-mono text-[9px] leading-tight">{item.label}</span></button>; })}
               </div>}
             </div>)}
           </div>
