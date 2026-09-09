@@ -10,7 +10,7 @@ import { readLocalStorage, STORAGE_CHANGED, writeLocalStorage } from "@/lib/stor
 import { useFavorites } from "./favorites-provider";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } from "./ui/dialog";
 
-const APP_VERSION = "0.1.1";
+const APP_VERSION = "0.1.2";
 const COLLAPSED_CATEGORIES_KEY = "it_tools_collapsed_categories";
 
 function readCollapsedCategories(): string[] {

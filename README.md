@@ -4,7 +4,7 @@ IT_TOOLS is a local-first, browser-based toolbox for sysadmins, network engineer
 
 The project is intentionally practical: calculators produce usable engineering values, generators produce reviewable configuration, references reduce lookup time, and builders help document repeatable procedures. The application does not execute commands against infrastructure and is not intended to replace a SIEM, EDR, cloud console or configuration-management platform.
 
-**Current release:** `v0.1.1`
+**Current release:** `v0.1.2`
 
 **MITRE ATT&CK data:** curated Enterprise snapshot based on `v19.2`
 
