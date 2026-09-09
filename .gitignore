@@ -56,3 +56,6 @@ next-env.d.ts
 !/docs/
 /docs/*
 !/docs/design-system.md
+.tmp-diagram-qa/
+.tmp-npm-cache/
+.tmp-qa-downloads/
