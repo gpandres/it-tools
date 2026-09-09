@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Star, ArrowRight, Boxes, Compass, ChevronDown } from "lucide-react";
+import { Star, ArrowRight, Boxes, Compass, ChevronDown, Pause, Play, X } from "lucide-react";
 import { CommandMenu } from "@/components/command-menu";
 import { useFavorites } from "@/components/favorites-provider";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { toolsRegistry, CATEGORIES } from "@/lib/tools";
 import { featuredWorkspaces, roleRecommendations, searchTools, toolDataFlow, workflows } from "@/lib/tool-discovery";
 import { catalogStructuredData, serializeJsonLd, SITE_URL } from "@/lib/seo";
@@ -12,6 +13,7 @@ import { readLocalStorage, STORAGE_CHANGED, writeLocalStorage } from "@/lib/stor
 const HOME_JSON_LD = serializeJsonLd(catalogStructuredData(toolsRegistry));
 const TOOL_DATA_FLOW = new Map(toolsRegistry.map(tool => [tool.id, toolDataFlow(tool)]));
 const HOME_FILTERS_KEY = "it_tools_home_filters";
+const ONBOARDING_DISMISSED_KEY = "it_tools_onboarding_dismissed";
 const INITIAL_TOOL_BATCH = 12;
 const TOOL_BATCH_SIZE = 24;
 
@@ -38,6 +40,53 @@ function FeaturedWorkspaceCard({ workspace }: { workspace: typeof featuredWorksp
     <p className="mt-3 flex-1 text-xs leading-relaxed text-zinc-400">{workspace.summary}</p>
     <Link href={tool.path} className="mt-5 inline-flex items-center gap-2 text-xs text-zinc-300 hover:text-[#00ff9c]">Open workspace <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" /></Link>
   </article>;
+}
+
+function RoleOnboarding({
+  open,
+  onOpenChange,
+  onDismiss,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDismiss: () => void;
+}) {
+  const [step, setStep] = useState(0);
+  const role = roleRecommendations[step];
+  const tools = role.toolIds.flatMap(id => {
+    const tool = toolsRegistry.find(item => item.id === id);
+    return tool ? [tool] : [];
+  });
+  const lastStep = roleRecommendations.length - 1;
+  const close = () => onDismiss();
+  return <Dialog open={open} onOpenChange={nextOpen => nextOpen ? onOpenChange(true) : close()}>
+    <DialogContent showCloseButton={false} className="max-h-[min(42rem,calc(100dvh-2rem))] max-w-[calc(100%-2rem)] overflow-y-auto rounded-none border border-zinc-700 bg-[#050505] p-0 text-zinc-100 sm:max-w-xl">
+      <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
+        <span className="text-[10px] tracking-[0.22em] text-[#00ff9c]">START HERE / {String(step + 1).padStart(2, "0")}</span>
+        <button type="button" onClick={close} className="inline-flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-200">Skip intro <X aria-hidden="true" className="h-3.5 w-3.5" /></button>
+      </div>
+      <div className="p-5 sm:p-7">
+        <DialogTitle className="text-2xl font-bold tracking-tight text-[#ffb000]">{role.name}</DialogTitle>
+        <DialogDescription className="mt-3 max-w-md text-sm leading-relaxed text-zinc-400">{role.description}</DialogDescription>
+        <div className="mt-8 space-y-0 border-t border-zinc-800">
+          {tools.map(tool => <Link key={tool.id} href={tool.path} onClick={close} className="group flex items-start gap-4 border-b border-zinc-800 py-4 hover:bg-[#071710]">
+            <span className="mt-0.5 text-[10px] text-zinc-600">LOCAL</span>
+            <span className="min-w-0 flex-1"><span className="block text-sm font-bold text-[#00ff9c] group-hover:underline">{tool.name}</span><span className="mt-1 block text-xs leading-relaxed text-zinc-400">{tool.description}</span></span>
+            <ArrowRight aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-zinc-600 group-hover:text-[#00ff9c]" />
+          </Link>)}
+        </div>
+      </div>
+      <div className="flex items-center justify-between border-t border-zinc-800 px-5 py-4 sm:px-7">
+        <div className="flex gap-1.5" aria-label={`Slide ${step + 1} of ${roleRecommendations.length}`}>
+          {roleRecommendations.map((item, index) => <button key={item.id} type="button" aria-label={`Show ${item.name} recommendations`} aria-current={index === step ? "step" : undefined} onClick={() => setStep(index)} className={`h-1.5 w-6 transition-colors ${index === step ? "bg-[#00ff9c]" : "bg-zinc-700 hover:bg-zinc-500"}`} />)}
+        </div>
+        <div className="flex items-center gap-3 text-xs">
+          <button type="button" onClick={() => setStep(current => Math.max(0, current - 1))} disabled={step === 0} className="text-zinc-500 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-30">Back</button>
+          {step === lastStep ? <button type="button" onClick={close} className="border border-[#00ff9c] px-3 py-2 text-[#00ff9c] hover:bg-[#071710]">Explore toolbox</button> : <button type="button" onClick={() => setStep(current => Math.min(lastStep, current + 1))} className="border border-zinc-700 px-3 py-2 text-zinc-200 hover:border-[#00ff9c] hover:text-[#00ff9c]">Next</button>}
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>;
 }
 
 const HomeToolCard = memo(function HomeToolCard({
@@ -67,7 +116,10 @@ export default function Home() {
   const [category, setCategory] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [localOnly, setLocalOnly] = useState(false);
-  const [activeRole, setActiveRole] = useState<typeof roleRecommendations[number]["id"]>(roleRecommendations[0].id);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  const [onboardingRequested, setOnboardingRequested] = useState(false);
+  const [featuredOffset, setFeaturedOffset] = useState(0);
+  const [featuredPaused, setFeaturedPaused] = useState(false);
   const [filtersReady, setFiltersReady] = useState(false);
   const [visibleToolCount, setVisibleToolCount] = useState(INITIAL_TOOL_BATCH);
   const { favorites, recent, addFavorite, removeFavorite, clearRecent, isLoaded } = useFavorites();
@@ -122,12 +174,19 @@ export default function Home() {
     const tool = toolsRegistry.find(item => item.id === id);
     return tool ? [tool] : [];
   });
-  const selectedRole = roleRecommendations.find(role => role.id === activeRole) ?? roleRecommendations[0];
-  const selectedRoleTools = selectedRole.toolIds.flatMap(id => {
-    const tool = toolsRegistry.find(item => item.id === id);
-    return tool ? [tool] : [];
-  });
   const catalogueReady = isLoaded && filtersReady;
+  const onboardingOpen = isLoaded && !onboardingDismissed && (onboardingRequested || readLocalStorage(ONBOARDING_DISMISSED_KEY) !== "1");
+  const visibleFeatured = [featuredWorkspaces[featuredOffset], featuredWorkspaces[(featuredOffset + 1) % featuredWorkspaces.length]];
+  const dismissOnboarding = useCallback(() => {
+    setOnboardingDismissed(true);
+    setOnboardingRequested(false);
+    writeLocalStorage(ONBOARDING_DISMISSED_KEY, "1");
+  }, []);
+  useEffect(() => {
+    if (featuredPaused) return;
+    const rotation = window.setInterval(() => setFeaturedOffset(current => (current + 2) % featuredWorkspaces.length), 7000);
+    return () => window.clearInterval(rotation);
+  }, [featuredPaused]);
   useEffect(() => {
     if (!catalogueReady) return;
     let nextCount = Math.min(INITIAL_TOOL_BATCH, filtered.length);
@@ -180,6 +239,7 @@ export default function Home() {
     <meta name="twitter:title" content="IT Tools | Privacy-First Developer Toolbox" />
     <meta name="twitter:description" content="Local-first tools for developers, sysadmins and blue teams." />
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: HOME_JSON_LD }} />
+    <RoleOnboarding open={onboardingOpen} onOpenChange={open => { if (!open) dismissOnboarding(); }} onDismiss={dismissOnboarding} />
     <div className="max-w-7xl mx-auto space-y-10">
       <header className="py-6 sm:py-10 border-b border-[#1a1a1a]">
         <p className="text-xs text-[#00ff9c] tracking-widest mb-4">/ OPERATIONS TOOLKIT</p>
@@ -198,35 +258,15 @@ export default function Home() {
         <div className="flex items-center gap-3">
           <Compass aria-hidden="true" className="h-4 w-4 text-[#ffb000]" />
           <h2 id="featured-heading" className="text-sm text-[#ffb000]">Featured workspaces</h2>
+          <button type="button" onClick={() => setFeaturedPaused(current => !current)} className="ml-auto inline-flex items-center gap-2 text-[10px] tracking-wider text-zinc-500 hover:text-zinc-200" aria-pressed={featuredPaused}>
+            {featuredPaused ? <Play aria-hidden="true" className="h-3.5 w-3.5" /> : <Pause aria-hidden="true" className="h-3.5 w-3.5" />}{featuredPaused ? "RESUME" : "PAUSE"}
+          </button>
         </div>
-        <p className="mt-2 max-w-2xl text-xs text-zinc-400">Four focused places to design, operate, investigate, and respond.</p>
+        <p className="mt-2 max-w-2xl text-xs text-zinc-400">A rotating selection of the tools that do the most operational work.</p>
         <div className="mt-5 grid gap-x-10 sm:grid-cols-2">
-          {featuredWorkspaces.map(workspace => <FeaturedWorkspaceCard key={workspace.id} workspace={workspace} />)}
+          {visibleFeatured.map(workspace => <FeaturedWorkspaceCard key={workspace.id} workspace={workspace} />)}
         </div>
-      </section>
-
-      <section aria-labelledby="roles-heading" className="border-t border-[#1a1a1a] pt-8">
-        <div className="flex items-center gap-3">
-          <h2 id="roles-heading" className="text-sm text-[#ffb000]">Start by role</h2>
-          <span className="text-[10px] tracking-wider text-zinc-600">PICK A STARTING POINT</span>
-        </div>
-        <p className="mt-2 text-xs text-zinc-400">New here? Choose the work you do most and open one of the essential tools for it.</p>
-        <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Recommended tools by role">
-          {roleRecommendations.map(role => <button key={role.id} type="button" role="tab" aria-selected={role.id === activeRole} aria-controls={`role-panel-${role.id}`} onClick={() => setActiveRole(role.id)} className={`border px-3 py-2 text-xs transition-colors ${role.id === activeRole ? "border-[#00ff9c] bg-[#071710] text-[#00ff9c]" : "border-zinc-800 bg-[#050505] text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"}`}>{role.name}</button>)}
-        </div>
-        <div id={`role-panel-${selectedRole.id}`} role="tabpanel" className="mt-5 grid gap-6 lg:grid-cols-[minmax(13rem,0.8fr)_repeat(3,minmax(0,1fr))]">
-          <div className="border-b border-zinc-800 pb-5 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6">
-            <p className="text-[10px] tracking-widest text-zinc-500">{selectedRole.name.toUpperCase()}</p>
-            <p className="mt-3 text-sm leading-relaxed text-zinc-300">{selectedRole.description}</p>
-            <a href="#catalogue-heading" className="mt-5 inline-flex items-center gap-2 text-xs text-[#00ff9c] hover:underline">Explore all tools <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" /></a>
-          </div>
-          {selectedRoleTools.map(tool => <article key={tool.id} className="flex flex-col border-t border-zinc-800 pt-4 lg:border-t-0 lg:border-l lg:pl-6 lg:pt-0">
-            <p className="text-[10px] tracking-wide text-zinc-600">{toolDataFlow(tool).label.toUpperCase()}</p>
-            <h3 className="mt-3 text-sm font-bold text-[#00ff9c]"><Link href={tool.path} className="hover:underline">{tool.name}</Link></h3>
-            <p className="mt-2 flex-1 text-xs leading-relaxed text-zinc-400">{tool.description}</p>
-            <Link href={tool.path} className="mt-4 inline-flex items-center gap-2 text-xs text-zinc-300 hover:text-[#00ff9c]">Open tool <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" /></Link>
-          </article>)}
-        </div>
+        <button type="button" onClick={() => { setOnboardingDismissed(false); setOnboardingRequested(true); }} className="mt-2 inline-flex items-center gap-2 text-xs text-[#00ff9c] hover:underline">New here? Get a quick start <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" /></button>
       </section>
 
       {!isLoaded ? <section aria-label="Loading recently opened tools" className="space-y-3" role="status">

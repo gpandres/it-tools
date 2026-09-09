@@ -43,6 +43,26 @@ export const featuredWorkspaces = [
     eyebrow: "RESPOND",
     summary: "Build a clear incident-response process around roles, decisions, and actions.",
   },
+  {
+    id: "sigma-builder",
+    eyebrow: "DETECT",
+    summary: "Create portable detection rules for SIEM and EDR workflows without sending logs away.",
+  },
+  {
+    id: "kubernetes-auditor",
+    eyebrow: "HARDEN",
+    summary: "Audit Kubernetes manifests for privilege, RBAC, secrets, and workload-hardening issues.",
+  },
+  {
+    id: "acl-builder",
+    eyebrow: "PROTECT",
+    summary: "Design reusable, cross-vendor access rules and test traffic decisions before rollout.",
+  },
+  {
+    id: "terraform-analyzer",
+    eyebrow: "REVIEW",
+    summary: "Inspect infrastructure-as-code for public exposure, weak IAM, and risky defaults.",
+  },
 ] as const;
 
 export const roleRecommendations = [
