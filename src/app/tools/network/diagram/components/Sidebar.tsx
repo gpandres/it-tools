@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToolActionButton } from "@/components/tool-action-panel";
-import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Eye, EyeOff, Globe2, Group, HardDriveDownload, KeyRound, Laptop, LayoutDashboard, Maximize2, Minimize2, Network, Redo2, Router, ScanSearch, Search, Server, ServerCog, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Undo2, Ungroup, Wifi, X, Zap } from 'lucide-react';
+import { AlertTriangle, Boxes, CheckCircle2, ChevronDown, Cloud, Database, Eye, EyeOff, Globe2, Group, HardDriveDownload, HelpCircle, KeyRound, Laptop, LayoutDashboard, Maximize2, Minimize2, Network, Redo2, Router, ScanSearch, Search, Server, ServerCog, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Trash2, Undo2, Ungroup, Wifi, X, Zap } from 'lucide-react';
+import { DiagramGuide } from './DiagramSupportPanels';
 import type { DiagramIssue } from '@/lib/diagram-validation';
 import type { DiagramMetadata } from '@/lib/diagram-validation';
 import type { NetworkPath, TopologyAnalysis } from '@/lib/diagram-analysis';
@@ -47,6 +48,7 @@ type SidebarProps = {
   updateNodeData: (nodeId: string, newData: Partial<NetworkNodeData>) => void;
   updateEdgeData: (edgeId: string, newData: Partial<NetworkEdge['data']>) => void;
   onAddNode: (type: NetworkNodeType, label: string) => void;
+  clearCanvas: () => void;
   duplicateSelected: () => void;
   deleteSelected: () => void;
   undo: () => void;
@@ -71,12 +73,15 @@ type SidebarProps = {
   toggleMinimap: () => void;
   focusMode: boolean;
   toggleFocusMode: () => void;
+  mobileOpen: boolean;
+  closeMobile: () => void;
 };
 
-export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount, selectedEdgeCount, updateNodeData, updateEdgeData, onAddNode, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, groupSelected, ungroupSelected, canGroup, canUngroup, autoLayout, fitView, validationIssues, diagramMetadata, updateDiagramMetadata, topologyNodes, topologyAnalysis, findPath, validate, loadTemplate, showMinimap, toggleMinimap, focusMode, toggleFocusMode }: SidebarProps) {
+export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount, selectedEdgeCount, updateNodeData, updateEdgeData, onAddNode, clearCanvas, duplicateSelected, deleteSelected, undo, redo, canUndo, canRedo, groupSelected, ungroupSelected, canGroup, canUngroup, autoLayout, fitView, validationIssues, diagramMetadata, updateDiagramMetadata, topologyNodes, topologyAnalysis, findPath, validate, loadTemplate, showMinimap, toggleMinimap, focusMode, toggleFocusMode, mobileOpen, closeMobile }: SidebarProps) {
   const [query, setQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<string[]>(['Network', 'Security', 'Compute', 'Services']);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [pathSourceId, setPathSourceId] = useState('');
   const [pathTargetId, setPathTargetId] = useState('');
   const [pathResult, setPathResult] = useState<NetworkPath | null>(null);
@@ -103,10 +108,11 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
   };
 
   return (
-    <aside className="relative z-10 flex h-full w-[19rem] shrink-0 flex-col overflow-hidden border-r border-[#1a1a1a] bg-[#050505]" aria-label="Diagram toolbox">
+    <aside className={`${mobileOpen ? 'flex' : 'hidden'} absolute inset-x-0 bottom-0 z-40 max-h-[78dvh] w-full flex-col overflow-hidden rounded-t-xl border-t border-[#1a1a1a] bg-[#050505] shadow-2xl md:relative md:inset-auto md:z-10 md:h-full md:max-h-none md:w-[19rem] md:rounded-none md:border-r md:border-t-0 md:shadow-none`} aria-label="Diagram toolbox">
       <div className="flex shrink-0 items-center gap-2 border-b border-[#1a1a1a] p-3">
         <Network className="h-4 w-4 shrink-0 text-[#00ff9c]" />
         <h2 className="truncate font-bold">Diagram toolbox</h2>
+        <button type="button" onClick={closeMobile} className="ml-auto rounded border border-[#1a1a1a] p-1.5 text-zinc-500 hover:border-[#00ff9c] hover:text-[#00ff9c] md:hidden" aria-label="Close diagram toolbox"><X className="h-3.5 w-3.5" /></button>
       </div>
 
       <div className="relative z-20 flex shrink-0 flex-wrap items-center gap-1.5 border-b border-[#1a1a1a] bg-[#080808] p-2" aria-label="Diagram controls">
@@ -118,6 +124,7 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
           <ToolActionButton type="button" onClick={autoLayout} aria-label="Auto layout" title="Auto layout"><LayoutDashboard /></ToolActionButton>
           <ToolActionButton type="button" onClick={fitView} aria-label="Fit diagram" title="Fit diagram"><ScanSearch /></ToolActionButton>
         </div>
+        <ToolActionButton type="button" onClick={clearCanvas} tone="danger" aria-label="Clear canvas" title="Clear canvas"><Trash2 /></ToolActionButton>
         <div className="relative">
           <ToolActionButton type="button" onClick={() => setViewMenuOpen(current => !current)} aria-expanded={viewMenuOpen} aria-haspopup="true" aria-label="View options" title="View options"><SlidersHorizontal /></ToolActionButton>
           {viewMenuOpen && <div className="absolute left-auto right-0 top-full z-50 mt-1 w-44 rounded border border-[#2a2a2a] bg-[#080808] p-2 shadow-2xl" role="menu" aria-label="View options">
@@ -126,7 +133,10 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
             <button type="button" role="menuitem" onClick={toggleFocusMode} className="flex w-full items-center gap-2 rounded px-2 py-2 text-left font-mono text-[10px] text-zinc-300 hover:bg-[#00ff9c]/10 hover:text-[#00ff9c]">{focusMode ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}{focusMode ? 'Exit focus mode' : 'Focus mode'}</button>
           </div>}
         </div>
+        <ToolActionButton type="button" onClick={() => setGuideOpen(current => !current)} aria-expanded={guideOpen} aria-controls="diagram-guide-panel" aria-label="Toggle quick guide" title="Quick guide"><HelpCircle /></ToolActionButton>
       </div>
+
+      {guideOpen && <div id="diagram-guide-panel" className="shrink-0 border-b border-[#1a1a1a] p-2"><DiagramGuide headingId="diagram-guide-heading-toolbox" /></div>}
 
       {(selectedNodeCount > 0 || selectedEdgeCount > 0) && <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[#1a1a1a] bg-[#00ff9c]/5 px-3 py-2 font-mono text-[10px] text-zinc-400">
         <span className="text-[#00ff9c]">{selectedNodeCount} nodes</span>{selectedEdgeCount > 0 && <><span>·</span><span className="text-[#38bdf8]">{selectedEdgeCount} links</span></>}
@@ -179,7 +189,7 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
           </div>
         </section>}
 
-        <section className="border-b border-[#1a1a1a] py-4"><div className="mb-3 flex items-center justify-between"><h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Templates</h3><span className="text-[9px] text-zinc-700">starter topologies</span></div><div className="grid grid-cols-2 gap-2"><Button onClick={() => loadTemplate('Small Office')} variant="outline" size="sm" className="bg-black text-[10px]">Small Office</Button><Button onClick={() => loadTemplate('Enterprise Core')} variant="outline" size="sm" className="bg-black text-[10px]">Enterprise Core</Button><Button onClick={() => loadTemplate('DMZ')} variant="outline" size="sm" className="bg-black text-[10px]">DMZ</Button><Button onClick={() => loadTemplate('VLAN Segmentation')} variant="outline" size="sm" className="bg-black text-[10px]">VLAN Segmentation</Button><Button onClick={() => loadTemplate('Empty Canvas')} variant="outline" size="sm" className="col-span-2 bg-black text-[10px] text-red-400">Clear canvas</Button></div></section>
+        <section className="border-b border-[#1a1a1a] py-4"><div className="mb-3 flex items-center justify-between"><h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Templates</h3><span className="text-[9px] text-zinc-700">starter topologies</span></div><div className="grid grid-cols-2 gap-2"><Button onClick={() => loadTemplate('Small Office')} variant="outline" size="sm" className="bg-black text-[10px]">Small Office</Button><Button onClick={() => loadTemplate('Enterprise Core')} variant="outline" size="sm" className="bg-black text-[10px]">Enterprise Core</Button><Button onClick={() => loadTemplate('DMZ')} variant="outline" size="sm" className="bg-black text-[10px]">DMZ</Button><Button onClick={() => loadTemplate('VLAN Segmentation')} variant="outline" size="sm" className="bg-black text-[10px]">VLAN Segmentation</Button></div></section>
 
         <section className="border-b border-[#1a1a1a] py-4"><div className="mb-3 flex items-center justify-between"><h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Validation</h3><button type="button" onClick={validate} className="text-[10px] font-bold uppercase text-[#00ff9c] hover:text-white">Run checks</button></div>{validationIssues.length === 0 ? <div className="flex items-center gap-2 text-[10px] text-[#72e6b4]"><CheckCircle2 className="h-3.5 w-3.5" />No issues detected</div> : <div className="space-y-2">{validationIssues.slice(0, 6).map(issue => <div key={issue.id} className={`flex gap-2 text-[10px] ${issue.severity === 'error' ? 'text-red-300' : 'text-amber-300'}`}><AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" /><span><strong>{issue.title}:</strong> {issue.detail}</span></div>)}{validationIssues.length > 6 && <p className="text-[9px] text-zinc-600">+{validationIssues.length - 6} more issues</p>}</div>}</section>
 

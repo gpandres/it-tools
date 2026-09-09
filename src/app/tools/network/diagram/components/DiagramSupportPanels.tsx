@@ -33,26 +33,38 @@ type DiagramExportPanelProps = {
 
 export function DiagramExportPanel({ exportImage, exportSvg, exportInventory, exportDiagram, exportMarkdown, importDiagram }: DiagramExportPanelProps) {
   return (
-    <section className="mt-6 rounded-lg border border-[#1a1a1a] bg-[#080808] p-4" aria-labelledby="diagram-export-heading">
+    <section className="mt-4 rounded-lg border border-[#1a1a1a] bg-[#080808] p-3 sm:p-4" aria-labelledby="diagram-export-heading">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 id="diagram-export-heading" className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Export &amp; documentation</h2>
-          <p className="mt-1 text-[10px] text-zinc-600">Export the complete topology, inventory, or a shareable technical report.</p>
+          <p className="mt-1 text-[10px] text-zinc-600">Create a file from the complete topology without leaving the browser.</p>
         </div>
         <span className="font-mono text-[9px] text-zinc-700">local-only</span>
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-        <Button onClick={() => exportImage('black')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG dark</Button>
-        <Button onClick={() => exportImage('white')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG light</Button>
-        <Button onClick={() => exportImage('transparent')} variant="outline" size="sm" className="bg-black text-[10px]"><Download className="mr-1 h-3 w-3" />PNG alpha</Button>
-        <Button onClick={exportSvg} variant="outline" size="sm" className="bg-black text-[10px] text-[#38bdf8]"><Download className="mr-1 h-3 w-3" />SVG</Button>
-        <Button onClick={exportInventory} variant="outline" size="sm" className="bg-black text-[10px] text-amber-300"><FileJson className="mr-1 h-3 w-3" />CSV inventory</Button>
-        <Button onClick={exportDiagram} variant="outline" size="sm" className="bg-black text-[10px] text-purple-300"><FileJson className="mr-1 h-3 w-3" />JSON</Button>
-        <Button onClick={exportMarkdown} variant="outline" size="sm" className="bg-black text-[10px] text-[#00ff9c]"><Download className="mr-1 h-3 w-3" />Markdown report</Button>
-        <label htmlFor="network-diagram-json" className={`${buttonVariants({ variant: 'outline', size: 'sm' })} cursor-pointer bg-black text-[10px]`}><Upload className="mr-1 h-3 w-3" />Load JSON<input id="network-diagram-json" type="file" accept=".json" aria-label="Choose diagram JSON file" className="sr-only" onChange={event => { const file = event.target.files?.[0]; if (file) importDiagram(file); event.currentTarget.value = ''; }} /></label>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <ExportGroup title="Image">
+          <Button onClick={() => exportImage('black')} variant="outline" size="sm" className="bg-black text-[10px]">PNG dark</Button>
+          <Button onClick={() => exportImage('white')} variant="outline" size="sm" className="bg-black text-[10px]">PNG light</Button>
+          <Button onClick={() => exportImage('transparent')} variant="outline" size="sm" className="bg-black text-[10px]">PNG alpha</Button>
+          <Button onClick={exportSvg} variant="outline" size="sm" className="bg-black text-[10px] text-[#38bdf8]">SVG</Button>
+        </ExportGroup>
+        <ExportGroup title="Data">
+          <Button onClick={exportInventory} variant="outline" size="sm" className="bg-black text-[10px] text-amber-300"><FileJson className="mr-1 h-3 w-3" />CSV inventory</Button>
+          <Button onClick={exportDiagram} variant="outline" size="sm" className="bg-black text-[10px] text-purple-300"><FileJson className="mr-1 h-3 w-3" />JSON</Button>
+        </ExportGroup>
+        <ExportGroup title="Report">
+          <Button onClick={exportMarkdown} variant="outline" size="sm" className="bg-black text-[10px] text-[#00ff9c]"><Download className="mr-1 h-3 w-3" />Markdown</Button>
+        </ExportGroup>
+        <ExportGroup title="Import">
+          <label htmlFor="network-diagram-json" className={`${buttonVariants({ variant: 'outline', size: 'sm' })} cursor-pointer bg-black text-[10px]`}><Upload className="mr-1 h-3 w-3" />Load JSON<input id="network-diagram-json" type="file" accept=".json" aria-label="Choose diagram JSON file" className="sr-only" onChange={event => { const file = event.target.files?.[0]; if (file) importDiagram(file); event.currentTarget.value = ''; }} /></label>
+        </ExportGroup>
       </div>
     </section>
   );
+}
+
+function ExportGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return <div className="rounded border border-[#1a1a1a] bg-black/40 p-2.5"><h3 className="mb-2 text-[9px] font-bold uppercase tracking-widest text-zinc-600">{title}</h3><div className="flex flex-wrap gap-1.5">{children}</div></div>;
 }
 
 type DiagramWorkspacePanelProps = {

@@ -4,12 +4,13 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { ReactFlow, Controls, MiniMap, Panel, Background, applyNodeChanges, applyEdgeChanges, addEdge, BackgroundVariant, ReactFlowProvider, SelectionMode, useReactFlow, getViewportForBounds, type Connection, type EdgeChange, type NodeChange } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { toPng, toSvg } from 'html-to-image';
+import { Network as NetworkIcon } from 'lucide-react';
 
 import { ToolLayout } from "@/components/tool-layout";
 import NetworkNodeComponent from './nodes/NetworkNode';
 import NetworkEdgeComponent from './edges/NetworkEdge';
 import Sidebar from './components/Sidebar';
-import { DiagramExportPanel, DiagramGuide, DiagramWorkspacePanel } from './components/DiagramSupportPanels';
+import { DiagramExportPanel, DiagramWorkspacePanel } from './components/DiagramSupportPanels';
 import { TEMPLATES } from './components/Templates';
 import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
 import { parseDiagram, validateDiagram } from '@/lib/diagram-validation';
@@ -36,6 +37,7 @@ function DiagramFlow() {
   const [future, setFuture] = useState<DiagramSnapshot[]>([]);
   const [showMinimap, setShowMinimap] = useState(true);
   const [focusMode, setFocusMode] = useState(false);
+  const [mobileToolboxOpen, setMobileToolboxOpen] = useState(false);
   const [diagramMetadata, setDiagramMetadata] = useState<DiagramMetadata>(DEFAULT_DIAGRAM_METADATA);
   const [savedDiagrams, setSavedDiagrams] = useState<SavedNetworkDiagram[]>([]);
   const exportInFlight = useRef(false);
@@ -378,6 +380,21 @@ function DiagramFlow() {
     setTimeout(() => fitView({ padding: 0.2 }), 100);
   };
 
+  const clearCanvas = useCallback(() => {
+    if (nodesRef.current.length === 0 && edgesRef.current.length === 0) {
+      notify('The canvas is already empty.', 'info');
+      return;
+    }
+    recordHistory();
+    nodesRef.current = [];
+    edgesRef.current = [];
+    setNodes([]);
+    setEdges([]);
+    setSelectedNodeIds([]);
+    setSelectedEdgeIds([]);
+    notify('Canvas cleared. Use Undo to restore it.', 'info');
+  }, [notify, recordHistory]);
+
   const exportDiagram = () => {
     const serialized = serializeNetworkDiagram(nodes, edges, diagramMetadata);
     if (!serialized) {
@@ -554,9 +571,9 @@ function DiagramFlow() {
   return (
     <>
       <div className="relative">
-        <div className="mb-4 2xl:hidden"><DiagramGuide headingId="diagram-guide-heading-mobile" /></div>
-        <div className="pointer-events-auto absolute right-full top-0 mr-6 hidden w-56 2xl:block"><DiagramGuide headingId="diagram-guide-heading-desktop" /></div>
-        <div className={`${focusMode ? 'fixed inset-3 z-50 h-[calc(100dvh-1.5rem)]' : 'h-[800px]'} flex w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]`} data-testid="network-diagram-editor" role="application" aria-label="Network diagram editor">
+        <div className={`${focusMode ? 'fixed inset-3 z-50 h-[calc(100dvh-1.5rem)]' : 'h-[min(800px,calc(100dvh-8rem))] min-h-[26rem] sm:min-h-[32rem]'} relative flex w-full flex-col overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] md:h-[800px] md:flex-row`} data-testid="network-diagram-editor" role="application" aria-label="Network diagram editor">
+      <button type="button" onClick={() => setMobileToolboxOpen(true)} className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded border border-[#1a1a1a] bg-[#050505]/95 px-3 py-2 font-mono text-[10px] font-bold text-zinc-300 shadow-lg hover:border-[#00ff9c] hover:text-[#00ff9c] md:hidden" aria-label="Open diagram toolbox"><NetworkIcon className="h-3.5 w-3.5 text-[#00ff9c]" />Toolbox</button>
+      {mobileToolboxOpen && <button type="button" onClick={() => setMobileToolboxOpen(false)} className="absolute inset-0 z-30 bg-black/35 md:hidden" aria-label="Close diagram toolbox overlay" />}
       <Sidebar 
         selectedNode={selectedNode}
         selectedEdge={selectedEdge}
@@ -565,6 +582,7 @@ function DiagramFlow() {
         updateNodeData={updateNodeData}
         updateEdgeData={updateEdgeData}
         onAddNode={addNode}
+        clearCanvas={clearCanvas}
         duplicateSelected={duplicateSelected}
         deleteSelected={deleteSelected}
         undo={undo}
@@ -589,8 +607,10 @@ function DiagramFlow() {
         toggleMinimap={() => setShowMinimap(current => !current)}
         focusMode={focusMode}
         toggleFocusMode={() => setFocusMode(current => !current)}
+        mobileOpen={mobileToolboxOpen}
+        closeMobile={() => setMobileToolboxOpen(false)}
       />
-      <div className="h-full flex-1" ref={reactFlowWrapper} data-testid="network-diagram-canvas" aria-label="Network diagram canvas">
+      <div className="min-h-0 min-w-0 h-full flex-1" ref={reactFlowWrapper} data-testid="network-diagram-canvas" aria-label="Network diagram canvas">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -616,8 +636,8 @@ function DiagramFlow() {
               pannable
               zoomable
               nodeColor={node => (node.data as { status?: string } | undefined)?.status === 'offline' ? '#ef4444' : '#00ff9c'}
-              maskColor="rgba(0, 0, 0, 0.72)"
-              style={{ backgroundColor: '#050505', border: '1px solid #1a1a1a' }}
+              maskColor="rgba(0, 0, 0, 0.42)"
+              style={{ backgroundColor: 'rgba(5, 5, 5, 0.68)', border: '1px solid rgba(26, 26, 26, 0.8)', opacity: 0.84 }}
             />}
           <Panel position="bottom-left" className="!m-3 !rounded border border-[#1a1a1a] !bg-[#050505]/95 px-2.5 py-1.5 font-mono text-[10px] text-zinc-500" aria-live="polite">
             <span className="text-[#00ff9c]">{nodes.length}</span> nodes · <span className="text-[#38bdf8]">{edges.length}</span> links · {validationIssues.length === 0 ? <span className="text-[#72e6b4]">topology ok</span> : <span className="text-amber-300">{validationIssues.length} issue{validationIssues.length === 1 ? '' : 's'}</span>}
