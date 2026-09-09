@@ -193,7 +193,7 @@ The internal [design-system reference](/design-system) renders the main patterns
 - diagram workspaces with toolbox/inspector patterns, groups, device icons, directional cables, context menus, resize handles and dark/light export variants;
 - responsive behaviour, keyboard focus, reduced-motion expectations and mobile-safe layouts.
 
-Reusable visual demos are kept in `src/app/design-system/components/`. Treat the page and the documentation as a reference implementation, not as a second tool catalogue. When a production tool needs a new pattern, add it to the reference first and then reuse the same component or documented tokens in the tool.
+Production tools import reusable patterns from the `@/components/tool-design` entry point. Files in `src/app/design-system/components/` only supply generic sample data to the reference route and must not be imported by tools. When a production tool needs a new pattern, add the shared component first, render it on the reference page and document its contract in `docs/design-system.md`.
 
 ## Local development
 

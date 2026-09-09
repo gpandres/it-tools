@@ -34,7 +34,7 @@ Use the existing CSS variables where possible. When a component needs an explici
 | Phosphor dim | `#1f7a5a` / `var(--phosphor-dim)` | Helper text, inactive decoration |
 | Amber | `#ffb000` / `var(--amber)` | Product/tool headings and attention |
 | Body text | `#d4d4d8` | Main readable content |
-| Muted text | `#71717a` | Descriptions and secondary metadata |
+| Muted text | `#a1a1aa` | Descriptions, helper text and secondary metadata |
 | Error | `#f87171` | Validation failure and destructive feedback |
 | Warning | `#fbbf24` | Caution and potentially disruptive actions |
 | Info | `#38bdf8` | Neutral information and telemetry context |
@@ -81,6 +81,136 @@ Every registered tool should use `ToolLayout`. It supplies the global header, se
 
 Use `fullWidth` only for matrix/canvas experiences that genuinely need the viewport. Tool content must remain `min-w-0`, avoid accidental horizontal overflow, and become a single column on narrow screens.
 
+## Shared design API
+
+Import reusable tool patterns from the single public entry point:
+
+```tsx
+import {
+  ToolPanel,
+  ToolPanelHeader,
+  ToolPanelTitle,
+  ToolPanelBody,
+  ToolField,
+  ToolStatus,
+  ToolProgress,
+  ToolDialog,
+  ToolConfirmDialog,
+  ToolFileDropzone,
+  ToolCodeField,
+  ToolTimeline,
+  ToolHorizontalTimeline,
+  ToolStatGrid,
+  ToolStat,
+  ToolBadge,
+  ToolDisclosure,
+} from "@/components/tool-design";
+```
+
+`src/components/tool-design.ts` is the stable import boundary for tool UI. A tool supplies content, domain validation, state and callbacks. Shared components own colours, spacing, responsive overflow, keyboard semantics, focus behavior and common feedback. Do not import a demo from `src/app/design-system/components`; those files only provide generic sample data to the reference page.
+
+| Component | Use | Tool supplies |
+| --- | --- | --- |
+| `ToolPanel` composition | Input, output, configuration and grouped result surfaces | title, marker, metadata, body and footer |
+| `ToolField` | Label/helper/error relationship for any shared form control | `htmlFor`, label, control and validation message |
+| `ToolBadge` | Compact count, state or shortcut metadata | tone and short content |
+| `ToolStatus` | Persistent info, success, attention or error feedback | tone, optional title and message |
+| `ToolProgress` | Determinate local work progress | label, value, maximum and optional value label |
+| `ToolDialog` | Any focused info, edit, import, export or choice flow | trigger, title, description, content and action descriptors |
+| `ToolConfirmDialog` | Explicit confirmation, especially destructive work | trigger, exact consequence and confirmation callback |
+| `ToolFileDropzone` | Keyboard-accessible browse and drag/drop intake | accepted types, size limit and file/rejection callbacks |
+| `ToolCodeField` | No-wrap code with lines, copy and local download | language, code, filename and MIME type |
+| `ToolTimeline` | Ordered operational events | stable IDs, timestamps, severity, title, detail and tone |
+| `ToolHorizontalTimeline` | Proportional milestones and target windows | ticks, 0–100 positions, segments, events and summary |
+| `ToolStatGrid` / `ToolStat` | Dense aligned metrics | label, value, context and tone |
+| `ToolDisclosure` | Advanced or secondary content | summary, default state and content |
+
+Shared primitives in `src/components/ui` remain the API for buttons, inputs, textareas, checkboxes, selects, switches, tabs and tables. `ToolActionPanel` and `ToolActionButton` remain available through the same `tool-design` entry point.
+
+### Generic panel composition
+
+```tsx
+<ToolPanel>
+  <ToolPanelHeader>
+    <ToolPanelTitle marker="IN">Input</ToolPanelTitle>
+    <ToolBadge tone="success">local</ToolBadge>
+  </ToolPanelHeader>
+  <ToolPanelBody>
+    <ToolField htmlFor="source" label="Source" helper="Describe format and limits.">
+      <Input id="source" className="rounded-none" />
+    </ToolField>
+  </ToolPanelBody>
+</ToolPanel>
+```
+
+### Generic dialog composition
+
+`ToolDialog` uses the shared Base UI dialog primitive. Escape dismissal, focus trapping, focus restoration, backdrop, bounded scrolling, close control and responsive sizing come from the component. Action descriptors close the dialog by default; set `closeOnSelect: false` only for an action that must keep the dialog open, such as an in-place validation attempt.
+
+```tsx
+<ToolDialog
+  trigger={<ToolActionButton>Open editor</ToolActionButton>}
+  title="Edit item"
+  description="Explain the scope and effect of this edit."
+  actions={[
+    { label: "Save", tone: "accent", onSelect: saveItem },
+  ]}
+>
+  {/* Tool-specific form content */}
+</ToolDialog>
+
+<ToolConfirmDialog
+  trigger={<ToolActionButton tone="danger">Clear</ToolActionButton>}
+  title="Clear current results?"
+  description="This removes local results. Source input remains unchanged."
+  confirmLabel="Clear results"
+  onConfirm={clearResults}
+/>
+```
+
+Do not render a permanent `role="dialog"` inside a normal page section to imitate a modal. That leaves an invisible or empty modal after close and does not implement Escape, focus trapping or restoration. Use `ToolDialog` even on the design reference page.
+
+### Generic file and data displays
+
+```tsx
+<ToolFileDropzone
+  accept=".json,.csv"
+  acceptedFormats="JSON or CSV"
+  maxSizeBytes={2 * 1024 * 1024}
+  onFiles={validateFiles}
+  onReject={showImportError}
+/>
+
+<ToolCodeField
+  language="JSON"
+  code={generatedOutput}
+  filename="result.json"
+  mimeType="application/json;charset=utf-8"
+/>
+```
+
+`ToolFileDropzone` handles selection, drag state, visible filename, size validation and local-processing copy. The tool still validates file type and contents before state replacement. `ToolCodeField` handles clipboard and file feedback through the notification provider.
+
+### Generic timeline data
+
+Both timeline components are data-driven. Positions in `ToolHorizontalTimeline` are percentages on one elapsed-time scale and are clamped to 0–100. First and last labels anchor inside the track, so the final milestone is not clipped. Keep stable event IDs and preserve chronological order.
+
+```tsx
+<ToolTimeline items={events} />
+
+<ToolHorizontalTimeline
+  title="Operation timeline"
+  ticks={["T−10m", "T−5m", "T0", "T+5m"]}
+  segments={windows}
+  events={milestones}
+  summary="Explain how to read this scale."
+/>
+```
+
+### Coverage and deliberate exclusions
+
+The reference now covers loading progress and destructive confirmation in addition to the earlier states. Native/shared controls cover radio-like choices through tabs or selects, binary settings through switches, and independent selection through checkboxes. Pagination, tooltips and skeleton loaders are not canonical abstractions yet: add one to this API only after a real tool needs it and the interaction contract is known. Diagram nodes, domain validators and command risk logic stay domain-specific; only their surrounding UI uses the shared API.
+
 ## Surfaces and spacing
 
 Prefer a small number of structural surfaces. A tool normally has one main surface and optional grouped panels. The default tool surface is square; use rounded corners only when they communicate a real affordance such as a popover or a third-party canvas node:
@@ -99,13 +229,13 @@ Use `gap-2` for controls, `gap-4` for field groups, and `space-y-6` between majo
 
 ## Controls and actions
 
-`ToolActionPanel` and `ToolActionButton` are the canonical toolbar controls. Keep them together and let them wrap on small screens. For the subnetting/defanger baseline, pass `className="rounded-none"` to these controls. Do not duplicate a custom button style in each tool.
+`ToolActionPanel` and `ToolActionButton` are the canonical toolbar controls. They are square by default. Keep them together and let them wrap on small screens. Do not duplicate a custom button style in each tool.
 
 ```tsx
-<ToolActionPanel label="ACTIONS" className="rounded-none">
-  <ToolActionButton className="rounded-none" tone="neutral">Reset</ToolActionButton>
-  <ToolActionButton className="rounded-none" tone="accent">Run</ToolActionButton>
-  <ToolActionButton className="rounded-none" tone="danger">Clear</ToolActionButton>
+<ToolActionPanel label="ACTIONS">
+  <ToolActionButton tone="neutral">Reset</ToolActionButton>
+  <ToolActionButton tone="accent">Run</ToolActionButton>
+  <ToolActionButton tone="danger">Clear</ToolActionButton>
 </ToolActionPanel>
 ```
 
@@ -312,15 +442,12 @@ Start with the composition rendered on `/design-system` and adapt the content, n
 Canonical tool panel:
 
 ```tsx
-<article className="border border-[#1a1a1a] bg-[#050505]">
-  <header className="border-b border-[#1a1a1a] bg-[#0a0a0a] px-4 py-3">
-    <span className="text-xs text-[#00ff9c]">[IN]</span>
-    <span className="ml-2 text-sm font-semibold uppercase tracking-widest text-[#ffb000]">
-      Input Config
-    </span>
-  </header>
-  <div className="p-6">Inputs and one primary action</div>
-</article>
+<ToolPanel>
+  <ToolPanelHeader>
+    <ToolPanelTitle marker="IN">Input config</ToolPanelTitle>
+  </ToolPanelHeader>
+  <ToolPanelBody>Inputs and one primary action</ToolPanelBody>
+</ToolPanel>
 ```
 
 This makes a calculator, parser, generator or auditor immediately recognisable as part of IT_TOOLS while leaving room for domain-specific logic.
@@ -347,3 +474,24 @@ This makes a calculator, parser, generator or auditor immediately recognisable a
 9. Passes typecheck, tests, build and `git diff --check`.
 
 When an existing tool differs, migrate its visual shell first and preserve its working domain logic. The `/design-system` page is a living visual regression reference, not a second product surface.
+
+## Verification for shared UI changes
+
+Run the repository gates after changing the public design API:
+
+```bash
+npm run typecheck
+npm test
+npm run lint:ratchet
+npm run build
+git diff --check
+```
+
+Then exercise `/design-system` at desktop and 390px mobile widths. The minimum browser checks are:
+
+1. No page-level horizontal overflow.
+2. `ToolDialog` opens from its trigger, closes with Escape and restores trigger focus after its exit transition.
+3. `ToolFileDropzone` exposes a labelled file input and keeps errors inside the flow.
+4. `ToolCodeField` copy produces notification feedback and its scroll region is keyboard focusable.
+5. `ToolHorizontalTimeline` fits at desktop width and owns horizontal overflow on mobile; the final 100% milestone remains inside the track.
+6. The main reference content has no automated WCAG A/AA violations. Manually review contrast where SVG text or layered demo backgrounds prevent an automated decision.
