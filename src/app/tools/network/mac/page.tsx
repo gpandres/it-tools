@@ -1,11 +1,19 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Copy, Check, RefreshCw, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNotification } from "@/components/notification-provider";
+import {
+  ToolPanel,
+  ToolPanelHeader,
+  ToolPanelTitle,
+  ToolPanelBody,
+  ToolField,
+  ToolStatus,
+} from "@/components/tool-design";
 
 // Mini local database of common MAC vendors to maintain 100% offline privacy
 const COMMON_VENDORS: Record<string, string> = {
@@ -53,20 +61,23 @@ const COMMON_VENDORS: Record<string, string> = {
 
 export default function MacFormatter() {
   const [input, setInput] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const { notify } = useNotification();
 
-  const copy = (text: string, key: string) => {
+  const copy = async (text: string, key: string) => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      notify("Copied to clipboard");
+      setTimeout(() => setCopiedKey(null), 2000);
+    } catch {
+      notify("Could not copy to clipboard", "error");
+    }
   };
 
   const handleInput = (val: string) => {
     setInput(val);
-    setError(null);
   };
 
   const generateRandom = () => {
@@ -75,19 +86,15 @@ export default function MacFormatter() {
     for (let i = 0; i < 12; i++) {
       mac += hexChars[Math.floor(Math.random() * 16)];
     }
-    // Format to IEEE for the input box automatically
     setInput(mac.match(/.{1,2}/g)?.join("-") || "");
   };
 
-  // Clean the MAC address by removing all non-hex characters
   const cleanMac = input.replace(/[^0-9a-fA-F]/g, "").toUpperCase();
   const isValid = cleanMac.length === 12;
   
-  // Extract OUI (first 6 characters/3 bytes)
   const oui = isValid ? cleanMac.substring(0, 6) : "";
   const vendor = oui ? (COMMON_VENDORS[oui] || "Unknown (Not in offline DB)") : "";
 
-  // Format generators
   const formats = {
     ieee: isValid ? cleanMac.match(/.{1,2}/g)?.join("-") || "" : "",
     unix: isValid ? cleanMac.match(/.{1,2}/g)?.join(":") || "" : "",
@@ -97,136 +104,169 @@ export default function MacFormatter() {
 
   return (
     <ToolLayout 
-      title="MAC Address Formatter" 
+      title="MAC ADDRESS FORMATTER" 
       description="Parse, validate, convert MAC addresses across formats, and detect vendors offline."
     >
-      <div className="max-w-4xl mx-auto flex flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-6">
         
-        {/* Input Section */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <div className="flex items-center gap-2">
-              <span className="text-[#00ff9c] text-xs">[IN]</span>
-              <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Input MAC</span>
-            </div>
+        <ToolPanel>
+          <ToolPanelHeader className="flex flex-row items-center justify-between border-b border-[#1a1a1a] bg-[#0a0a0a] px-3 py-2">
+            <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">INPUT MAC</ToolPanelTitle>
             <div className="flex items-center gap-2">
               <Button 
                 variant="ghost"
                 size="sm"
-                className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#ffb000] hover:bg-[#ffb000]/10 transition-colors border border-transparent hover:border-[#ffb000]/30"
+                className="h-7 rounded-none border border-transparent font-mono text-xs text-zinc-400 transition-colors hover:border-[#ffb000]/30 hover:bg-[#ffb000]/10 hover:text-[#ffb000]"
                 onClick={generateRandom}
               >
-                <RefreshCw className="w-3 h-3 mr-1" /> Random
+                <RefreshCw className="mr-1 h-3 w-3" /> Random
               </Button>
               {input && (
                 <Button 
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-red-400 hover:bg-red-950/20 transition-colors"
+                  className="h-7 rounded-none font-mono text-xs text-zinc-400 transition-colors hover:bg-red-950/20 hover:text-red-400"
                   onClick={() => setInput("")}
                 >
                   Clear
                 </Button>
               )}
             </div>
-          </header>
-          <div className="p-6">
-            <Label htmlFor="mac-input" className="sr-only">MAC Address</Label>
-            <Input
-              id="mac-input"
-              type="text"
-              value={input}
-              onChange={(e) => handleInput(e.target.value)}
-              placeholder="e.g. 00:1A:2B:3C:4D:5E or 001a.2b3c.4d5e"
-              className={`w-full font-mono text-lg bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] h-14 text-zinc-200 ${input && !isValid ? 'border-red-500/50 focus-visible:ring-red-500 text-red-400' : ''}`}
-              spellCheck={false}
-            />
-            {input && !isValid && (
-              <div className="mt-3 text-red-500 font-mono text-xs flex items-center">
-                [ERR] Invalid MAC address length. Found {cleanMac.length} hex digits, expected 12.
+          </ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            <ToolField htmlFor="mac-input" label="MAC Address">
+              <Input
+                id="mac-input"
+                type="text"
+                value={input}
+                onChange={(e) => handleInput(e.target.value)}
+                placeholder="e.g. 00:1A:2B:3C:4D:5E or 001a.2b3c.4d5e"
+                className={`rounded-none font-mono ${input && !isValid ? 'border-red-500/50 text-red-400 focus-visible:ring-red-500' : 'text-[#00ff9c]'}`}
+                spellCheck={false}
+              />
+            </ToolField>
+          </ToolPanelBody>
+        </ToolPanel>
+
+
+
+        <ToolPanel>
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="OUT" className="text-sm">FORMATS</ToolPanelTitle>
+          </ToolPanelHeader>
+          <ToolPanelBody className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <ToolField htmlFor="format-ieee" label="IEEE 802 (Windows)">
+              <div className="flex gap-2">
+                <Input
+                  id="format-ieee"
+                  value={formats.ieee}
+                  readOnly
+                  placeholder="00-00-00-00-00-00"
+                  className="rounded-none border-[#1a1a1a] bg-[#050505] font-mono text-[#00ff9c] focus-visible:ring-0"
+                />
+                <Button 
+                  type="button"
+                  disabled={!formats.ieee}
+                  variant="outline" size="icon" 
+                  aria-label="Copy IEEE"
+                  title="Copy IEEE"
+                  onClick={() => copy(formats.ieee, "ieee")}
+                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c] disabled:opacity-50"
+                >
+                  {copiedKey === "ieee" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
               </div>
-            )}
-            {input && isValid && (
-              <div className="mt-3 text-[#00ff9c] font-mono text-xs flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Check className="w-3 h-3" /> Valid MAC Address detected
-                </div>
-                <div className="flex items-center gap-2 text-purple-400">
-                  <Server className="w-3 h-3" /> Vendor: {vendor}
-                </div>
+            </ToolField>
+
+            <ToolField htmlFor="format-unix" label="UNIX / Linux">
+              <div className="flex gap-2">
+                <Input
+                  id="format-unix"
+                  value={formats.unix}
+                  readOnly
+                  placeholder="00:00:00:00:00:00"
+                  className="rounded-none border-[#1a1a1a] bg-[#050505] font-mono text-[#00ff9c] focus-visible:ring-0"
+                />
+                <Button 
+                  type="button"
+                  disabled={!formats.unix}
+                  variant="outline" size="icon" 
+                  aria-label="Copy UNIX"
+                  title="Copy UNIX"
+                  onClick={() => copy(formats.unix, "unix")}
+                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c] disabled:opacity-50"
+                >
+                  {copiedKey === "unix" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
               </div>
+            </ToolField>
+
+            <ToolField htmlFor="format-cisco" label="Cisco">
+              <div className="flex gap-2">
+                <Input
+                  id="format-cisco"
+                  value={formats.cisco}
+                  readOnly
+                  placeholder="0000.0000.0000"
+                  className="rounded-none border-[#1a1a1a] bg-[#050505] font-mono text-[#00ff9c] focus-visible:ring-0"
+                />
+                <Button 
+                  type="button"
+                  disabled={!formats.cisco}
+                  variant="outline" size="icon" 
+                  aria-label="Copy Cisco"
+                  title="Copy Cisco"
+                  onClick={() => copy(formats.cisco, "cisco")}
+                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c] disabled:opacity-50"
+                >
+                  {copiedKey === "cisco" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </ToolField>
+
+            <ToolField htmlFor="format-bare" label="Bare / Raw">
+              <div className="flex gap-2">
+                <Input
+                  id="format-bare"
+                  value={formats.bare}
+                  readOnly
+                  placeholder="000000000000"
+                  className="rounded-none border-[#1a1a1a] bg-[#050505] font-mono text-[#00ff9c] focus-visible:ring-0"
+                />
+                <Button 
+                  type="button"
+                  disabled={!formats.bare}
+                  variant="outline" size="icon" 
+                  aria-label="Copy Bare"
+                  title="Copy Bare"
+                  onClick={() => copy(formats.bare, "bare")}
+                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c] disabled:opacity-50"
+                >
+                  {copiedKey === "bare" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </ToolField>
+          </ToolPanelBody>
+        </ToolPanel>
+
+        {input && (
+          <div className="animate-crt-on origin-center">
+            {!isValid ? (
+              <ToolStatus tone="error">
+                <div className="font-mono">Invalid MAC address length. Found {cleanMac.length} hex digits, expected 12.</div>
+              </ToolStatus>
+            ) : (
+              <ToolStatus tone="success">
+                <div className="flex flex-col gap-1 font-mono w-full">
+                  <span>Valid MAC Address detected</span>
+                  <span className="text-purple-400 font-bold">Vendor: {vendor}</span>
+                </div>
+              </ToolStatus>
             )}
           </div>
-        </article>
-
-        {/* Outputs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormatBox 
-            title="IEEE 802 (Windows)" 
-            value={formats.ieee}
-            onCopy={() => copy(formats.ieee, "ieee")}
-            copied={copiedKey === "ieee"}
-          />
-          <FormatBox 
-            title="UNIX / Linux" 
-            value={formats.unix}
-            onCopy={() => copy(formats.unix, "unix")}
-            copied={copiedKey === "unix"}
-          />
-          <FormatBox 
-            title="Cisco" 
-            value={formats.cisco}
-            onCopy={() => copy(formats.cisco, "cisco")}
-            copied={copiedKey === "cisco"}
-          />
-          <FormatBox 
-            title="Bare / Raw" 
-            value={formats.bare}
-            onCopy={() => copy(formats.bare, "bare")}
-            copied={copiedKey === "bare"}
-          />
-        </div>
+        )}
 
       </div>
     </ToolLayout>
-  );
-}
-
-function FormatBox({ 
-  title, 
-  value, 
-  onCopy, 
-  copied
-}: { 
-  title: string, 
-  value: string, 
-  onCopy: () => void,
-  copied: boolean
-}) {
-  return (
-    <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
-      <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-        <div className="flex items-center gap-2">
-          <span className="text-zinc-600 text-xs">[OUT]</span>
-          <span className="text-blue-400 text-sm font-semibold uppercase tracking-widest">{title}</span>
-        </div>
-        <Button 
-          variant="ghost"
-          size="sm"
-          disabled={!value}
-          className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 transition-colors disabled:opacity-30"
-          onClick={onCopy}
-        >
-          {copied ? <><Check className="w-3 h-3 mr-1" /> Copied</> : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
-        </Button>
-      </header>
-      <div className="p-4 flex items-center min-h-[80px]">
-        {value ? (
-          <span className="font-mono text-lg text-zinc-200 tracking-wider">{value}</span>
-        ) : (
-          <span className="font-mono text-sm text-zinc-700 select-none">Awaiting valid input...</span>
-        )}
-      </div>
-    </article>
   );
 }
