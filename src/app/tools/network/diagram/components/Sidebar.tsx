@@ -108,7 +108,7 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
   };
 
   return (
-    <aside className={`${mobileOpen ? 'flex' : 'hidden'} absolute inset-x-0 bottom-0 z-40 max-h-[78dvh] w-full flex-col overflow-hidden rounded-t-xl border-t border-[#1a1a1a] bg-[#050505] shadow-2xl md:relative md:inset-auto md:z-10 md:h-full md:max-h-none md:w-[19rem] md:rounded-none md:border-r md:border-t-0 md:shadow-none`} aria-label="Diagram toolbox">
+    <aside className={`${mobileOpen ? 'flex' : 'hidden'} absolute inset-x-0 bottom-0 z-40 max-h-[78dvh] w-full flex-col overflow-hidden rounded-t-xl border-t border-[#1a1a1a] bg-[#050505] shadow-2xl md:relative md:flex md:inset-auto md:z-10 md:h-full md:max-h-none md:w-[19rem] md:rounded-none md:border-r md:border-t-0 md:shadow-none`} aria-label="Diagram toolbox">
       <div className="flex shrink-0 items-center gap-2 border-b border-[#1a1a1a] p-3">
         <Network className="h-4 w-4 shrink-0 text-[#00ff9c]" />
         <h2 className="truncate font-bold">Diagram toolbox</h2>
