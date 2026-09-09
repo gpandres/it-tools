@@ -29,14 +29,14 @@ export default function NetworkEdge({
   const connType = data?.connectionType || 'ethernet';
   
   let strokeColor = '#52525b'; // zinc-600
-  let strokeWidth = 2;
+  let strokeWidth = 'var(--diagram-edge-width, 2px)';
   let strokeDasharray = '0';
   let isVpn = false;
 
   switch (connType) {
     case 'fiber':
       strokeColor = '#00ff9c';
-      strokeWidth = 3;
+      strokeWidth = 'calc(var(--diagram-edge-width, 2px) + 1px)';
       break;
     case 'wireless':
       strokeColor = '#00e5ff';
@@ -55,7 +55,7 @@ export default function NetworkEdge({
 
   if (selected) {
     strokeColor = '#ffffff';
-    strokeWidth += 1;
+    strokeWidth = `calc(${strokeWidth} + 1px)`;
   }
 
   const metadataLabel = data?.label || [
@@ -81,7 +81,7 @@ export default function NetworkEdge({
               transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
               pointerEvents: 'all',
             }}
-            className="nodrag nopan"
+            className={`edge-metadata nodrag nopan ${selected ? 'edge-metadata-selected' : ''}`}
           >
             <div className={`flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] backdrop-blur-sm ${isVpn ? 'border-[#b026ff]/50 bg-[#b026ff]/20 text-[#d8a8ff]' : 'border-zinc-800 bg-black/80 text-zinc-300'}`}>
               {isVpn && <Lock className="h-3 w-3 shrink-0 text-[#b026ff]" />}

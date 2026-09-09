@@ -25,6 +25,7 @@ export type NetworkNodeData = {
   status?: NetworkStatus;
   notes?: string;
   interfaces?: string;
+  groupColor?: string;
 };
 
 export type NetworkEdgeData = {

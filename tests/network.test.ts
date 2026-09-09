@@ -157,6 +157,37 @@ test("reports actionable diagram topology issues", () => {
   ]);
 });
 
+test("does not report visual groups as isolated when their children carry links", () => {
+  const issues = validateDiagram({
+    nodes: [
+      { id: "group", position: { x: 0, y: 0 }, data: { label: "Branch office", type: "group" } },
+      { id: "router", position: { x: 20, y: 20 }, parentId: "group", data: { label: "Router", type: "router" } },
+      { id: "switch", position: { x: 140, y: 20 }, parentId: "group", data: { label: "Switch", type: "switch" } },
+    ],
+    edges: [{ id: "uplink", source: "router", target: "switch", data: { connectionType: "ethernet" } }],
+  });
+
+  assert.equal(issues.some(issue => issue.id === "orphan-group"), false);
+});
+
+test("reviews edge redundancy independently from the local handoff", () => {
+  const nodes = [
+    { id: "internet-a", position: { x: 0, y: 0 }, data: { label: "ISP A", type: "cloud", zone: "internet" } },
+    { id: "edge", position: { x: 120, y: 0 }, data: { label: "Edge Router", type: "router", zone: "wan" } },
+    { id: "core", position: { x: 240, y: 0 }, data: { label: "Core", type: "switch", zone: "lan" } },
+  ];
+  const singleWan = [{ id: "wan-a", source: "internet-a", target: "edge", data: { connectionType: "fiber" } }, { id: "lan", source: "edge", target: "core", data: { connectionType: "ethernet" } }];
+
+  assert.equal(validateDiagram({ nodes, edges: singleWan }).some(issue => issue.id === "wan-failover-edge"), true);
+  const withoutLan = validateDiagram({ nodes, edges: singleWan.slice(0, 1) });
+  assert.equal(withoutLan.some(issue => issue.id === "wan-failover-edge"), true);
+  assert.equal(withoutLan.some(issue => issue.id === "internal-handoff-edge"), true);
+
+  const dualWanNodes = [...nodes, { id: "internet-b", position: { x: 0, y: 80 }, data: { label: "ISP B", type: "cloud", zone: "internet" } }];
+  const dualWan = [...singleWan, { id: "wan-b", source: "internet-b", target: "edge", data: { connectionType: "fiber" } }];
+  assert.equal(validateDiagram({ nodes: dualWanNodes, edges: dualWan }).some(issue => issue.id === "wan-failover-edge"), false);
+});
+
 test("auto layout terminates for cyclic network topologies", () => {
   const nodes = [
     { id: "a", position: { x: 900, y: 900 } },

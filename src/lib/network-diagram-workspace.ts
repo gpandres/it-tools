@@ -4,6 +4,8 @@ import type { NetworkEdge, NetworkNode } from '@/app/tools/network/diagram/types
 
 export const NETWORK_DIAGRAM_LIBRARY_KEY = 'network_diagram_library';
 export const MAX_SAVED_NETWORK_DIAGRAMS = 10;
+export const NETWORK_DIAGRAM_TEMPLATES_KEY = 'network_diagram_templates';
+export const MAX_SAVED_NETWORK_TEMPLATES = 8;
 
 export type SavedNetworkDiagram = {
   id: string;
@@ -28,12 +30,34 @@ export function writeNetworkDiagramLibrary(diagrams: SavedNetworkDiagram[]): boo
   return writeLocalStorage(NETWORK_DIAGRAM_LIBRARY_KEY, JSON.stringify(diagrams.slice(0, MAX_SAVED_NETWORK_DIAGRAMS)));
 }
 
+export function readNetworkDiagramTemplates(): SavedNetworkDiagram[] {
+  const raw = readLocalStorage(NETWORK_DIAGRAM_TEMPLATES_KEY);
+  if (!raw) return [];
+  try {
+    return parseNetworkDiagramTemplates(JSON.parse(raw));
+  } catch {
+    return [];
+  }
+}
+
+export function writeNetworkDiagramTemplates(templates: SavedNetworkDiagram[]): boolean {
+  return writeLocalStorage(NETWORK_DIAGRAM_TEMPLATES_KEY, JSON.stringify(templates.slice(0, MAX_SAVED_NETWORK_TEMPLATES)));
+}
+
 export function parseNetworkDiagramLibrary(value: unknown): SavedNetworkDiagram[] {
+  return parseNetworkDiagramCollection(value, MAX_SAVED_NETWORK_DIAGRAMS);
+}
+
+export function parseNetworkDiagramTemplates(value: unknown): SavedNetworkDiagram[] {
+  return parseNetworkDiagramCollection(value, MAX_SAVED_NETWORK_TEMPLATES);
+}
+
+function parseNetworkDiagramCollection(value: unknown, maxItems: number): SavedNetworkDiagram[] {
   if (!Array.isArray(value)) return [];
   const seenIds = new Set<string>();
   const diagrams: SavedNetworkDiagram[] = [];
 
-  for (const item of value.slice(0, MAX_SAVED_NETWORK_DIAGRAMS)) {
+  for (const item of value.slice(0, maxItems)) {
     if (!item || typeof item !== 'object') continue;
     const source = item as Record<string, unknown>;
     const parsed = parseDiagram(source);

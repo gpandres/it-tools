@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo, type CSSProperties, type ReactNode } from 'react';
 import { ReactFlow, Controls, MiniMap, Panel, Background, applyNodeChanges, applyEdgeChanges, addEdge, BackgroundVariant, ReactFlowProvider, SelectionMode, useReactFlow, getViewportForBounds, type Connection, type EdgeChange, type NodeChange } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { toPng, toSvg } from 'html-to-image';
-import { Network as NetworkIcon } from 'lucide-react';
+import { Copy, FileArchive, Group, LayoutDashboard, Maximize2, Minimize2, Network as NetworkIcon, Redo2, Save, Settings2, Trash2, Undo2, Ungroup } from 'lucide-react';
 
 import { ToolLayout } from "@/components/tool-layout";
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import NetworkNodeComponent from './nodes/NetworkNode';
 import NetworkEdgeComponent from './edges/NetworkEdge';
 import Sidebar from './components/Sidebar';
@@ -27,6 +29,8 @@ import type { NetworkEdge, NetworkNode, NetworkNodeData, NetworkNodeType, Diagra
 const nodeTypes = { networkNode: NetworkNodeComponent };
 const edgeTypes = { networkEdge: NetworkEdgeComponent };
 const DEFAULT_DIAGRAM_METADATA: DiagramMetadata = { title: 'Network topology', description: 'Network topology documentation generated locally in the browser.' };
+type DiagramAppearance = { deviceDensity: 'compact' | 'comfortable'; deviceStyle: 'solid' | 'outline' | 'minimal'; cableWeight: 'fine' | 'standard' | 'bold'; grid: 'subtle' | 'dense' | 'off'; edgeLabels: 'selected' | 'always' };
+const DEFAULT_DIAGRAM_APPEARANCE: DiagramAppearance = { deviceDensity: 'comfortable', deviceStyle: 'solid', cableWeight: 'standard', grid: 'subtle', edgeLabels: 'selected' };
 
 function DiagramFlow() {
   const [nodes, setNodes] = useState<NetworkNode[]>(() => cloneNodes(TEMPLATES["Empty Canvas"].nodes as NetworkNode[]));
@@ -40,7 +44,12 @@ function DiagramFlow() {
   const [mobileToolboxOpen, setMobileToolboxOpen] = useState(false);
   const [diagramMetadata, setDiagramMetadata] = useState<DiagramMetadata>(DEFAULT_DIAGRAM_METADATA);
   const [savedDiagrams, setSavedDiagrams] = useState<SavedNetworkDiagram[]>([]);
+  const [fileDialogOpen, setFileDialogOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [appearance, setAppearance] = useState<DiagramAppearance>(DEFAULT_DIAGRAM_APPEARANCE);
+  const [isShiftHeld, setIsShiftHeld] = useState(false);
   const exportInFlight = useRef(false);
+  const diagramClipboardRef = useRef<DiagramSnapshot | null>(null);
   const workspaceLoaded = useRef(false);
   const workspacePersistErrorShown = useRef(false);
   const { notify } = useNotification();
@@ -290,6 +299,74 @@ function DiagramFlow() {
     setSelectedEdgeIds([]);
   }, [notify, recordHistory, selectedNodeIds]);
 
+  const copySelection = useCallback(() => {
+    if (selectedNodeIds.length === 0) {
+      notify('Select one or more devices to copy.', 'info');
+      return false;
+    }
+    const nodeIds = new Set(selectedNodeIds);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const node of nodesRef.current) {
+        if (node.parentId && nodeIds.has(node.parentId) && !nodeIds.has(node.id)) {
+          nodeIds.add(node.id);
+          changed = true;
+        }
+      }
+    }
+    const copiedNodes = cloneNodes(nodesRef.current.filter(node => nodeIds.has(node.id)));
+    const copiedEdges = cloneEdges(edgesRef.current.filter(edge => nodeIds.has(edge.source) && nodeIds.has(edge.target)));
+    diagramClipboardRef.current = { nodes: copiedNodes, edges: copiedEdges };
+    notify(`Copied ${copiedNodes.length} device${copiedNodes.length === 1 ? '' : 's'}.`, 'info');
+    return true;
+  }, [notify, selectedNodeIds]);
+
+  const pasteSelection = useCallback(() => {
+    const clipboard = diagramClipboardRef.current;
+    if (!clipboard || clipboard.nodes.length === 0) {
+      notify('Copy one or more devices before pasting.', 'info');
+      return;
+    }
+    recordHistory();
+    const timestamp = Date.now();
+    const idMap = new Map<string, string>();
+    clipboard.nodes.forEach((node, index) => idMap.set(node.id, `${node.data.type === 'group' ? 'group' : 'node'}_${timestamp}_${index}`));
+    const copiedNodes = clipboard.nodes.map(node => {
+      const parentId = node.parentId && idMap.get(node.parentId);
+      return {
+        ...node,
+        id: idMap.get(node.id) as string,
+        parentId,
+        extent: parentId ? node.extent : undefined,
+        position: parentId ? { ...node.position } : { x: node.position.x + 48, y: node.position.y + 48 },
+        selected: !parentId,
+        data: { ...node.data },
+      };
+    });
+    const copiedEdges = clipboard.edges.map((edge, index) => ({ ...edge, id: `edge_${timestamp}_${index}`, source: idMap.get(edge.source) as string, target: idMap.get(edge.target) as string, selected: false, data: edge.data ? { ...edge.data } : edge.data }));
+    const nextNodes = [...nodesRef.current.map(node => ({ ...node, selected: false })), ...copiedNodes];
+    const nextEdges = [...edgesRef.current.map(edge => ({ ...edge, selected: false })), ...copiedEdges];
+    nodesRef.current = nextNodes;
+    edgesRef.current = nextEdges;
+    setNodes(nextNodes);
+    setEdges(nextEdges);
+    setSelectedNodeIds(copiedNodes.filter(node => !node.parentId).map(node => node.id));
+    setSelectedEdgeIds([]);
+    notify(`Pasted ${copiedNodes.length} device${copiedNodes.length === 1 ? '' : 's'}.`, 'info');
+  }, [notify, recordHistory]);
+
+  const selectAll = useCallback(() => {
+    const nextNodes = nodesRef.current.map(node => ({ ...node, selected: true }));
+    const nextEdges = edgesRef.current.map(edge => ({ ...edge, selected: true }));
+    nodesRef.current = nextNodes;
+    edgesRef.current = nextEdges;
+    setNodes(nextNodes);
+    setEdges(nextEdges);
+    setSelectedNodeIds(nextNodes.map(node => node.id));
+    setSelectedEdgeIds(nextEdges.map(edge => edge.id));
+  }, []);
+
   const groupSelected = useCallback(() => {
     const groupable = nodesRef.current.filter(node => selectedNodeIds.includes(node.id));
     if (groupable.length < 2 || groupable.some(node => node.parentId || node.data.type === 'group')) {
@@ -307,7 +384,7 @@ function DiagramFlow() {
       height: bounds.height + 80,
       zIndex: -1,
       selected: true,
-      data: { label: 'Network group', type: 'group', status: 'active', notes: 'Movable container for grouped topology nodes.' },
+      data: { label: 'Network group', type: 'group', status: 'active', groupColor: '#00ff9c', notes: 'Movable container for grouped topology nodes.' },
     };
     const selectedIds = new Set(selectedNodeIds);
     const nextNodes = [groupNode, ...nodesRef.current.map(node => selectedIds.has(node.id) ? { ...node, selected: false, parentId: groupId, extent: 'parent' as const, position: { x: node.position.x - bounds.x + 40, y: node.position.y - bounds.y + 40 } } : { ...node, selected: false })];
@@ -355,16 +432,34 @@ function DiagramFlow() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') {
+        setIsShiftHeld(true);
+        return;
+      }
       if (event.key === 'Escape') {
         setFocusMode(false);
         return;
       }
       const target = event.target as HTMLElement | null;
       if (target?.matches('input, textarea, select, [contenteditable="true"]')) return;
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+      const modifier = event.ctrlKey || event.metaKey;
+      const key = event.key.toLowerCase();
+      if (modifier && key === 'a') {
+        event.preventDefault();
+        selectAll();
+      } else if (modifier && key === 'c') {
+        event.preventDefault();
+        copySelection();
+      } else if (modifier && key === 'x') {
+        event.preventDefault();
+        if (copySelection()) deleteSelected();
+      } else if (modifier && key === 'v') {
+        event.preventDefault();
+        pasteSelection();
+      } else if (modifier && key === 'z') {
         event.preventDefault();
         if (event.shiftKey) redo(); else undo();
-      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+      } else if (modifier && key === 'y') {
         event.preventDefault();
         redo();
       } else if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -372,9 +467,19 @@ function DiagramFlow() {
         deleteSelected();
       }
     };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') setIsShiftHeld(false);
+    };
+    const onWindowBlur = () => setIsShiftHeld(false);
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [deleteSelected, redo, undo]);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onWindowBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onWindowBlur);
+    };
+  }, [copySelection, deleteSelected, pasteSelection, redo, selectAll, undo]);
 
   const onNodeDragStart = useCallback(() => recordHistory(), [recordHistory]);
 
@@ -466,6 +571,8 @@ function DiagramFlow() {
     }
     exportInFlight.current = true;
     if (isLargeDiagram) notify('Generating a lighter export for this large topology.', 'info');
+    const usesLightExport = bgColor === 'white';
+    if (usesLightExport) element.classList.add('diagram-export-light');
 
     toPng(element, {
       backgroundColor,
@@ -480,6 +587,7 @@ function DiagramFlow() {
     }).then((dataUrl) => {
       downloadUrl(dataUrl, `network-diagram-${bgColor}.png`);
     }).catch(() => notify("Could not export the diagram image.", "error")).finally(() => {
+      if (usesLightExport) element.classList.remove('diagram-export-light');
       exportInFlight.current = false;
     });
   };
@@ -573,88 +681,38 @@ function DiagramFlow() {
     setTimeout(() => fitView({ padding: 0.2 }), 100);
   };
 
-  const fitDiagram = () => fitView({ padding: 0.2 });
+  const canvasStyle = {
+    '--diagram-node-min-height': appearance.deviceDensity === 'compact' ? '72px' : '92px',
+    '--diagram-node-min-width': appearance.deviceDensity === 'compact' ? '136px' : '172px',
+    '--diagram-edge-width': appearance.cableWeight === 'fine' ? '1.5px' : appearance.cableWeight === 'bold' ? '3px' : '2px',
+  } as CSSProperties;
+  const gridGap = appearance.grid === 'dense' ? 16 : 24;
 
   return (
     <>
-      <div className="relative">
-        <div className={`${focusMode ? 'fixed inset-3 z-50 h-[calc(100dvh-1.5rem)]' : 'h-[min(800px,calc(100dvh-8rem))] min-h-[26rem] sm:min-h-[32rem]'} relative flex w-full flex-col overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] md:h-[800px] md:flex-row`} data-testid="network-diagram-editor" role="application" aria-label="Network diagram editor">
-      <button type="button" onClick={() => setMobileToolboxOpen(true)} className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded border border-[#1a1a1a] bg-[#050505]/95 px-3 py-2 font-mono text-[10px] font-bold text-zinc-300 shadow-lg hover:border-[#00ff9c] hover:text-[#00ff9c] md:hidden" aria-label="Open diagram toolbox"><NetworkIcon className="h-3.5 w-3.5 text-[#00ff9c]" />Toolbox</button>
-      {mobileToolboxOpen && <button type="button" onClick={() => setMobileToolboxOpen(false)} className="absolute inset-0 z-30 bg-black/35 md:hidden" aria-label="Close diagram toolbox overlay" />}
-      <Sidebar 
-        selectedNode={selectedNode}
-        selectedEdge={selectedEdge}
-        selectedNodeCount={selectedNodeIds.length}
-        selectedEdgeCount={selectedEdgeIds.length}
-        updateNodeData={updateNodeData}
-        updateEdgeData={updateEdgeData}
-        onAddNode={addNode}
-        clearCanvas={clearCanvas}
-        duplicateSelected={duplicateSelected}
-        deleteSelected={deleteSelected}
-        undo={undo}
-        redo={redo}
-        canUndo={history.length > 0}
-        canRedo={future.length > 0}
-        groupSelected={groupSelected}
-        ungroupSelected={ungroupSelected}
-        canGroup={canGroup}
-        canUngroup={canUngroup}
-        autoLayout={runAutoLayout}
-        fitView={fitDiagram}
-        validationIssues={validationIssues}
-        diagramMetadata={diagramMetadata}
-        updateDiagramMetadata={newMetadata => setDiagramMetadata(current => ({ ...current, ...newMetadata }))}
-        topologyNodes={topologyNodes}
-        topologyAnalysis={topologyAnalysis}
-        findPath={findPath}
-        validate={() => notify(validationIssues.length === 0 ? 'No topology issues detected.' : `${validationIssues.length} topology issue${validationIssues.length === 1 ? '' : 's'} found.`, validationIssues.some(issue => issue.severity === 'error') ? 'error' : 'info')}
-        loadTemplate={loadTemplate}
-        showMinimap={showMinimap}
-        toggleMinimap={() => setShowMinimap(current => !current)}
-        focusMode={focusMode}
-        toggleFocusMode={() => setFocusMode(current => !current)}
-        mobileOpen={mobileToolboxOpen}
-        closeMobile={() => setMobileToolboxOpen(false)}
-      />
-      <div className="min-h-0 min-w-0 h-full flex-1" ref={reactFlowWrapper} data-testid="network-diagram-canvas" aria-label="Network diagram canvas">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onNodeDragStart={onNodeDragStart}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          onSelectionChange={onSelectionChange}
-          selectionKeyCode="Shift"
-          multiSelectionKeyCode="Shift"
-          selectionMode={SelectionMode.Partial}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          fitView
-          colorMode="dark"
-          className="bg-[#050505]"
-        >
-          <Background color="#1a1a1a" variant={BackgroundVariant.Dots} gap={20} size={2} />
-          <Controls style={{ backgroundColor: '#050505', border: '1px solid #1a1a1a' }} />
-          {showMinimap && <MiniMap
-              pannable
-              zoomable
-              nodeColor={node => (node.data as { status?: string } | undefined)?.status === 'offline' ? '#ef4444' : '#00ff9c'}
-              maskColor="rgba(0, 0, 0, 0.42)"
-              style={{ backgroundColor: 'rgba(5, 5, 5, 0.68)', border: '1px solid rgba(26, 26, 26, 0.8)', opacity: 0.84 }}
-            />}
-          <Panel position="bottom-left" className="!m-3 !max-w-[calc(100%-1.5rem)] !rounded border border-[#1a1a1a] !bg-[#050505]/95 px-2.5 py-1.5 font-mono text-[9px] text-zinc-500 sm:text-[10px]" aria-live="polite">
-            <span className="text-[#00ff9c]">{nodes.length}</span> nodes · <span className="text-[#38bdf8]">{edges.length}</span> links · {validationIssues.length === 0 ? <span className="text-[#72e6b4]">topology ok</span> : <span className="text-amber-300">{validationIssues.length} issue{validationIssues.length === 1 ? '' : 's'}</span>}
-          </Panel>
-        </ReactFlow>
-      </div>
+      <section className={`${focusMode ? 'fixed inset-0 z-50 h-dvh rounded-none border-0' : 'relative h-[min(800px,calc(100dvh-8rem))] min-h-[29rem] sm:min-h-[34rem] 2xl:h-[min(1080px,calc(100dvh-8rem))]'} flex w-full flex-col overflow-hidden rounded-xl border border-[#26272b] bg-[#090a0c] shadow-[0_16px_48px_rgba(0,0,0,0.24)]`} data-testid="network-diagram-editor" role="application" aria-label="Network diagram editor">
+        <header className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-[#242424] bg-[#0d0e10] px-3 py-2 sm:px-4">
+          <div className="hidden flex-1 items-center gap-1 sm:flex"><EditorButton label="Undo" icon={<Undo2 />} onClick={undo} disabled={history.length === 0} /><EditorButton label="Redo" icon={<Redo2 />} onClick={redo} disabled={future.length === 0} /><span className="mx-1 h-5 w-px bg-[#242424]" /><EditorButton label="Auto layout" icon={<LayoutDashboard />} onClick={runAutoLayout} /><EditorButton label="Clear" icon={<Trash2 />} onClick={clearCanvas} danger /><span className="mx-1 hidden h-5 w-px bg-[#242424] lg:block" /><span className="hidden lg:contents"><EditorButton label={showMinimap ? 'Hide map' : 'Show map'} icon={<NetworkIcon />} onClick={() => setShowMinimap(current => !current)} /><EditorButton label={focusMode ? 'Exit focus' : 'Focus'} icon={focusMode ? <Minimize2 /> : <Maximize2 />} onClick={() => setFocusMode(current => !current)} /></span></div>
+          <div className="flex flex-1 items-center gap-1 sm:hidden"><EditorButton label="Undo" icon={<Undo2 />} onClick={undo} disabled={history.length === 0} /><EditorButton label="Redo" icon={<Redo2 />} onClick={redo} disabled={future.length === 0} /><EditorButton label={focusMode ? 'Exit focus' : 'Focus'} icon={focusMode ? <Minimize2 /> : <Maximize2 />} onClick={() => setFocusMode(current => !current)} /></div>
+          {(selectedNodeIds.length > 0 || selectedEdgeIds.length > 0) && <div className="flex items-center gap-1 border-l border-[#242424] pl-2"><EditorButton label="Duplicate" icon={<Copy />} onClick={duplicateSelected} />{canGroup && <EditorButton label="Group" icon={<Group />} onClick={groupSelected} />}{canUngroup && <EditorButton label="Ungroup" icon={<Ungroup />} onClick={ungroupSelected} />}<EditorButton label="Delete" icon={<span>×</span>} onClick={deleteSelected} danger /></div>}
+          <EditorButton label="Settings" icon={<Settings2 />} onClick={() => setSettingsOpen(true)} />
+          <Button type="button" onClick={saveWorkspaceSnapshot} variant="outline" size="sm" className="h-8 border-[#00ff9c]/35 bg-[#00ff9c]/[0.06] px-2.5 text-[10px] text-[#9cf5c1] hover:bg-[#00ff9c]/15"><Save className="mr-1 h-3.5 w-3.5" />Save</Button>
+          <Button type="button" onClick={() => setFileDialogOpen(true)} variant="outline" size="sm" className="h-8 border-[#242424] bg-black px-2.5 text-[10px] text-zinc-200 hover:border-sky-400/50"><FileArchive className="mr-1 h-3.5 w-3.5 text-sky-300" />Export</Button>
+        </header>
+        <div className="relative flex min-h-0 flex-1">
+          <button type="button" onClick={() => setMobileToolboxOpen(true)} className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded-md border border-[#242424] bg-[#090a0c]/95 px-3 py-2 text-[10px] font-semibold text-zinc-300 shadow-lg hover:border-[#00ff9c] hover:text-[#00ff9c] md:hidden" aria-label="Open diagram toolbox"><NetworkIcon className="h-3.5 w-3.5 text-[#00ff9c]" />Library</button>
+          {mobileToolboxOpen && <button type="button" onClick={() => setMobileToolboxOpen(false)} className="absolute inset-0 z-30 bg-black/35 md:hidden" aria-label="Close diagram toolbox overlay" />}
+          <Sidebar selectedNode={selectedNode} selectedEdge={selectedEdge} selectedNodeCount={selectedNodeIds.length} selectedEdgeCount={selectedEdgeIds.length} updateNodeData={updateNodeData} updateEdgeData={updateEdgeData} onAddNode={addNode} validationIssues={validationIssues} topologyNodes={topologyNodes} topologyAnalysis={topologyAnalysis} findPath={findPath} validate={() => notify(validationIssues.length === 0 ? 'No topology issues detected.' : `${validationIssues.length} topology issue${validationIssues.length === 1 ? '' : 's'} found.`, validationIssues.some(issue => issue.severity === 'error') ? 'error' : 'info')} loadTemplate={loadTemplate} mobileOpen={mobileToolboxOpen} closeMobile={() => setMobileToolboxOpen(false)} />
+          <div className="min-h-0 min-w-0 flex-1" ref={reactFlowWrapper} data-testid="network-diagram-canvas" aria-label="Network diagram canvas"><ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeDragStart={onNodeDragStart} onDrop={onDrop} onDragOver={onDragOver} onSelectionChange={onSelectionChange} selectionKeyCode="Shift" multiSelectionKeyCode="Shift" selectionMode={SelectionMode.Partial} snapToGrid={isShiftHeld} snapGrid={[gridGap, gridGap]} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView colorMode="dark" style={canvasStyle} className={`select-none bg-[#07080a] diagram-devices-${appearance.deviceStyle} ${appearance.edgeLabels === 'selected' ? 'diagram-labels-selected' : ''}`}>
+            {appearance.grid !== 'off' && <Background color="#202124" variant={BackgroundVariant.Dots} gap={gridGap} size={appearance.grid === 'dense' ? 1.1 : 1.4} />}<Controls style={{ backgroundColor: '#0d0e10', border: '1px solid #292a2f' }} />
+            {showMinimap && <MiniMap pannable zoomable ariaLabel="Topology overview" nodeColor={node => { const data = node.data as { status?: string; type?: string; groupColor?: string } | undefined; return data?.type === 'group' ? data.groupColor || '#00ff9c' : data?.status === 'offline' ? '#ef4444' : '#00c782'; }} maskColor="rgba(0, 0, 0, 0.62)" nodeStrokeColor="#07080a" nodeBorderRadius={4} style={{ width: 184, height: 116, backgroundColor: 'rgba(16, 17, 21, 0.86)', border: 'none', borderRadius: 10, boxShadow: 'none', opacity: 1 }} />}
+            {nodes.length === 0 && <Panel position="top-center" className="!m-0 !mt-[max(2.5rem,6vh)] !w-[min(25rem,calc(100vw-3rem))]"><div className="rounded-xl border border-[#2b2d32] bg-[#101115]/95 p-5 text-center shadow-2xl backdrop-blur"><p className="text-sm font-semibold text-zinc-100">Start a topology</p><p className="mx-auto mt-1 max-w-xs text-[11px] leading-relaxed text-zinc-500">Set the context, then choose a starter or add a device from the library.</p><div className="mt-4 border-y border-[#2b2d32] py-3 text-left"><p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">Diagram details</p><div className="mt-3 space-y-2"><label className="block text-[10px] text-zinc-500">Title<input value={diagramMetadata.title || ''} onChange={event => setDiagramMetadata(current => ({ ...current, title: event.target.value }))} className="mt-1 h-8 w-full rounded-md border border-[#2b2d32] bg-black px-2 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /></label><label className="block text-[10px] text-zinc-500">Description<textarea value={diagramMetadata.description || ''} onChange={event => setDiagramMetadata(current => ({ ...current, description: event.target.value }))} placeholder="Purpose, scope, or change context…" className="mt-1 min-h-16 w-full resize-y rounded-md border border-[#2b2d32] bg-black px-2 py-1.5 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /></label></div></div><p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">Starters</p><div className="mt-2 grid grid-cols-2 gap-2">{['Small Office', 'Enterprise Core', 'DMZ', 'VLAN Segmentation'].map(template => <button key={template} type="button" onClick={() => loadTemplate(template)} className="rounded-md border border-[#2b2d32] bg-black px-2 py-2 text-[10px] text-zinc-300 transition-colors hover:border-[#00ff9c]/50 hover:bg-[#00ff9c]/[0.06] hover:text-[#a9f7c8]">{template}</button>)}</div></div></Panel>}
+            <Panel position="bottom-left" className="!m-3 !max-w-[calc(100%-1.5rem)] !rounded-md border border-[#292a2f] !bg-[#0d0e10]/95 px-2.5 py-1.5 text-[10px] text-zinc-500" aria-live="polite"><span className="text-[#73e9af]">{nodes.length}</span> devices · <span className="text-sky-300">{edges.length}</span> links · {validationIssues.length === 0 ? <span className="text-[#73e9af]">ready</span> : <span className="text-amber-300">{validationIssues.length} issue{validationIssues.length === 1 ? '' : 's'}</span>}</Panel>
+          </ReactFlow></div>
         </div>
-      </div>
-      <DiagramExportPanel exportImage={exportImage} exportSvg={exportSvg} exportInventory={exportInventory} exportDiagram={exportDiagram} exportMarkdown={exportMarkdown} importDiagram={importDiagram} />
-      <DiagramWorkspacePanel diagrams={savedDiagrams} onSave={saveWorkspaceSnapshot} onLoad={loadWorkspaceSnapshot} onDelete={deleteWorkspaceSnapshot} />
+      </section>
+      <Dialog open={fileDialogOpen} onOpenChange={setFileDialogOpen}><DialogContent className="w-[min(92vw,56rem)] max-h-[min(86dvh,48rem)] overflow-y-auto border-[#292a2f] bg-[#101115] p-4 sm:!max-w-3xl sm:p-6"><DialogTitle className="text-sm text-zinc-100">Export topology</DialogTitle><DialogDescription className="text-xs text-zinc-500">Create a file or manage local snapshots without leaving the editor.</DialogDescription><div className="mt-2"><DiagramExportPanel exportImage={exportImage} exportSvg={exportSvg} exportInventory={exportInventory} exportDiagram={exportDiagram} exportMarkdown={exportMarkdown} importDiagram={importDiagram} /><DiagramWorkspacePanel diagrams={savedDiagrams} onSave={saveWorkspaceSnapshot} onLoad={loadWorkspaceSnapshot} onDelete={deleteWorkspaceSnapshot} /></div></DialogContent></Dialog>
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}><DialogContent className="w-[min(92vw,34rem)] border-[#292a2f] bg-[#101115] p-4 sm:!max-w-lg sm:p-6"><DialogTitle className="text-sm text-zinc-100">Diagram settings</DialogTitle><DialogDescription className="text-xs text-zinc-500">Tune the canvas presentation without changing topology data.</DialogDescription><DiagramSettings appearance={appearance} onChange={setAppearance} /></DialogContent></Dialog>
     </>
   );
 }
@@ -664,14 +722,39 @@ export default function NetworkDiagramPage() {
     <ToolLayout
       title="Network Diagram Generator"
       description="Create, edit and export network topology diagrams directly in your browser."
+      fullWidth
     >
-      <div className="w-full h-full max-w-7xl mx-auto">
+      <div className="h-full w-full">
         <ReactFlowProvider>
           <DiagramFlow />
         </ReactFlowProvider>
       </div>
     </ToolLayout>
   );
+}
+
+function EditorButton({ label, icon, onClick, disabled = false, danger = false }: { label: string; icon: ReactNode; onClick: () => void; disabled?: boolean; danger?: boolean }) {
+  return <button type="button" onClick={onClick} disabled={disabled} title={label} aria-label={label} className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[10px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${danger ? 'text-red-300 hover:bg-red-500/10 hover:text-red-200' : 'text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-100'}`}><span className="grid h-3.5 w-3.5 place-items-center [&>svg]:h-3.5 [&>svg]:w-3.5">{icon}</span><span className="hidden xl:inline">{label}</span></button>;
+}
+
+function DiagramSettings({ appearance, onChange }: { appearance: DiagramAppearance; onChange: (next: DiagramAppearance) => void }) {
+  const update = <K extends keyof DiagramAppearance>(key: K, value: DiagramAppearance[K]) => onChange({ ...appearance, [key]: value });
+  return <div className="mt-2 space-y-5"><SettingsOption label="Device sizing" description="Controls the visual density of every device card." value={appearance.deviceDensity} options={[['compact', 'Compact'], ['comfortable', 'Comfortable']]} onChange={value => update('deviceDensity', value as DiagramAppearance['deviceDensity'])} /><SettingsOption label="Cable weight" description="Sets the base thickness of connections." value={appearance.cableWeight} options={[['fine', 'Fine'], ['standard', 'Standard'], ['bold', 'Bold']]} onChange={value => update('cableWeight', value as DiagramAppearance['cableWeight'])} /><SettingsOption label="Grid" description="Adjusts the canvas reference grid." value={appearance.grid} options={[['subtle', 'Subtle'], ['dense', 'Dense'], ['off', 'Off']]} onChange={value => update('grid', value as DiagramAppearance['grid'])} /><SettingsOption label="Link labels" description="Choose when connection metadata is visible." value={appearance.edgeLabels} options={[['selected', 'On selection'], ['always', 'Always']]} onChange={value => update('edgeLabels', value as DiagramAppearance['edgeLabels'])} /><DeviceStyleOptions value={appearance.deviceStyle} onChange={value => update('deviceStyle', value)} /></div>;
+}
+
+function DeviceStyleOptions({ value, onChange }: { value: DiagramAppearance['deviceStyle']; onChange: (value: DiagramAppearance['deviceStyle']) => void }) {
+  const options: Array<{ value: DiagramAppearance['deviceStyle']; label: string }> = [{ value: 'solid', label: 'Solid' }, { value: 'outline', label: 'Outline' }, { value: 'minimal', label: 'Minimal' }];
+  return <section><div className="mb-2"><h3 className="text-xs font-semibold text-zinc-200">Device visual style</h3><p className="mt-0.5 text-[10px] text-zinc-500">Each preview shows its dark and light export treatment.</p></div><div className="grid gap-2 sm:grid-cols-3">{options.map(option => <button key={option.value} type="button" onClick={() => onChange(option.value)} aria-pressed={value === option.value} className={`rounded-lg border p-1.5 text-left transition-colors ${value === option.value ? 'border-[#00ff9c]/70 bg-[#00ff9c]/[0.06]' : 'border-[#2b2d32] bg-black hover:border-zinc-500'}`}><DeviceStylePreview style={option.value} /><span className={`mt-1.5 block text-center text-[10px] font-medium ${value === option.value ? 'text-[#a9f7c8]' : 'text-zinc-400'}`}>{option.label}</span></button>)}</div></section>;
+}
+
+function DeviceStylePreview({ style }: { style: DiagramAppearance['deviceStyle'] }) {
+  const deviceClass = style === 'solid' ? 'border border-[#00ff9c]/60 bg-[#17191d] shadow-[0_4px_10px_rgba(0,0,0,.28)]' : style === 'outline' ? 'border border-[#00ff9c] bg-transparent' : 'border border-transparent bg-[#1d2025]';
+  const lightDeviceClass = style === 'solid' ? 'border border-slate-300 bg-white shadow-sm' : style === 'outline' ? 'border border-slate-700 bg-transparent' : 'border border-transparent bg-slate-100';
+  return <div className="relative h-16 overflow-hidden rounded-md border border-[#34353a] bg-[#f8fafc]"><div className="absolute inset-y-0 left-0 w-[58%] bg-[#0b0d10]" style={{ clipPath: 'polygon(0 0, 100% 0, 84% 100%, 0 100%)' }} /><span className="absolute left-1.5 top-1 text-[7px] font-semibold tracking-wider text-zinc-500">DARK</span><span className="absolute right-1.5 top-1 text-[7px] font-semibold tracking-wider text-slate-400">LIGHT</span><div className={`absolute left-2 top-6 flex h-6 w-[3.8rem] items-center gap-1 rounded px-1.5 ${deviceClass}`}><span className="h-2 w-2 rounded-sm bg-[#00ff9c]" /><span className="h-1 w-7 rounded bg-zinc-600" /></div><div className={`absolute right-2 top-6 flex h-6 w-[3.8rem] items-center gap-1 rounded px-1.5 ${lightDeviceClass}`}><span className="h-2 w-2 rounded-sm bg-emerald-500" /><span className="h-1 w-7 rounded bg-slate-400" /></div></div>;
+}
+
+function SettingsOption({ label, description, value, options, onChange }: { label: string; description: string; value: string; options: Array<[string, string]>; onChange: (value: string) => void }) {
+  return <section><div className="mb-2"><h3 className="text-xs font-semibold text-zinc-200">{label}</h3><p className="mt-0.5 text-[10px] text-zinc-500">{description}</p></div><div className="flex flex-wrap gap-1.5">{options.map(([optionValue, optionLabel]) => <button key={optionValue} type="button" onClick={() => onChange(optionValue)} aria-pressed={value === optionValue} className={`rounded-md border px-2.5 py-1.5 text-[10px] transition-colors ${value === optionValue ? 'border-[#00ff9c]/60 bg-[#00ff9c]/10 text-[#a9f7c8]' : 'border-[#2b2d32] bg-black text-zinc-400 hover:border-zinc-500 hover:text-zinc-200'}`}>{optionLabel}</button>)}</div></section>;
 }
 
 function cloneNodes(nodes: NetworkNode[]): NetworkNode[] {

@@ -11,11 +11,14 @@ export function DiagramGuide({ headingId = 'diagram-guide-heading' }: { headingI
         <p><span className="text-[#00ff9c]">02</span> Connect source to target handles to create a link.</p>
         <p><span className="text-[#00ff9c]">03</span> Select an item to edit its properties here.</p>
         <p><span className="text-[#00ff9c]">04</span> Run validation before exporting the topology.</p>
-        <div className="border-t border-[#1a1a1a] pt-3 text-zinc-600">
-          <p><kbd className="rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-zinc-300">Shift</kbd> multi-select</p>
-          <p><kbd className="rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-zinc-300">Delete</kbd> remove selection</p>
-          <p><kbd className="rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-zinc-300">Ctrl/Cmd + Z</kbd> undo</p>
-          <p><kbd className="rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-zinc-300">Esc</kbd> exit focus mode</p>
+        <div className="space-y-1 border-t border-[#1a1a1a] pt-3 text-zinc-600">
+          <p className="flex items-center gap-1.5"><kbd className="shrink-0 rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-zinc-300">Shift</kbd> snap while dragging · multi-select</p>
+          <p className="flex items-center gap-1.5"><kbd className="shrink-0 rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-zinc-300">Ctrl/Cmd + A</kbd> select all</p>
+          <p className="flex items-center gap-1.5"><kbd className="shrink-0 rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-zinc-300">Ctrl/Cmd + C / V</kbd> copy / paste</p>
+          <p className="flex items-center gap-1.5"><kbd className="shrink-0 rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-zinc-300">Ctrl/Cmd + X</kbd> cut selection</p>
+          <p className="flex items-center gap-1.5"><kbd className="shrink-0 rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-zinc-300">Delete</kbd> remove selection</p>
+          <p className="flex items-center gap-1.5"><kbd className="shrink-0 rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-zinc-300">Ctrl/Cmd + Z</kbd> undo</p>
+          <p className="flex items-center gap-1.5"><kbd className="shrink-0 rounded border border-[#2a2a2a] bg-black px-1 py-0.5 text-zinc-300">Esc</kbd> exit focus mode</p>
         </div>
       </div>
     </section>
@@ -36,12 +39,12 @@ export function DiagramExportPanel({ exportImage, exportSvg, exportInventory, ex
     <section className="mt-4 rounded-lg border border-[#1a1a1a] bg-[#080808] p-3 sm:p-4" aria-labelledby="diagram-export-heading">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 id="diagram-export-heading" className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Export &amp; documentation</h2>
-          <p className="mt-1 text-[10px] text-zinc-600">Create a file from the complete topology without leaving the browser.</p>
+          <h2 id="diagram-export-heading" className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Export</h2>
+          <p className="mt-1 text-[10px] text-zinc-600">Create a file from the current topology.</p>
         </div>
         <span className="font-mono text-[9px] text-zinc-700">local-only</span>
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <ExportGroup title="Image">
           <Button onClick={() => exportImage('black')} variant="outline" size="sm" className="bg-black text-[10px]">PNG dark</Button>
           <Button onClick={() => exportImage('white')} variant="outline" size="sm" className="bg-black text-[10px]">PNG light</Button>

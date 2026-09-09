@@ -181,6 +181,38 @@
   fill: #a1a1aa !important;
 }
 
+.diagram-labels-selected .edge-metadata:not(.edge-metadata-selected) {
+  display: none;
+}
+
+.diagram-devices-outline .diagram-device-card {
+  background: #0a0b0d !important;
+  box-shadow: none !important;
+  border-width: 1px !important;
+}
+
+.diagram-devices-minimal .diagram-device-card {
+  background: #101115 !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
+}
+
+.diagram-devices-minimal .diagram-device-icon {
+  opacity: 0.72;
+}
+
+.diagram-export-light .diagram-device-card {
+  background: #ffffff !important;
+  border-color: #94a3b8 !important;
+  box-shadow: none !important;
+  color: #0f172a !important;
+}
+
+.diagram-export-light .diagram-device-title { color: #0f172a !important; }
+.diagram-export-light .diagram-device-icon,
+.diagram-export-light .diagram-device-meta,
+.diagram-export-light .diagram-device-vlan { color: #475569 !important; }
+
 /* Diagram colors are also resolved into the standalone PNG export. */
 .runbook-diagram,
 .runbook-exporting {

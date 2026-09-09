@@ -5,7 +5,7 @@ export type DiagramData = { nodes: Record<string, unknown>[]; edges: Record<stri
 export type DiagramIssue = { id: string; severity: 'error' | 'warning'; title: string; detail: string };
 
 const MAX_LABEL_LENGTH = 1000;
-const NODE_DATA_FIELDS = ['label', 'type', 'ip', 'subnet', 'vlan', 'hostname', 'vendor', 'model', 'role', 'zone', 'status', 'notes', 'interfaces'];
+const NODE_DATA_FIELDS = ['label', 'type', 'ip', 'subnet', 'vlan', 'hostname', 'vendor', 'model', 'role', 'zone', 'status', 'notes', 'interfaces', 'groupColor'];
 const EDGE_DATA_FIELDS = ['connectionType', 'label', 'sourcePort', 'targetPort', 'bandwidth', 'vlanMode', 'vlans'];
 const CONNECTION_TYPES = new Set(['ethernet', 'fiber', 'wireless', 'vpn']);
 const VLAN_MODES = new Set(['access', 'trunk', 'routed', 'unknown']);
@@ -143,7 +143,9 @@ export function validateDiagram(diagram: DiagramData): DiagramIssue[] {
     const subnet = readNodeString(data, 'subnet').trim();
     const vlan = readNodeString(data, 'vlan').trim();
 
-    if (!connectedNodeIds.has(nodeId)) {
+    // Groups are visual containers: their children own the actual links, so a
+    // group itself must never be reported as an isolated network device.
+    if (readNodeString(data, 'type') !== 'group' && !connectedNodeIds.has(nodeId)) {
       issues.push({ id: `orphan-${nodeId}`, severity: 'warning', title: 'Isolated node', detail: `${label} has no connections.` });
     }
     if (ip) {
@@ -245,12 +247,33 @@ export function validateDiagram(diagram: DiagramData): DiagramIssue[] {
   }
 
   const infrastructureTypes = new Set(['router', 'firewall', 'switch', 'load-balancer', 'ids-ips', 'vpn']);
+  const edgeTypes = new Set(['router', 'firewall', 'vpn']);
+  const isExternalPeer = (data: Record<string, unknown>) => {
+    const zone = readNodeString(data, 'zone');
+    const type = readNodeString(data, 'type');
+    return ['internet', 'wan', 'cloud'].includes(zone) || ['cloud', 'vpc'].includes(type);
+  };
   for (const node of diagram.nodes) {
     const nodeId = readNodeString(node, 'id');
     const data = node.data && typeof node.data === 'object' ? node.data as Record<string, unknown> : {};
     const type = readNodeString(data, 'type');
-    if (infrastructureTypes.has(type) && (nodeDegrees.get(nodeId) ?? 0) === 1) {
-      const label = readNodeString(data, 'label') || nodeId;
+    const label = readNodeString(data, 'label') || nodeId;
+    const neighborIds = diagram.edges.flatMap(edge => edge.source === nodeId ? [edge.target] : edge.target === nodeId ? [edge.source] : []).filter((id): id is string => typeof id === 'string');
+    const externalPeerIds = new Set(neighborIds.filter(peerId => {
+      const peer = nodesById.get(peerId);
+      const peerData = peer?.data && typeof peer.data === 'object' ? peer.data as Record<string, unknown> : {};
+      return isExternalPeer(peerData);
+    }));
+    const internalPeerCount = new Set(neighborIds).size - externalPeerIds.size;
+
+    if (edgeTypes.has(type) && externalPeerIds.size > 0) {
+      if (externalPeerIds.size < 2) {
+        issues.push({ id: `wan-failover-${nodeId}`, severity: 'warning', title: 'WAN failover unavailable', detail: `${label} has ${externalPeerIds.size} external upstream; add an independent Internet/WAN peer for failover.` });
+      }
+      if (internalPeerCount === 0) {
+        issues.push({ id: `internal-handoff-${nodeId}`, severity: 'warning', title: 'Internal handoff missing', detail: `${label} reaches an external network but has no LAN, DMZ, or server-side connection.` });
+      }
+    } else if (infrastructureTypes.has(type) && (nodeDegrees.get(nodeId) ?? 0) === 1) {
       issues.push({ id: `single-homed-${nodeId}`, severity: 'warning', title: 'Single-homed infrastructure', detail: `${label} has one connection; consider a redundant link or document the dependency.` });
     }
   }
