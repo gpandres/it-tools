@@ -1,12 +1,20 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cidrToMaskInt, intToIp } from "@/lib/network";
+import { useNotification } from "@/components/notification-provider";
+import {
+  ToolPanel,
+  ToolPanelHeader,
+  ToolPanelTitle,
+  ToolPanelBody,
+  ToolField,
+  ToolStatus,
+} from "@/components/tool-design";
 
 export default function CidrConverter() {
   const [cidr, setCidr] = useState("24");
@@ -14,12 +22,18 @@ export default function CidrConverter() {
   
   const [error, setError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const { notify } = useNotification();
 
-  const copy = (text: string, key: string) => {
+  const copy = async (text: string, key: string) => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      notify("Copied to clipboard");
+      setTimeout(() => setCopiedKey(null), 2000);
+    } catch {
+      notify("Could not copy to clipboard", "error");
+    }
   };
 
   const updateFromCidr = (val: string) => {
@@ -51,7 +65,6 @@ export default function CidrConverter() {
     if (parts.length === 4 && parts.every(p => /^\d+$/.test(p) && parseInt(p) >= 0 && parseInt(p) <= 255)) {
       const intVal = parts.reduce((acc, part) => (acc << 8) + parseInt(part), 0) >>> 0;
       
-      // Calculate CIDR by counting consecutive 1s from the left
       let c = 0;
       let temp = intVal;
       let valid = true;
@@ -59,7 +72,6 @@ export default function CidrConverter() {
         if ((temp >>> i) & 1) {
           c++;
         } else {
-          // Once we hit a 0, the rest must be 0s for a valid mask
           const remaining = temp & ((1 << i) - 1);
           if (remaining !== 0) {
             valid = false;
@@ -78,7 +90,6 @@ export default function CidrConverter() {
     }
   };
 
-  // Derived calculations based on valid state
   let wildcard = "";
   let hosts = 0;
   
@@ -95,117 +106,114 @@ export default function CidrConverter() {
 
   return (
     <ToolLayout 
-      title="CIDR & Subnet Mask Converter" 
+      title="CIDR & SUBNET MASK CONVERTER" 
       description="Convert bidirectionally between CIDR notation (e.g., /24) and IPv4 Subnet Masks (e.g., 255.255.255.0)."
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-        <BaseInputBox 
-          title="CIDR Prefix" 
-          value={cidr}
-          onChange={updateFromCidr}
-          onCopy={() => copy("/" + cidr, "cidr")}
-          copied={copiedKey === "cidr"}
-          error={error}
-          prefix="/"
-          placeholder="24"
-        />
-        <BaseInputBox 
-          title="Subnet Mask" 
-          value={mask}
-          onChange={updateFromMask}
-          onCopy={() => copy(mask, "mask")}
-          copied={copiedKey === "mask"}
-          error={error}
-          prefix=""
-          placeholder="255.255.255.0"
-        />
-        <BaseInputBox 
-          title="Wildcard Mask" 
-          value={wildcard}
-          onChange={() => {}}
-          onCopy={() => copy(wildcard, "wild")}
-          copied={copiedKey === "wild"}
-          error={error}
-          prefix=""
-          placeholder=""
-          readOnly
-        />
-        <BaseInputBox 
-          title="Total IPs" 
-          value={hosts.toString()}
-          onChange={() => {}}
-          onCopy={() => copy(hosts.toString(), "hosts")}
-          copied={copiedKey === "hosts"}
-          error={error}
-          prefix=""
-          placeholder=""
-          readOnly
-        />
-      </div>
-      
-      {error && (
-        <div className="mt-6 p-4 bg-red-950/30 border border-red-900/50 max-w-4xl mx-auto flex items-center gap-3">
-          <span className="bg-red-500 text-white px-2 py-0.5 text-xs font-mono">ERROR</span>
-          <span className="text-red-400 font-mono text-sm">{error}</span>
-        </div>
-      )}
-    </ToolLayout>
-  );
-}
+      <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6">
+        <ToolPanel>
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="IN/OUT" className="text-sm text-[#ffb000] glow-amber">CONVERSION</ToolPanelTitle>
+          </ToolPanelHeader>
+          <ToolPanelBody className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <ToolField htmlFor="cidr" label="CIDR Prefix">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-zinc-500">/</span>
+                  <Input
+                    id="cidr"
+                    value={cidr}
+                    onChange={(e) => updateFromCidr(e.target.value)}
+                    placeholder="24"
+                    className={`rounded-none pl-7 font-mono ${error && cidr ? "border-red-500 text-red-400 focus-visible:ring-red-500" : "text-[#00ff9c]"}`}
+                  />
+                </div>
+                <Button 
+                  type="button"
+                  variant="outline" size="icon" 
+                  aria-label="Copy CIDR"
+                  title="Copy CIDR"
+                  onClick={() => copy("/" + cidr, "cidr")}
+                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]"
+                >
+                  {copiedKey === "cidr" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </ToolField>
 
-function BaseInputBox({ 
-  title, 
-  value, 
-  onChange, 
-  onCopy, 
-  copied, 
-  error,
-  prefix,
-  placeholder,
-  readOnly = false
-}: { 
-  title: string, 
-  value: string, 
-  onChange: (val: string) => void,
-  onCopy: () => void,
-  copied: boolean,
-  error: string | null,
-  prefix: string,
-  placeholder: string,
-  readOnly?: boolean
-}) {
-  return (
-    <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
-      <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-        <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">{title}</span>
-        <Button 
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 transition-colors"
-          onClick={onCopy}
-        >
-          {copied ? <><Check className="w-3 h-3 mr-1" /> Copied</> : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
-        </Button>
-      </header>
-      <div className="p-4 flex flex-col justify-center min-h-[100px]">
-        <Label className="sr-only">{title}</Label>
-        <div className="relative">
-          {prefix && value && !error && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 font-mono text-lg pointer-events-none select-none">
-              {prefix}
-            </div>
-          )}
-          <Input
-            type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
-            readOnly={readOnly}
-            className={`w-full font-mono text-lg bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] h-12 text-zinc-200 ${prefix && value && !error ? 'pl-7' : ''} ${error && value && !readOnly ? 'border-red-500/50 text-red-400 focus-visible:ring-red-500' : ''} ${readOnly ? 'opacity-70 focus-visible:ring-0 cursor-default' : ''}`}
-            spellCheck={false}
-          />
-        </div>
+            <ToolField htmlFor="mask" label="Subnet Mask">
+              <div className="flex gap-2">
+                <Input
+                  id="mask"
+                  value={mask}
+                  onChange={(e) => updateFromMask(e.target.value)}
+                  placeholder="255.255.255.0"
+                  className={`rounded-none font-mono ${error && mask ? "border-red-500 text-red-400 focus-visible:ring-red-500" : "text-[#00ff9c]"}`}
+                />
+                <Button 
+                  type="button"
+                  variant="outline" size="icon" 
+                  aria-label="Copy Mask"
+                  title="Copy Mask"
+                  onClick={() => copy(mask, "mask")}
+                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]"
+                >
+                  {copiedKey === "mask" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </ToolField>
+
+            <ToolField htmlFor="wildcard" label="Wildcard Mask">
+              <div className="flex gap-2">
+                <Input
+                  id="wildcard"
+                  value={wildcard}
+                  readOnly
+                  placeholder="0.0.0.255"
+                  className="rounded-none border-[#1a1a1a] bg-[#050505] font-mono text-zinc-300 opacity-80 focus-visible:ring-0"
+                />
+                <Button 
+                  type="button"
+                  variant="outline" size="icon" 
+                  aria-label="Copy Wildcard"
+                  title="Copy Wildcard"
+                  onClick={() => copy(wildcard, "wildcard")}
+                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]"
+                >
+                  {copiedKey === "wildcard" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </ToolField>
+
+            <ToolField htmlFor="hosts" label="Total IPs">
+              <div className="flex gap-2">
+                <Input
+                  id="hosts"
+                  value={hosts ? hosts.toString() : ""}
+                  readOnly
+                  placeholder="256"
+                  className="rounded-none border-[#1a1a1a] bg-[#050505] font-mono text-zinc-300 opacity-80 focus-visible:ring-0"
+                />
+                <Button 
+                  type="button"
+                  variant="outline" size="icon" 
+                  aria-label="Copy IPs"
+                  title="Copy IPs"
+                  onClick={() => copy(hosts.toString(), "hosts")}
+                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]"
+                >
+                  {copiedKey === "hosts" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </ToolField>
+          </ToolPanelBody>
+        </ToolPanel>
+
+        {error && (
+          <ToolStatus tone="error">
+            {error}
+          </ToolStatus>
+        )}
       </div>
-    </article>
+    </ToolLayout>
   );
 }
