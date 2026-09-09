@@ -3,9 +3,9 @@ import { Check, CircleAlert, Clock3, Database, ShieldAlert } from "lucide-react"
 const ticks = ["T−24h", "T−20h", "T−16h", "T−12h", "T−08h", "T−04h", "T0", "T+04h"];
 
 const events = [
-  { time: "09:00 UTC", offset: "T−04:00", label: "Last backup", detail: "Latest recovery point", tone: "info", icon: Database },
-  { time: "13:00 UTC", offset: "T0", label: "Disaster event", detail: "Service interruption", tone: "failure", icon: ShieldAlert },
-  { time: "17:00 UTC", offset: "T+04:00", label: "System restored", detail: "Operations resumed", tone: "success", icon: Check },
+  { time: "09:00 UTC", offset: "T−04:00", position: 71.4286, label: "Last backup", detail: "Latest recovery point", tone: "info", icon: Database },
+  { time: "13:00 UTC", offset: "T0", position: 85.7143, label: "Disaster event", detail: "Service interruption", tone: "failure", icon: ShieldAlert },
+  { time: "17:00 UTC", offset: "T+04:00", position: 100, label: "System restored", detail: "Operations resumed", tone: "success", icon: Check },
 ] as const;
 
 const toneClasses = {
@@ -55,10 +55,24 @@ export function HorizontalTimelineDemo() {
             </div>
           </div>
 
-          <div className="relative h-7 border-b border-[#2a2a2a]">
-            <span className="absolute bottom-0 left-[71.4286%] h-5 border-l border-sky-300/70" aria-hidden="true" />
-            <span className="absolute bottom-0 left-[85.7143%] h-7 border-l border-red-300/80" aria-hidden="true" />
-            <span className="absolute bottom-0 right-0 h-5 border-l border-[#00ff9c]/70" aria-hidden="true" />
+          <div className="relative h-16 border-b border-[#2a2a2a]">
+            {events.map(event => {
+              const tone = toneClasses[event.tone];
+              const isFinalEvent = event.position === 100;
+
+              return (
+                <div
+                  key={event.label}
+                  className={`absolute bottom-0 flex flex-col items-center ${isFinalEvent ? "-translate-x-full items-end" : "-translate-x-1/2"}`}
+                  style={{ left: `${event.position}%` }}
+                >
+                  <span className={`mb-2 whitespace-nowrap text-[9px] font-bold uppercase tracking-wider ${tone.accent}`}>
+                    {event.label}
+                  </span>
+                  <span className={`h-3 w-3 border-2 ${tone.marker}`} aria-hidden="true" />
+                </div>
+              );
+            })}
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-3">
