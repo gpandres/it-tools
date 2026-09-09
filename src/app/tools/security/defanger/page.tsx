@@ -94,12 +94,12 @@ function DefangerContent() {
               <span className="text-[#00ff9c] text-xs">[IN]</span>
               <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Input URLs</span>
             </div>
-            <div className="flex bg-black border border-[#1a1a1a] rounded p-1 gap-1">
+            <div className="flex bg-black border border-[#1a1a1a] rounded-none p-1 gap-1">
               <Button 
                 size="sm" 
                 variant="ghost" 
                 onClick={() => setMode("defang")}
-                className={`h-7 px-3 text-xs font-mono rounded-sm transition-colors ${mode === "defang" ? "bg-[#00ff9c]/20 text-[#00ff9c]" : "text-zinc-500 hover:text-zinc-300"}`}
+                className={`h-7 px-3 text-xs font-mono rounded-none transition-colors ${mode === "defang" ? "bg-[#00ff9c]/20 text-[#00ff9c]" : "text-zinc-500 hover:text-zinc-300"}`}
               >
                 <Link2Off className="w-3 h-3 mr-2" /> Defang
               </Button>
@@ -107,7 +107,7 @@ function DefangerContent() {
                 size="sm" 
                 variant="ghost" 
                 onClick={() => setMode("refang")}
-                className={`h-7 px-3 text-xs font-mono rounded-sm transition-colors ${mode === "refang" ? "bg-[#00ff9c]/20 text-[#00ff9c]" : "text-zinc-500 hover:text-zinc-300"}`}
+                className={`h-7 px-3 text-xs font-mono rounded-none transition-colors ${mode === "refang" ? "bg-[#00ff9c]/20 text-[#00ff9c]" : "text-zinc-500 hover:text-zinc-300"}`}
               >
                 <Link2 className="w-3 h-3 mr-2" /> Refang
               </Button>
@@ -115,7 +115,7 @@ function DefangerContent() {
                 size="sm" 
                 variant="ghost" 
                 onClick={() => setMode("decode")}
-                className={`h-7 px-3 text-xs font-mono rounded-sm transition-colors ${mode === "decode" ? "bg-amber-500/20 text-amber-500" : "text-zinc-500 hover:text-zinc-300"}`}
+                className={`h-7 px-3 text-xs font-mono rounded-none transition-colors ${mode === "decode" ? "bg-amber-500/20 text-amber-500" : "text-zinc-500 hover:text-zinc-300"}`}
               >
                 <ShieldAlert className="w-3 h-3 mr-2" /> Decode Only
               </Button>

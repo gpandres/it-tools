@@ -535,7 +535,7 @@ export default function IncidentReportTool() {
               <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">META INFORMATION</ToolPanelTitle>
             </ToolPanelHeader>
             <ToolPanelBody className="space-y-4">
-              <ToolField label="Company Logo (For PDF)">
+              <ToolField label="Company Logo (For PDF)" htmlFor="logo">
                 <div className="flex items-center gap-4">
                   {logo ? (
                     <div className="relative">
@@ -553,37 +553,37 @@ export default function IncidentReportTool() {
               </ToolField>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ToolField label="Incident Title">
+                <ToolField label="Incident Title" htmlFor="title">
                   <Input value={report.title} onChange={e => updateField("title", e.target.value)} placeholder="Network connectivity outage" className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm" />
                 </ToolField>
-                <ToolField label="Incident ID (Optional)">
+                <ToolField label="Incident ID (Optional)" htmlFor="id">
                   <Input value={report.id} onChange={e => updateField("id", e.target.value)} placeholder="INC-2026-001" className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm" />
                 </ToolField>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ToolField label="Agent / Responder">
+                <ToolField label="Agent / Responder" htmlFor="agent">
                   <Input value={report.agentName} onChange={e => updateField("agentName", e.target.value)} placeholder="John Doe (SOC)" className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm" />
                 </ToolField>
-                <ToolField label="Affected User / Dept">
+                <ToolField label="Affected User / Dept" htmlFor="dept">
                   <Input value={report.affectedUserDept} onChange={e => updateField("affectedUserDept", e.target.value)} placeholder="Finance Dept" className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm" />
                 </ToolField>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <ToolField label="Date">
+                <ToolField label="Date" htmlFor="date">
                   <Input type="date" value={report.date} onChange={e => updateField("date", e.target.value)} className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm [color-scheme:dark]" />
                 </ToolField>
-                <ToolField label="Start Time">
+                <ToolField label="Start Time" htmlFor="start">
                   <Input type="time" value={report.startTime} onChange={e => updateField("startTime", e.target.value)} className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm [color-scheme:dark]" />
                 </ToolField>
-                <ToolField label="End Time">
+                <ToolField label="End Time" htmlFor="end">
                   <Input type="time" value={report.endTime} onChange={e => updateField("endTime", e.target.value)} className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm [color-scheme:dark]" />
                 </ToolField>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ToolField label="Severity">
+                <ToolField label="Severity" htmlFor="severity">
                   <Select value={report.severity} onValueChange={(v) => updateField("severity", v || "")}>
                     <SelectTrigger className="rounded-none bg-black border-[#1a1a1a] focus:ring-[#00ff9c] font-mono text-sm">
                       <SelectValue />
@@ -597,7 +597,7 @@ export default function IncidentReportTool() {
                     </SelectContent>
                   </Select>
                 </ToolField>
-                <ToolField label="Status">
+                <ToolField label="Status" htmlFor="status">
                   <Select value={report.status} onValueChange={(v) => updateField("status", v || "")}>
                     <SelectTrigger className="rounded-none bg-black border-[#1a1a1a] focus:ring-[#00ff9c] font-mono text-sm">
                       <SelectValue />
@@ -620,15 +620,15 @@ export default function IncidentReportTool() {
               <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">INCIDENT DETAILS</ToolPanelTitle>
             </ToolPanelHeader>
             <ToolPanelBody className="space-y-4">
-              <ToolField label="Affected Systems (One per line)">
+              <ToolField label="Affected Systems (One per line)" htmlFor="systems">
                 <Textarea value={report.affectedSystems} onChange={e => updateField("affectedSystems", e.target.value)} placeholder="SW-CORE\nVLAN 20\nWEB-01" className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[80px]" />
               </ToolField>
 
-              <ToolField label="Summary">
+              <ToolField label="Summary" htmlFor="summary">
                 <Textarea value={report.summary} onChange={e => updateField("summary", e.target.value)} placeholder="Brief description of the incident and impact..." className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[100px]" />
               </ToolField>
 
-              <ToolField label={<span className="flex justify-between items-center w-full">Raw Notes / Timeline <span className="text-[10px] text-zinc-500 font-normal normal-case tracking-normal">Auto-parses Syslog, ISO 8601, HH:MM</span></span>}>
+              <ToolField label={<span className="flex justify-between items-center w-full">Raw Notes / Timeline <span className="text-[10px] text-zinc-500 font-normal normal-case tracking-normal">Auto-parses Syslog, ISO 8601, HH:MM</span></span>} htmlFor="rawNotes">
                 <Textarea value={report.rawNotes} onChange={e => updateField("rawNotes", e.target.value)} placeholder={"10:31 User reports no connectivity\n10:32 SW-CORE Gi0/1 shows down"} className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[200px]" />
               </ToolField>
             </ToolPanelBody>
@@ -639,19 +639,19 @@ export default function IncidentReportTool() {
               <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">POST-INCIDENT</ToolPanelTitle>
             </ToolPanelHeader>
             <ToolPanelBody className="space-y-4">
-              <ToolField label="Root Cause">
+              <ToolField label="Root Cause" htmlFor="rootCause">
                 <Textarea value={report.rootCause} onChange={e => updateField("rootCause", e.target.value)} placeholder="Leave empty if unknown. Do not guess." className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[80px]" />
               </ToolField>
 
-              <ToolField label="Resolution">
+              <ToolField label="Resolution" htmlFor="resolution">
                 <Textarea value={report.resolution} onChange={e => updateField("resolution", e.target.value)} placeholder="How was the incident resolved?" className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[80px]" />
               </ToolField>
 
-              <ToolField label="Actions Taken">
+              <ToolField label="Actions Taken" htmlFor="actionsTaken">
                 <Textarea value={report.actionsTaken} onChange={e => updateField("actionsTaken", e.target.value)} placeholder="List of specific actions performed..." className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[100px]" />
               </ToolField>
 
-              <ToolField label={<>Recommendations <span className="text-zinc-600 normal-case tracking-normal">(Optional)</span></>}>
+              <ToolField label={<>Recommendations <span className="text-zinc-600 normal-case tracking-normal">(Optional)</span></>} htmlFor="recommendations">
                 <Textarea value={report.recommendations} onChange={e => updateField("recommendations", e.target.value)} placeholder="Steps to prevent recurrence..." className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[100px]" />
               </ToolField>
             </ToolPanelBody>
@@ -678,7 +678,7 @@ export default function IncidentReportTool() {
                 <ToolActionButton onClick={handleExportTXT} tone="neutral"><FileText className="w-4 h-4 mr-2" /> TXT</ToolActionButton>
                 <ToolActionButton onClick={handleExportJSON} tone="neutral"><FileJson className="w-4 h-4 mr-2" /> JSON</ToolActionButton>
                 <ToolActionButton onClick={handleExportBundle} tone="neutral"><FileSearch className="w-4 h-4 mr-2" /> Bundle</ToolActionButton>
-                <ToolActionButton onClick={handleExportPDF} tone="primary"><Download className="w-4 h-4 mr-2" /> PDF</ToolActionButton>
+                <ToolActionButton onClick={handleExportPDF} tone="accent"><Download className="w-4 h-4 mr-2" /> PDF</ToolActionButton>
               </div>
             </div>
           </ToolActionPanel>

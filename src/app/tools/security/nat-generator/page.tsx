@@ -96,9 +96,9 @@ function NatGeneratorContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex w-fit flex-wrap overflow-hidden rounded border border-[#1a1a1a] bg-black">
+      <div className="flex w-fit flex-wrap overflow-hidden rounded-none border border-[#1a1a1a] bg-black">
         {(["dnat", "snat"] as const).map(mode => (
-          <button key={mode} type="button" aria-pressed={natType === mode} onClick={() => setNatType(mode)} className={`px-5 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${natType === mode ? "bg-[#00ff9c] text-black" : "text-zinc-500 hover:text-zinc-300"}`}>
+          <button key={mode} type="button" aria-pressed={natType === mode} onClick={() => setNatType(mode)} className={`px-5 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${natType === mode ? "bg-[#00ff9c] text-black" : "text-zinc-500 hover:text-zinc-300"} rounded-none`}>
             {mode === "dnat" ? "DNAT (Port Forwarding)" : "SNAT / Masquerade"}
           </button>
         ))}
@@ -117,13 +117,13 @@ function NatGeneratorContent() {
               <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2">External (WAN)</h3>
               <div className="space-y-2">
                 <label className="text-xs font-mono text-zinc-400">Public IP</label>
-                <input type="text" value={publicIp} onChange={(e) => setPublicIp(e.target.value)} className="w-full bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none" />
+                <input type="text" value={publicIp} onChange={(e) => setPublicIp(e.target.value)} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-mono text-zinc-400">Public Port & Protocol</label>
                 <div className="flex gap-2">
-                  <input type="text" value={publicPort} onChange={(e) => setPublicPort(e.target.value)} className="flex-1 bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none" />
-                  <select value={protocol} onChange={(e) => setProtocol(e.target.value === "udp" ? "udp" : "tcp")} className="bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono uppercase focus:border-[#00ff9c] focus:outline-none w-24">
+                  <input type="text" value={publicPort} onChange={(e) => setPublicPort(e.target.value)} className="flex-1 rounded-none bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none" />
+                  <select value={protocol} onChange={(e) => setProtocol(e.target.value === "udp" ? "udp" : "tcp")} className="rounded-none bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono uppercase focus:border-[#00ff9c] focus:outline-none w-24">
                     <option value="tcp">TCP</option>
                     <option value="udp">UDP</option>
                   </select>
@@ -135,11 +135,11 @@ function NatGeneratorContent() {
               <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2">Internal (LAN)</h3>
               <div className="space-y-2">
                 <label className="text-xs font-mono text-zinc-400">Private IP</label>
-                <input type="text" value={privateIp} onChange={(e) => setPrivateIp(e.target.value)} className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none" />
+                <input type="text" value={privateIp} onChange={(e) => setPrivateIp(e.target.value)} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-mono text-zinc-400">Private Port</label>
-                <input type="text" value={privatePort} onChange={(e) => setPrivatePort(e.target.value)} className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none" />
+                <input type="text" value={privatePort} onChange={(e) => setPrivatePort(e.target.value)} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none" />
               </div>
             </div>
           </div>
@@ -149,11 +149,11 @@ function NatGeneratorContent() {
               <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2">Internal Source</h3>
               <div className="space-y-2">
                 <label className="text-xs font-mono text-zinc-400">Source Network/IP</label>
-                <input type="text" value={srcNetwork} onChange={(e) => setSrcNetwork(e.target.value)} className="w-full bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none" />
+                <input type="text" value={srcNetwork} onChange={(e) => setSrcNetwork(e.target.value)} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-mono text-zinc-400">Outbound Interface</label>
-                <input type="text" value={outIface} onChange={(e) => setOutIface(e.target.value)} className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none" />
+                <input type="text" value={outIface} onChange={(e) => setOutIface(e.target.value)} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none" />
               </div>
             </div>
             
@@ -161,7 +161,7 @@ function NatGeneratorContent() {
               <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2">Translation Type</h3>
               <div className="space-y-2">
                 <label className="text-xs font-mono text-zinc-400">Action</label>
-                <select value={snatType} onChange={(e) => setSnatType(e.target.value)} className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none">
+                <select value={snatType} onChange={(e) => setSnatType(e.target.value)} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none">
                   <option value="masquerade">Masquerade (Dynamic IP)</option>
                   <option value="src-nat">Static SNAT (Fixed IP)</option>
                 </select>
@@ -169,7 +169,7 @@ function NatGeneratorContent() {
               {snatType === "src-nat" && (
                 <div className="space-y-2">
                   <label className="text-xs font-mono text-zinc-400">Translated Public IP</label>
-                  <input type="text" value={snatIp} onChange={(e) => setSnatIp(e.target.value)} className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none" />
+                  <input type="text" value={snatIp} onChange={(e) => setSnatIp(e.target.value)} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none" />
                 </div>
               )}
             </div>

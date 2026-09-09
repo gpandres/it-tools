@@ -248,19 +248,19 @@ export default function LogParser() {
                 <div className="grid grid-cols-1 gap-2">
                   <button 
                     onClick={() => setLogType("nginx_combined")}
-                    className={`p-2 border text-left font-mono text-xs transition-colors ${logType === "nginx_combined" ? "border-blue-500/50 bg-blue-500/10 text-blue-400" : "border-[#1a1a1a] text-zinc-400 hover:border-[#2a2a2a]"}`}
+                    className={`p-2 rounded-none border text-left font-mono text-xs transition-colors ${logType === "nginx_combined" ? "border-blue-500/50 bg-blue-500/10 text-blue-400" : "border-[#1a1a1a] text-zinc-400 hover:border-[#2a2a2a]"}`}
                   >
                     Nginx/Apache (Combined)
                   </button>
                   <button 
                     onClick={() => setLogType("auth_log")}
-                    className={`p-2 border text-left font-mono text-xs transition-colors ${logType === "auth_log" ? "border-blue-500/50 bg-blue-500/10 text-blue-400" : "border-[#1a1a1a] text-zinc-400 hover:border-[#2a2a2a]"}`}
+                    className={`p-2 rounded-none border text-left font-mono text-xs transition-colors ${logType === "auth_log" ? "border-blue-500/50 bg-blue-500/10 text-blue-400" : "border-[#1a1a1a] text-zinc-400 hover:border-[#2a2a2a]"}`}
                   >
                     Linux auth.log (SSH)
                   </button>
                   <button 
                     onClick={() => setLogType("custom")}
-                    className={`p-2 border text-left font-mono text-xs transition-colors ${logType === "custom" ? "border-blue-500/50 bg-blue-500/10 text-blue-400" : "border-[#1a1a1a] text-zinc-400 hover:border-[#2a2a2a]"}`}
+                    className={`p-2 rounded-none border text-left font-mono text-xs transition-colors ${logType === "custom" ? "border-blue-500/50 bg-blue-500/10 text-blue-400" : "border-[#1a1a1a] text-zinc-400 hover:border-[#2a2a2a]"}`}
                   >
                     Custom Regex Pattern
                   </button>
@@ -314,20 +314,20 @@ export default function LogParser() {
             
             {parsedData && (
               <div className="flex items-center gap-4">
-                <div className="flex items-center bg-black border border-[#1a1a1a]">
+                <div className="flex items-center rounded-none bg-black border border-[#1a1a1a]">
                   <Search className="w-3 h-3 text-zinc-500 ml-2" />
                   <input 
                     type="text"
                     placeholder="Filter by IP or String..."
                     value={filterIp}
                     onChange={(e) => setFilterIp(e.target.value)}
-                    className="bg-transparent border-none text-xs font-mono text-zinc-300 w-40 px-2 py-1.5 focus:outline-none placeholder:text-zinc-600"
+                    className="rounded-none bg-transparent border-none text-xs font-mono text-zinc-300 w-40 px-2 py-1.5 focus:outline-none placeholder:text-zinc-600 focus:border-[#00ff9c] focus:ring-1 focus:ring-[#00ff9c]"
                   />
                 </div>
                 
                 <button
                   onClick={() => setShowOnlyErrors(!showOnlyErrors)}
-                  className={`flex items-center gap-2 px-3 py-1.5 border font-mono text-xs transition-colors ${
+                  className={`flex items-center gap-2 px-3 py-1.5 border font-mono text-xs transition-colors rounded-none ${
                     showOnlyErrors ? "border-red-500/50 bg-red-500/10 text-red-400" : "border-[#1a1a1a] bg-black text-zinc-400 hover:text-zinc-300 hover:border-[#2a2a2a]"
                   }`}
                 >

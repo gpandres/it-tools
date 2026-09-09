@@ -1079,17 +1079,17 @@ function MitreSimulator() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-4 shrink-0">
-          <Button onClick={() => setIsBuilderOpen(!isBuilderOpen)} variant="outline" className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 font-mono text-xs h-9">
+          <Button onClick={() => setIsBuilderOpen(!isBuilderOpen)} variant="outline" className="rounded-none border-[#00ff9c]/30 text-[#00ff9c] hover:bg-[#00ff9c]/10 hover:text-[#00ff9c] font-mono text-xs h-9">
             <Plus className="w-3 h-3 mr-2" /> Custom Scenario
           </Button>
           <div className="flex items-center gap-2 border-l border-[#1a1a1a] pl-4">
             <Label htmlFor="simulator-mode" className={`font-bold font-mono text-xs uppercase tracking-widest flex items-center gap-1 ${isHardMode ? 'text-red-500' : 'text-zinc-500'}`}><Skull className="w-3 h-3" /> Mode</Label>
-            <select id="simulator-mode" value={simulatorMode} onChange={(event) => changeSimulatorMode(event.target.value as "standard" | "hard")} className="h-9 border border-[#1a1a1a] bg-black px-2 text-[10px] font-mono uppercase tracking-widest text-zinc-300 outline-none focus:border-[#00ff9c]">
+            <select id="simulator-mode" value={simulatorMode} onChange={(event) => changeSimulatorMode(event.target.value as "standard" | "hard")} className="h-9 rounded-none border border-[#1a1a1a] bg-black px-2 text-[10px] font-mono uppercase tracking-widest text-zinc-300 outline-none focus:border-[#00ff9c]">
               <option value="standard">Training</option>
               <option value="hard">Hard</option>
             </select>
           </div>
-          <Button onClick={handleGenerateProcedural} variant="outline" className="border-[#00ff9c]/50 text-[#00ff9c] hover:bg-[#00ff9c]/10 h-9 font-mono text-xs ml-2">
+          <Button onClick={handleGenerateProcedural} variant="outline" className="rounded-none border-[#00ff9c]/50 text-[#00ff9c] hover:bg-[#00ff9c]/10 h-9 font-mono text-xs ml-2">
             <Shuffle className="w-3 h-3 mr-2" /> Random Incident
           </Button>
         </div>
@@ -1097,25 +1097,25 @@ function MitreSimulator() {
 
       {/* Builder Modal */}
       {isBuilderOpen && (
-        <div className="mb-6 border border-purple-500/30 bg-[#050505] p-6 relative">
+        <div className="mb-6 border border-[#00ff9c]/30 bg-[#050505] p-6 relative">
           <button onClick={() => setIsBuilderOpen(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><XCircle className="w-5 h-5" /></button>
-          <h3 className="text-purple-400 font-bold uppercase tracking-widest text-sm mb-4">Create & Share Custom Scenario</h3>
+          <h3 className="text-[#00ff9c] font-bold uppercase tracking-widest text-sm mb-4">Create & Share Custom Scenario</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="text-[10px] uppercase font-bold text-zinc-500">Scenario Title</label>
-              <input type="text" value={builderTitle} onChange={(e)=>setBuilderTitle(e.target.value)} className="w-full bg-black border border-[#1a1a1a] p-2 text-xs text-zinc-300 focus:border-purple-500 outline-none mt-1" placeholder="My APT29 Simulation" />
+              <input type="text" value={builderTitle} onChange={(e)=>setBuilderTitle(e.target.value)} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-xs text-zinc-300 focus:border-[#00ff9c] outline-none mt-1" placeholder="My APT29 Simulation" />
             </div>
             <div>
               <label className="text-[10px] uppercase font-bold text-zinc-500">Platform OS</label>
-              <select value={builderPlatform} onChange={(e)=>setBuilderPlatform(e.target.value as "Windows" | "Linux")} className="w-full bg-black border border-[#1a1a1a] p-2 text-xs text-zinc-300 focus:border-purple-500 outline-none mt-1">
+              <select value={builderPlatform} onChange={(e)=>setBuilderPlatform(e.target.value as "Windows" | "Linux")} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-xs text-zinc-300 focus:border-[#00ff9c] outline-none mt-1">
                 <option value="Windows">Windows</option>
                 <option value="Linux">Linux</option>
               </select>
             </div>
             <div>
               <label className="text-[10px] uppercase font-bold text-zinc-500">Description</label>
-              <input type="text" value={builderDesc} onChange={(e)=>setBuilderDesc(e.target.value)} className="w-full bg-black border border-[#1a1a1a] p-2 text-xs text-zinc-300 focus:border-purple-500 outline-none mt-1" placeholder="Brief backstory of the attack..." />
+              <input type="text" value={builderDesc} onChange={(e)=>setBuilderDesc(e.target.value)} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-xs text-zinc-300 focus:border-[#00ff9c] outline-none mt-1" placeholder="Brief backstory of the attack..." />
             </div>
           </div>
 
@@ -1125,15 +1125,15 @@ function MitreSimulator() {
               <div key={i} className="flex flex-col sm:flex-row gap-4 p-4 border border-[#1a1a1a] bg-black">
                 <div className="flex-1">
                   <label className="text-[10px] text-zinc-500">Narrative Step {i+1}</label>
-                  <input type="text" value={step.desc} onChange={(e) => { const n = [...builderSteps]; n[i].desc = e.target.value; setBuilderSteps(n); }} className="w-full bg-transparent border-b border-[#1a1a1a] p-1 text-xs text-zinc-300 focus:border-purple-500 outline-none" placeholder="Attacker does X..." />
+                  <input type="text" value={step.desc} onChange={(e) => { const n = [...builderSteps]; n[i].desc = e.target.value; setBuilderSteps(n); }} className="w-full rounded-none bg-transparent border-b border-[#1a1a1a] p-1 text-xs text-zinc-300 focus:border-[#00ff9c] outline-none" placeholder="Attacker does X..." />
                 </div>
                 <div className="w-48 shrink-0 relative">
                   <label className="text-[10px] text-zinc-500">MITRE ID</label>
-                  <input type="text" value={step.mitre} onFocus={() => setFocusedField({index: i, type: "mitre"})} onBlur={() => setTimeout(() => setFocusedField(null), 200)} onChange={(e) => { const n = [...builderSteps]; n[i].mitre = e.target.value; setBuilderSteps(n); }} className="w-full bg-transparent border-b border-[#1a1a1a] p-1 text-xs font-mono text-[#00ff9c] focus:border-purple-500 outline-none" placeholder="T1566" />
+                  <input type="text" value={step.mitre} onFocus={() => setFocusedField({index: i, type: "mitre"})} onBlur={() => setTimeout(() => setFocusedField(null), 200)} onChange={(e) => { const n = [...builderSteps]; n[i].mitre = e.target.value; setBuilderSteps(n); }} className="w-full rounded-none bg-transparent border-b border-[#1a1a1a] p-1 text-xs font-mono text-[#00ff9c] focus:border-[#00ff9c] outline-none" placeholder="T1566" />
                   {focusedField?.index === i && focusedField?.type === "mitre" && step.mitre && (
-                    <div className="absolute z-10 w-[300px] left-0 bg-black border border-purple-500/50 mt-1 max-h-48 overflow-y-auto shadow-2xl divide-y divide-[#1a1a1a]">
+                    <div className="absolute z-10 w-[300px] left-0 bg-black border border-[#00ff9c]/50 mt-1 max-h-48 overflow-y-auto shadow-2xl divide-y divide-[#1a1a1a]">
                       {MITRE_DB.filter(m => m.id.toLowerCase().includes(step.mitre.toLowerCase()) || m.name.toLowerCase().includes(step.mitre.toLowerCase())).slice(0, 10).map(s => (
-                        <div key={s.id} className="p-2 text-[10px] hover:bg-purple-500/20 cursor-pointer" onClick={() => { const n = [...builderSteps]; n[i].mitre = s.id; setBuilderSteps(n); setFocusedField(null); }}>
+                        <div key={s.id} className="p-2 text-[10px] hover:bg-[#00ff9c]/20 cursor-pointer" onClick={() => { const n = [...builderSteps]; n[i].mitre = s.id; setBuilderSteps(n); setFocusedField(null); }}>
                           <span className="font-bold text-[#00ff9c]">{s.id}</span> - {s.name}
                         </div>
                       ))}
@@ -1142,15 +1142,15 @@ function MitreSimulator() {
                 </div>
                 <div className="w-48 shrink-0 relative">
                   <label className="text-[10px] text-zinc-500">Telemetry ID</label>
-                  <input type="text" value={step.event} onFocus={() => setFocusedField({index: i, type: "event"})} onBlur={() => setTimeout(() => setFocusedField(null), 200)} onChange={(e) => { const n = [...builderSteps]; n[i].event = e.target.value; setBuilderSteps(n); }} className="w-full bg-transparent border-b border-[#1a1a1a] p-1 text-xs font-mono text-blue-400 focus:border-purple-500 outline-none" placeholder="Sysmon 1 / auditd" />
+                  <input type="text" value={step.event} onFocus={() => setFocusedField({index: i, type: "event"})} onBlur={() => setTimeout(() => setFocusedField(null), 200)} onChange={(e) => { const n = [...builderSteps]; n[i].event = e.target.value; setBuilderSteps(n); }} className="w-full rounded-none bg-transparent border-b border-[#1a1a1a] p-1 text-xs font-mono text-blue-400 focus:border-[#00ff9c] outline-none" placeholder="Sysmon 1 / auditd" />
                   {focusedField?.index === i && focusedField?.type === "event" && step.event && (
-                    <div className="absolute z-10 w-[300px] right-0 sm:left-0 bg-black border border-purple-500/50 mt-1 max-h-48 overflow-y-auto shadow-2xl divide-y divide-[#1a1a1a]">
+                    <div className="absolute z-10 w-[300px] right-0 sm:left-0 bg-black border border-[#00ff9c]/50 mt-1 max-h-48 overflow-y-auto shadow-2xl divide-y divide-[#1a1a1a]">
                       {(builderPlatform === "Windows" ? WIN_EVENTS_DB : LINUX_EVENTS_DB).filter(e => e.id.toLowerCase().includes(step.event.toLowerCase()) || e.name.toLowerCase().includes(step.event.toLowerCase())).slice(0, 10).map(s => (
-                        <div key={s.id} className="p-2 text-[10px] hover:bg-purple-500/20 cursor-pointer" onClick={() => { const n = [...builderSteps]; n[i].event = s.id; setBuilderSteps(n); setFocusedField(null); }}>
+                        <div key={s.id} className="p-2 text-[10px] hover:bg-[#00ff9c]/20 cursor-pointer" onClick={() => { const n = [...builderSteps]; n[i].event = s.id; setBuilderSteps(n); setFocusedField(null); }}>
                           <span className="font-bold text-blue-400">{s.id}</span> - {s.name}
                         </div>
                       ))}
-                      <div className="p-2 text-[10px] hover:bg-purple-500/20 cursor-pointer text-zinc-400" onClick={() => { const n = [...builderSteps]; n[i].event = "none"; setBuilderSteps(n); setFocusedField(null); }}>
+                      <div className="p-2 text-[10px] hover:bg-[#00ff9c]/20 cursor-pointer text-zinc-400" onClick={() => { const n = [...builderSteps]; n[i].event = "none"; setBuilderSteps(n); setFocusedField(null); }}>
                         <span className="font-bold">none</span> - No Telemetry
                       </div>
                     </div>
@@ -1162,14 +1162,14 @@ function MitreSimulator() {
           </div>
 
           <div className="pt-4 border-t border-[#1a1a1a] flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <Button onClick={handleBuilderGenerateLink} className="bg-purple-600 hover:bg-purple-500 text-white font-bold uppercase tracking-widest text-xs h-10 shrink-0">
+            <Button onClick={handleBuilderGenerateLink} className="rounded-none bg-[#00ff9c] hover:bg-[#00cc7d] text-black font-bold uppercase tracking-widest text-xs h-10 shrink-0">
               <Share2 className="w-4 h-4 mr-2" /> Generate Shareable Link
             </Button>
             {builderError && <p className="text-red-500 text-xs font-bold">{builderError}</p>}
             {shareLink && (
-              <div className="flex-1 flex w-full border border-purple-500/50 bg-black">
+              <div className="flex-1 flex w-full border border-[#00ff9c]/50 bg-black">
                 <input type="text" readOnly value={shareLink} className="flex-1 bg-transparent text-zinc-400 text-xs p-2 outline-none font-mono" />
-                <button onClick={() => navigator.clipboard.writeText(shareLink)} className="p-2 bg-purple-500/20 hover:bg-purple-500/40 text-purple-400 transition-colors"><Copy className="w-4 h-4" /></button>
+                <button onClick={() => navigator.clipboard.writeText(shareLink)} className="p-2 bg-[#00ff9c]/20 hover:bg-[#00ff9c]/40 text-[#00ff9c] transition-colors"><Copy className="w-4 h-4" /></button>
               </div>
             )}
           </div>
@@ -1179,10 +1179,10 @@ function MitreSimulator() {
       {/* Info Modal Renderer */}
       {infoModalData && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setInfoModalData(null)}>
-          <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-6 max-w-lg w-full relative shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] p-6 max-w-lg w-full relative shadow-2xl rounded-none" onClick={e => e.stopPropagation()}>
             <button onClick={() => setInfoModalData(null)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><XCircle className="w-5 h-5" /></button>
             <div className="flex items-center gap-3 mb-4">
-              <div className={`p-2 rounded bg-black border border-[#1a1a1a] ${infoModalData.data.color}`}>
+              <div className={`p-2 rounded-none bg-black border border-[#1a1a1a] ${infoModalData.data.color}`}>
                 <infoModalData.data.icon className="w-5 h-5" />
               </div>
               <div>
@@ -1261,16 +1261,16 @@ function MitreSimulator() {
       {/* Seed Error Modal */}
       {seedError && (
         <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSeedError("")}>
-          <div className="bg-[#050505] border border-red-500/50 p-6 max-w-md w-full animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#050505] border border-red-500/50 p-6 max-w-md w-full animate-in fade-in zoom-in-95 duration-200 rounded-none" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 bg-red-500/20 rounded-none flex items-center justify-center shrink-0">
                 <ShieldAlert className="w-5 h-5 text-red-500" />
               </div>
               <h3 className="text-xl font-bold text-red-500">Seed Invalid</h3>
             </div>
             <p className="text-zinc-400 text-sm mb-6">{seedError}</p>
             <div className="flex justify-end">
-              <Button onClick={() => setSeedError("")} className="bg-red-500/20 text-red-500 hover:bg-red-500/40 border border-red-500/30">
+              <Button onClick={() => setSeedError("")} className="rounded-none bg-red-500/20 text-red-500 hover:bg-red-500/40 border border-red-500/30">
                 Dismiss
               </Button>
             </div>
@@ -1291,7 +1291,7 @@ function MitreSimulator() {
               return (
                 <div key={step.id} className="relative flex gap-4">
                   <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 rounded bg-black border border-[#1a1a1a] flex items-center justify-center font-mono text-[#00ff9c] font-bold text-sm z-10 shrink-0">{idx + 1}</div>
+                    <div className="w-8 h-8 rounded-none bg-black border border-[#1a1a1a] flex items-center justify-center font-mono text-[#00ff9c] font-bold text-sm z-10 shrink-0">{idx + 1}</div>
                     {idx < scenario.steps.length - 1 && <div className="w-px h-full bg-[#1a1a1a] -mb-4 mt-2"></div>}
                   </div>
 
@@ -1304,7 +1304,7 @@ function MitreSimulator() {
                       {isHardMode ? (
                         <div className="relative flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold text-zinc-500 flex items-center gap-1"><Shield className="w-3 h-3"/> Mitre ID</label>
-                          <input type="text" autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="" value={mapping[step.id].textMitre} onFocus={() => setHardFocusedField({ stepId: step.id, type: "mitre" })} onBlur={() => setTimeout(() => setHardFocusedField(null), 300)} onChange={(e) => { handleTextChange(step.id, "textMitre", e.target.value); setHardFocusedField({ stepId: step.id, type: "mitre" }); }} className={`w-full bg-black border p-3 text-xs font-mono text-[#00ff9c] focus:outline-none transition-colors ${validation.isChecked && !res?.mitre ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a] focus:border-[#00ff9c]'}`} />
+                          <input type="text" autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="" value={mapping[step.id].textMitre} onFocus={() => setHardFocusedField({ stepId: step.id, type: "mitre" })} onBlur={() => setTimeout(() => setHardFocusedField(null), 300)} onChange={(e) => { handleTextChange(step.id, "textMitre", e.target.value); setHardFocusedField({ stepId: step.id, type: "mitre" }); }} className={`w-full rounded-none bg-black border p-3 text-xs font-mono text-[#00ff9c] focus:outline-none transition-colors ${validation.isChecked && !res?.mitre ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a] focus:border-[#00ff9c]'}`} />
                           {hardFocusedField?.stepId === step.id && hardFocusedField.type === "mitre" && mapping[step.id].textMitre.length > 0 && (
                             <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto border border-[#00ff9c]/40 bg-black shadow-2xl">
                               {UNIQUE_MITRE_CODES.filter(id => !mapping[step.id].textMitre || id.toLowerCase().includes(mapping[step.id].textMitre.toLowerCase())).slice(0, 12).map(id => (
@@ -1321,7 +1321,7 @@ function MitreSimulator() {
                                 <Shield className="w-4 h-4 text-[#00ff9c] shrink-0" />
                                 <span className="text-xs font-mono text-[#00ff9c] truncate">{mapping[step.id].mitre!.label}</span>
                               </div>
-                              <button onClick={() => openInfoModalMitre(mapping[step.id].mitre!.id)} className="p-1 hover:bg-[#00ff9c]/20 text-[#00ff9c]/50 hover:text-[#00ff9c] transition-colors rounded shrink-0">
+                              <button onClick={() => openInfoModalMitre(mapping[step.id].mitre!.id)} className="p-1 hover:bg-[#00ff9c]/20 text-[#00ff9c]/50 hover:text-[#00ff9c] transition-colors rounded-none shrink-0">
                                 <Info className="w-4 h-4" />
                               </button>
                             </div>
@@ -1335,7 +1335,7 @@ function MitreSimulator() {
                       {isHardMode ? (
                         <div className="relative flex flex-col gap-2">
                           <label className="text-[10px] uppercase font-bold text-zinc-500 flex items-center gap-1"><Terminal className="w-3 h-3"/> Event / Telemetry</label>
-                          <input type="text" autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="" value={mapping[step.id].textEvent} onFocus={() => setHardFocusedField({ stepId: step.id, type: "event" })} onBlur={() => setTimeout(() => setHardFocusedField(null), 300)} onChange={(e) => { handleTextChange(step.id, "textEvent", e.target.value); setHardFocusedField({ stepId: step.id, type: "event" }); }} className={`w-full bg-black border p-3 text-xs font-mono ${scenario.platform === 'Windows' ? 'text-blue-400 focus:border-blue-400' : 'text-orange-400 focus:border-orange-400'} focus:outline-none transition-colors ${validation.isChecked && !res?.event ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a]'}`} />
+                          <input type="text" autoComplete="off" autoCorrect="off" spellCheck={false} placeholder="" value={mapping[step.id].textEvent} onFocus={() => setHardFocusedField({ stepId: step.id, type: "event" })} onBlur={() => setTimeout(() => setHardFocusedField(null), 300)} onChange={(e) => { handleTextChange(step.id, "textEvent", e.target.value); setHardFocusedField({ stepId: step.id, type: "event" }); }} className={`w-full rounded-none bg-black border p-3 text-xs font-mono ${scenario.platform === 'Windows' ? 'text-blue-400 focus:border-blue-400' : 'text-orange-400 focus:border-orange-400'} focus:outline-none transition-colors ${validation.isChecked && !res?.event ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-[#1a1a1a]'}`} />
                           {hardFocusedField?.stepId === step.id && hardFocusedField.type === "event" && mapping[step.id].textEvent.length > 0 && (
                             <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto border border-blue-400/40 bg-black shadow-2xl">
                               {(scenario.platform === "Windows" ? UNIQUE_WINDOWS_EVENT_CODES : UNIQUE_LINUX_EVENT_CODES).filter(id => !mapping[step.id].textEvent || id.toLowerCase().includes(mapping[step.id].textEvent.toLowerCase())).slice(0, 12).map(id => (
@@ -1352,7 +1352,7 @@ function MitreSimulator() {
                                 <Terminal className={`w-4 h-4 shrink-0 ${scenario.platform === 'Windows' ? 'text-blue-400' : 'text-orange-400'}`} />
                                 <span className={`text-xs font-mono truncate ${scenario.platform === 'Windows' ? 'text-blue-400' : 'text-orange-400'}`}>{mapping[step.id].event!.label}</span>
                               </div>
-                              <button onClick={() => openInfoModalEvent(mapping[step.id].event!.id)} className={`p-1 transition-colors rounded shrink-0 ${scenario.platform === 'Windows' ? 'hover:bg-blue-400/20 text-blue-400/50 hover:text-blue-400' : 'hover:bg-orange-400/20 text-orange-400/50 hover:text-orange-400'}`}>
+                              <button onClick={() => openInfoModalEvent(mapping[step.id].event!.id)} className={`p-1 transition-colors rounded-none shrink-0 ${scenario.platform === 'Windows' ? 'hover:bg-blue-400/20 text-blue-400/50 hover:text-blue-400' : 'hover:bg-orange-400/20 text-orange-400/50 hover:text-orange-400'}`}>
                                 <Info className="w-4 h-4" />
                               </button>
                             </div>
@@ -1377,7 +1377,7 @@ function MitreSimulator() {
           </div>
 
           <div className="pt-6">
-            <Button onClick={validate} className="w-full bg-[#00ff9c] text-black hover:bg-[#00cc7d] font-bold uppercase tracking-widest h-12 shadow-[0_0_15px_rgba(0,255,156,0.2)]">
+            <Button onClick={validate} className="w-full rounded-none bg-[#00ff9c] text-black hover:bg-[#00cc7d] font-bold uppercase tracking-widest h-12 shadow-[0_0_15px_rgba(0,255,156,0.2)]">
               Verify Incident Report <Play className="w-4 h-4 ml-2 fill-black" />
             </Button>
           </div>
@@ -1452,7 +1452,7 @@ function MitreSimulator() {
                             </div>
                           </div>
                           {dbInfo && (
-                            <button onClick={() => openInfoModalMitre(tile.id)} className="p-1 opacity-0 group-hover:opacity-100 hover:bg-[#00ff9c]/20 text-[#00ff9c]/50 hover:text-[#00ff9c] transition-all rounded shrink-0">
+                            <button onClick={() => openInfoModalMitre(tile.id)} className="p-1 opacity-0 group-hover:opacity-100 hover:bg-[#00ff9c]/20 text-[#00ff9c]/50 hover:text-[#00ff9c] transition-all rounded-none shrink-0">
                               <Info className="w-4 h-4" />
                             </button>
                           )}
@@ -1484,7 +1484,7 @@ function MitreSimulator() {
                             </div>
                           </div>
                           {dbInfo && (
-                            <button onClick={() => openInfoModalEvent(tile.id)} className={`p-1 opacity-0 group-hover:opacity-100 hover:bg-black text-zinc-600 hover:${textColor} transition-all rounded shrink-0`}>
+                            <button onClick={() => openInfoModalEvent(tile.id)} className={`p-1 opacity-0 group-hover:opacity-100 hover:bg-black text-zinc-600 hover:${textColor} transition-all rounded-none shrink-0`}>
                               <Info className="w-4 h-4" />
                             </button>
                           )}

@@ -138,12 +138,10 @@ export default function PlaybookPage() {
         {buildView === "list" ? <Builder runbook={playbook} onChange={updatePlaybook} /> : <DiagramBuilder runbook={playbook} onChange={updatePlaybook} />}
         <ToolActionPanel label="Export / Import" className="justify-end bg-[#080808]">
           <ToolActionButton onClick={() => downloadTextFile(JSON.stringify(document, null, 2), `playbook-${safeDownloadName(playbook.id, "workflow")}.json`, "application/json;charset=utf-8")} tone="neutral"><Download className="mr-2 h-4 w-4" />JSON</ToolActionButton>
-          <ToolActionButton tone="neutral" asChild>
-            <label className="relative cursor-pointer">
-              <Upload className="mr-2 h-4 w-4" />Load
-              <input type="file" accept="application/json,.json" className="absolute inset-0 cursor-pointer opacity-0 w-full h-full" onChange={event => { const file = event.target.files?.[0]; if (file) importPlaybook(file); event.currentTarget.value = ""; }} />
-            </label>
+          <ToolActionButton tone="neutral" onClick={() => window.document.getElementById('playbook-upload')?.click()}>
+            <Upload className="mr-2 h-4 w-4" />Load
           </ToolActionButton>
+          <input id="playbook-upload" type="file" accept="application/json,.json" className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) importPlaybook(file); event.currentTarget.value = ""; }} />
           <ToolActionButton onClick={() => downloadTextFile(playbookMarkdown(document), `playbook-${safeDownloadName(playbook.id, "workflow")}.md`, "text/markdown;charset=utf-8")} tone="neutral"><FileText className="mr-2 h-4 w-4" />Markdown</ToolActionButton>
           <ToolActionButton onClick={exportEvidenceBundle} tone="neutral"><ShieldAlert className="mr-2 h-4 w-4" />Evidence bundle</ToolActionButton>
           <RunbookPdfExport runbook={playbook} />

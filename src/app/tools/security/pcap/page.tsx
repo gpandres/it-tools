@@ -394,7 +394,7 @@ export default function PcapViewer() {
                   )}
                   <button 
                     onClick={() => setTimeFormat(prev => prev === "unix" ? "local" : "unix")}
-                    className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest px-2 py-1 bg-[#1a1a1a] text-zinc-400 hover:text-zinc-200"
+                    className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest px-2 py-1 bg-[#1a1a1a] text-zinc-400 hover:text-zinc-200 rounded-none"
                   >
                     <Clock className="w-3 h-3" />
                     {timeFormat}
@@ -402,14 +402,14 @@ export default function PcapViewer() {
                 </div>
                 
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center bg-black border border-[#1a1a1a]">
+                  <div className="flex items-center bg-black border border-[#1a1a1a] rounded-none">
                     <Search className="w-3 h-3 text-zinc-500 ml-2" />
                     <input 
                       type="text"
                       placeholder="Filter IP / Protocol..."
                       value={filterQuery}
                       onChange={(e) => { setFilterQuery(e.target.value); setPage(1); }}
-                      className="bg-transparent border-none text-xs font-mono text-zinc-300 w-40 px-2 py-1.5 focus:outline-none placeholder:text-zinc-600"
+                      className="bg-transparent border-none text-xs font-mono text-zinc-300 w-40 px-2 py-1.5 focus:outline-none placeholder:text-zinc-600 rounded-none focus:border-[#00ff9c] focus:ring-1 focus:ring-[#00ff9c]"
                     />
                   </div>
                   <Button
@@ -499,7 +499,7 @@ export default function PcapViewer() {
                     <button 
                       onClick={() => setPage(p => Math.max(1, p - 1))}
                       disabled={page === 1}
-                      className="p-1 border border-[#1a1a1a] hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
+                      className="p-1 border border-[#1a1a1a] hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors rounded-none"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -507,7 +507,7 @@ export default function PcapViewer() {
                     <button 
                       onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                       disabled={page === totalPages}
-                      className="p-1 border border-[#1a1a1a] hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors"
+                      className="p-1 border border-[#1a1a1a] hover:bg-[#1a1a1a] disabled:opacity-30 transition-colors rounded-none"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>

@@ -134,10 +134,10 @@ function AclSimulatorContent() {
           </div>
           <div className="flex gap-2">
             <input type="file" accept=".json" ref={fileInputRef} onChange={importRules} className="hidden" />
-            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="h-7 text-xs bg-black border-[#1a1a1a] text-zinc-400">
+            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="rounded-none h-7 text-xs bg-black border-[#1a1a1a] text-zinc-400">
               <Upload className="w-3 h-3 mr-1" /> Import JSON
             </Button>
-            <Button size="sm" onClick={addRule} className="h-7 text-xs bg-[#00ff9c]/10 text-[#00ff9c] border border-[#00ff9c]/30 hover:bg-[#00ff9c]/20">
+            <Button size="sm" onClick={addRule} className="rounded-none h-7 text-xs bg-[#00ff9c]/10 text-[#00ff9c] border border-[#00ff9c]/30 hover:bg-[#00ff9c]/20">
               <Plus className="w-3 h-3 mr-1" /> Add Rule
             </Button>
           </div>
@@ -165,24 +165,24 @@ function AclSimulatorContent() {
                 >
                   <GripVertical className="w-4 h-4 text-zinc-600 shrink-0" />
                   <div className="w-6 text-zinc-600 text-center text-xs">{idx + 1}</div>
-                  <select value={rule.action} onChange={(e) => updateRule(rule.id, "action", e.target.value)} className={`bg-transparent p-1 focus:outline-none font-bold uppercase ${rule.action === "permit" ? "text-[#00ff9c]" : "text-red-500"}`}>
+                  <select value={rule.action} onChange={(e) => updateRule(rule.id, "action", e.target.value)} className={`rounded-none bg-transparent p-1 focus:outline-none font-bold uppercase ${rule.action === "permit" ? "text-[#00ff9c]" : "text-red-500"}`}>
                     <option value="permit">Permit</option>
                     <option value="deny">Deny</option>
                   </select>
-                  <select value={rule.protocol} onChange={(e) => updateRule(rule.id, "protocol", e.target.value)} className="bg-transparent text-zinc-300 p-1 focus:outline-none uppercase w-20">
+                  <select value={rule.protocol} onChange={(e) => updateRule(rule.id, "protocol", e.target.value)} className="rounded-none bg-transparent text-zinc-300 p-1 focus:outline-none uppercase w-20">
                     <option value="ip">IP</option>
                     <option value="tcp">TCP</option>
                     <option value="udp">UDP</option>
                     <option value="icmp">ICMP</option>
                   </select>
-                  <input type="text" value={rule.srcIp} onChange={(e) => updateRule(rule.id, "srcIp", e.target.value)} className="bg-[#1a1a1a] text-[#00ff9c] px-2 py-1 w-32 focus:outline-none" placeholder="Src IP" />
+                  <input type="text" value={rule.srcIp} onChange={(e) => updateRule(rule.id, "srcIp", e.target.value)} className="rounded-none bg-[#1a1a1a] text-[#00ff9c] px-2 py-1 w-32 focus:outline-none focus:border-[#00ff9c]" placeholder="Src IP" />
                   {(rule.protocol === "tcp" || rule.protocol === "udp") && (
-                    <input type="text" value={rule.srcPort} onChange={(e) => updateRule(rule.id, "srcPort", e.target.value)} className="bg-[#1a1a1a] text-zinc-300 px-2 py-1 w-16 focus:outline-none" placeholder="Port" />
+                    <input type="text" value={rule.srcPort} onChange={(e) => updateRule(rule.id, "srcPort", e.target.value)} className="rounded-none bg-[#1a1a1a] text-zinc-300 px-2 py-1 w-16 focus:outline-none focus:border-[#00ff9c]" placeholder="Port" />
                   )}
                   <span className="text-zinc-600">-&gt;</span>
-                  <input type="text" value={rule.dstIp} onChange={(e) => updateRule(rule.id, "dstIp", e.target.value)} className="bg-[#1a1a1a] text-[#00ff9c] px-2 py-1 w-32 focus:outline-none" placeholder="Dst IP" />
+                  <input type="text" value={rule.dstIp} onChange={(e) => updateRule(rule.id, "dstIp", e.target.value)} className="rounded-none bg-[#1a1a1a] text-[#00ff9c] px-2 py-1 w-32 focus:outline-none focus:border-[#00ff9c]" placeholder="Dst IP" />
                   {(rule.protocol === "tcp" || rule.protocol === "udp") && (
-                    <input type="text" value={rule.dstPort} onChange={(e) => updateRule(rule.id, "dstPort", e.target.value)} className="bg-[#1a1a1a] text-zinc-300 px-2 py-1 w-16 focus:outline-none" placeholder="Port" />
+                    <input type="text" value={rule.dstPort} onChange={(e) => updateRule(rule.id, "dstPort", e.target.value)} className="rounded-none bg-[#1a1a1a] text-zinc-300 px-2 py-1 w-16 focus:outline-none focus:border-[#00ff9c]" placeholder="Port" />
                   )}
                   <div className="flex-1"></div>
                   <button onClick={() => removeRule(rule.id)} className="text-zinc-600 hover:text-red-500 px-2">
@@ -204,7 +204,7 @@ function AclSimulatorContent() {
           <div className="p-4 space-y-4">
             <div className="space-y-2">
               <label className="text-xs font-mono text-zinc-500">Protocol</label>
-              <select value={pktProtocol} onChange={(e) => setPktProtocol(e.target.value as any)} className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono uppercase focus:border-[#00ff9c] focus:outline-none">
+              <select value={pktProtocol} onChange={(e) => setPktProtocol(e.target.value as any)} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono uppercase focus:border-[#00ff9c] focus:outline-none">
                 <option value="tcp">TCP</option>
                 <option value="udp">UDP</option>
                 <option value="icmp">ICMP</option>
@@ -215,22 +215,22 @@ function AclSimulatorContent() {
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2 space-y-2">
                 <label className="text-xs font-mono text-zinc-500">Source IP</label>
-                <input type="text" value={pktSrcIp} onChange={(e) => setPktSrcIp(e.target.value)} className="w-full bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none" />
+                <input type="text" value={pktSrcIp} onChange={(e) => setPktSrcIp(e.target.value)} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-mono text-zinc-500">Src Port</label>
-                <input type="text" value={pktSrcPort} onChange={(e) => setPktSrcPort(e.target.value)} disabled={pktProtocol !== "tcp" && pktProtocol !== "udp"} className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none disabled:opacity-30" />
+                <input type="text" value={pktSrcPort} onChange={(e) => setPktSrcPort(e.target.value)} disabled={pktProtocol !== "tcp" && pktProtocol !== "udp"} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none disabled:opacity-30" />
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2 space-y-2">
                 <label className="text-xs font-mono text-zinc-500">Dest IP</label>
-                <input type="text" value={pktDstIp} onChange={(e) => setPktDstIp(e.target.value)} className="w-full bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none" />
+                <input type="text" value={pktDstIp} onChange={(e) => setPktDstIp(e.target.value)} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-mono text-zinc-500">Dst Port</label>
-                <input type="text" value={pktDstPort} onChange={(e) => setPktDstPort(e.target.value)} disabled={pktProtocol !== "tcp" && pktProtocol !== "udp"} className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none disabled:opacity-30" />
+                <input type="text" value={pktDstPort} onChange={(e) => setPktDstPort(e.target.value)} disabled={pktProtocol !== "tcp" && pktProtocol !== "udp"} className="w-full rounded-none bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none disabled:opacity-30" />
               </div>
             </div>
 

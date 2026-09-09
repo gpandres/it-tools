@@ -207,7 +207,7 @@ function AclBuilderContent() {
             type="text"
             value={listName}
             onChange={(e) => setListName(e.target.value)}
-            className="bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none"
+            className="rounded-none bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none"
           />
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -250,12 +250,12 @@ function AclBuilderContent() {
               <div className="hidden xl:flex items-center justify-center w-6 text-zinc-600 font-mono text-xs">{idx + 1}</div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 xl:flex flex-1 gap-2">
-                <select value={rule.action} onChange={(e) => updateRule(rule.id, "action", e.target.value)} className="bg-[#050505] border border-[#1a1a1a] text-sm font-bold uppercase p-2 focus:border-[#00ff9c] focus:outline-none w-full xl:w-24 text-center data-[state=permit]:text-[#00ff9c] data-[state=deny]:text-red-500" data-state={rule.action}>
+                <select value={rule.action} onChange={(e) => updateRule(rule.id, "action", e.target.value)} className="rounded-none bg-[#050505] border border-[#1a1a1a] text-sm font-bold uppercase p-2 focus:border-[#00ff9c] focus:outline-none w-full xl:w-24 text-center data-[state=permit]:text-[#00ff9c] data-[state=deny]:text-red-500" data-state={rule.action}>
                   <option value="permit">Permit</option>
                   <option value="deny">Deny</option>
                 </select>
 
-                <select value={rule.protocol} onChange={(e) => updateRule(rule.id, "protocol", e.target.value)} className="bg-[#050505] border border-[#1a1a1a] text-zinc-300 text-sm font-mono p-2 focus:border-[#00ff9c] focus:outline-none w-full xl:w-24 uppercase">
+                <select value={rule.protocol} onChange={(e) => updateRule(rule.id, "protocol", e.target.value)} className="rounded-none bg-[#050505] border border-[#1a1a1a] text-zinc-300 text-sm font-mono p-2 focus:border-[#00ff9c] focus:outline-none w-full xl:w-24 uppercase">
                   <option value="ip">IP</option>
                   <option value="tcp">TCP</option>
                   <option value="udp">UDP</option>
@@ -263,18 +263,18 @@ function AclBuilderContent() {
                 </select>
 
                 <div className="flex gap-2 col-span-2 xl:col-span-1 xl:flex-1">
-                  <input type="text" value={rule.srcIp} onChange={(e) => updateRule(rule.id, "srcIp", e.target.value)} placeholder="Src IP (any or CIDR)" className="bg-[#050505] border border-[#1a1a1a] text-[#00ff9c] text-sm font-mono p-2 focus:border-[#00ff9c] focus:outline-none w-full" spellCheck={false} />
+                  <input type="text" value={rule.srcIp} onChange={(e) => updateRule(rule.id, "srcIp", e.target.value)} placeholder="Src IP (any or CIDR)" className="rounded-none bg-[#050505] border border-[#1a1a1a] text-[#00ff9c] text-sm font-mono p-2 focus:border-[#00ff9c] focus:outline-none w-full" spellCheck={false} />
                   {(rule.protocol === "tcp" || rule.protocol === "udp") && (
-                    <input type="text" value={rule.srcPort} onChange={(e) => updateRule(rule.id, "srcPort", e.target.value)} placeholder="Src Port" className="bg-[#050505] border border-[#1a1a1a] text-zinc-300 text-sm font-mono p-2 focus:border-[#00ff9c] focus:outline-none w-24 shrink-0" />
+                    <input type="text" value={rule.srcPort} onChange={(e) => updateRule(rule.id, "srcPort", e.target.value)} placeholder="Src Port" className="rounded-none bg-[#050505] border border-[#1a1a1a] text-zinc-300 text-sm font-mono p-2 focus:border-[#00ff9c] focus:outline-none w-24 shrink-0" />
                   )}
                 </div>
 
                 <div className="hidden xl:flex items-center text-zinc-600 px-2 font-bold">-&gt;</div>
 
                 <div className="flex gap-2 col-span-2 xl:col-span-1 xl:flex-1">
-                  <input type="text" value={rule.dstIp} onChange={(e) => updateRule(rule.id, "dstIp", e.target.value)} placeholder="Dst IP (any or CIDR)" className="bg-[#050505] border border-[#1a1a1a] text-[#00ff9c] text-sm font-mono p-2 focus:border-[#00ff9c] focus:outline-none w-full" spellCheck={false} />
+                  <input type="text" value={rule.dstIp} onChange={(e) => updateRule(rule.id, "dstIp", e.target.value)} placeholder="Dst IP (any or CIDR)" className="rounded-none bg-[#050505] border border-[#1a1a1a] text-[#00ff9c] text-sm font-mono p-2 focus:border-[#00ff9c] focus:outline-none w-full" spellCheck={false} />
                   {(rule.protocol === "tcp" || rule.protocol === "udp") && (
-                    <input type="text" value={rule.dstPort} onChange={(e) => updateRule(rule.id, "dstPort", e.target.value)} placeholder="Dst Port" className="bg-[#050505] border border-[#1a1a1a] text-zinc-300 text-sm font-mono p-2 focus:border-[#00ff9c] focus:outline-none w-24 shrink-0" />
+                    <input type="text" value={rule.dstPort} onChange={(e) => updateRule(rule.id, "dstPort", e.target.value)} placeholder="Dst Port" className="rounded-none bg-[#050505] border border-[#1a1a1a] text-zinc-300 text-sm font-mono p-2 focus:border-[#00ff9c] focus:outline-none w-24 shrink-0" />
                   )}
                 </div>
               </div>
