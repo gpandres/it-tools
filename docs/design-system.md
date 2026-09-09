@@ -193,7 +193,7 @@ Do not render a permanent `role="dialog"` inside a normal page section to imitat
 
 ### Generic timeline data
 
-Both timeline components are data-driven. Positions in `ToolHorizontalTimeline` are percentages on one elapsed-time scale and are clamped to 0–100. First and last labels anchor inside the track, so the final milestone is not clipped. Keep stable event IDs and preserve chronological order.
+Both timeline components are data-driven. Positions in `ToolHorizontalTimeline` are percentages on one elapsed-time scale and are clamped to 0–100. First and last labels anchor inside the track, so the final milestone is not clipped. Detail cards occupy non-overlapping temporal lanes around their event, and each card marker uses the same percentage coordinate as the marker on the scale. Keep stable event IDs and preserve chronological order. When the restored or completed state matters, leave scale after that milestone and represent it as a segment; do not stop the timeline at the restoration point.
 
 ```tsx
 <ToolTimeline items={events} />
