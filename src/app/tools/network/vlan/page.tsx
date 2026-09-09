@@ -3,6 +3,15 @@
 import { Suspense, useState } from "react";
 import { MultiVendorOutput, type VendorOutput } from "@/components/multi-vendor-output";
 import { ToolLayout } from "@/components/tool-layout";
+import {
+  ToolPanel,
+  ToolPanelHeader,
+  ToolPanelTitle,
+  ToolPanelBody,
+  ToolField,
+  ToolStatus,
+} from "@/components/tool-design";
+import { Input } from "@/components/ui/input";
 
 type VlanVendor = "cisco" | "mikrotik" | "fortigate" | "juniper" | "arista";
 
@@ -112,47 +121,73 @@ exit`;
   ];
 
   return (
-    <ToolLayout title="VLAN Calculator & Config" description="Calculate VLAN ranges and generate 802.1Q access/trunk configurations for Cisco, MikroTik, FortiGate, Juniper, and Arista.">
-      <div className="space-y-6">
-        <div className="space-y-4 rounded border border-[#1a1a1a] bg-[#0a0a0a] p-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <label className="space-y-2">
-              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">VLAN ID (1-4094)</span>
-              <input type="number" value={vlanIdStr} onChange={e => setVlanIdStr(e.target.value)} min="1" max="4094" className="w-full border border-[#1a1a1a] bg-black p-3 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
-            </label>
-            <label className="space-y-2">
-              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Interface Name</span>
-              <input type="text" value={iface} onChange={e => setIface(e.target.value)} placeholder="GigabitEthernet0/1 or ge-0/0/1" className="w-full border border-[#1a1a1a] bg-black p-3 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
-            </label>
+    <ToolLayout title="VLAN CALCULATOR & CONFIG" description="Calculate VLAN ranges and generate 802.1Q access/trunk configurations for Cisco, MikroTik, FortiGate, Juniper, and Arista.">
+      <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6">
+        <ToolPanel>
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">INPUT CONFIG</ToolPanelTitle>
+          </ToolPanelHeader>
+          <ToolPanelBody className="grid gap-4 md:grid-cols-3">
+            <ToolField htmlFor="vlanId" label="VLAN ID (1-4094)">
+              <Input
+                id="vlanId"
+                type="number"
+                min="1"
+                max="4094"
+                value={vlanIdStr}
+                onChange={e => setVlanIdStr(e.target.value)}
+                className="rounded-none font-mono text-[#00ff9c]"
+              />
+            </ToolField>
+            
+            <ToolField htmlFor="iface" label="Interface Name">
+              <Input
+                id="iface"
+                value={iface}
+                onChange={e => setIface(e.target.value)}
+                placeholder="GigabitEthernet0/1 or ge-0/0/1"
+                className="rounded-none font-mono text-[#00ff9c]"
+              />
+            </ToolField>
+
             {portMode === "trunk" && (
-              <label className="space-y-2">
-                <span className="block text-xs font-bold uppercase tracking-wider text-zinc-500">Native VLAN</span>
-                <input type="number" value={nativeVlan} onChange={e => setNativeVlan(e.target.value)} min="1" max="4094" className="w-full border border-[#1a1a1a] bg-black p-3 font-mono text-sm text-[#00ff9c] outline-none transition-colors focus:border-[#00ff9c]" />
-              </label>
+              <ToolField htmlFor="nativeVlan" label="Native VLAN">
+                <Input
+                  id="nativeVlan"
+                  type="number"
+                  min="1"
+                  max="4094"
+                  value={nativeVlan}
+                  onChange={e => setNativeVlan(e.target.value)}
+                  className="rounded-none font-mono text-[#00ff9c]"
+                />
+              </ToolField>
             )}
-          </div>
-        </div>
+          </ToolPanelBody>
+        </ToolPanel>
 
-        {(!isValidVlan || (portMode === "trunk" && !isValidNativeVlan) || !isValidInterface) && (
-          <div className="border border-amber-500/40 bg-amber-500/5 p-3 font-mono text-xs text-amber-300">
-            The preview uses placeholders until the VLAN IDs and interface name are valid. VLAN IDs must be integers from 1 to 4094.
-          </div>
-        )}
-
-        {vlanInfo && (
-          <div className="flex flex-col justify-between gap-4 rounded border border-[#1a1a1a] bg-[#050505] p-4 md:flex-row md:items-center">
-            <div><div className="text-xs font-bold uppercase tracking-wider text-zinc-500">VLAN Range Type</div><div className="font-mono text-[#00ff9c]">{vlanInfo.type}</div></div>
-            <div className="text-sm text-zinc-400 md:text-right">{vlanInfo.desc}</div>
-          </div>
-        )}
-
-        <div className="flex w-fit flex-wrap overflow-hidden rounded border border-[#1a1a1a] bg-black">
+        <div className="flex w-fit flex-wrap overflow-hidden border border-[#1a1a1a] bg-black">
           {(["access", "trunk"] as const).map(mode => (
             <button key={mode} type="button" aria-pressed={portMode === mode} onClick={() => setPortMode(mode)} className={`px-5 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${portMode === mode ? "bg-[#00ff9c] text-black" : "text-zinc-500 hover:text-zinc-300"}`}>
               {mode === "access" ? "Access Port (Untagged)" : "Trunk Port (Tagged)"}
             </button>
           ))}
         </div>
+
+        {(!isValidVlan || (portMode === "trunk" && !isValidNativeVlan) || !isValidInterface) && (
+          <ToolStatus tone="attention">
+            The preview uses placeholders until the VLAN IDs and interface name are valid. VLAN IDs must be integers from 1 to 4094.
+          </ToolStatus>
+        )}
+
+        {vlanInfo && (
+          <ToolPanel>
+            <ToolPanelBody className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+              <div><div className="text-xs font-bold uppercase tracking-wider text-zinc-500">VLAN Range Type</div><div className="font-mono text-[#00ff9c]">{vlanInfo.type}</div></div>
+              <div className="text-sm text-zinc-400 md:text-right">{vlanInfo.desc}</div>
+            </ToolPanelBody>
+          </ToolPanel>
+        )}
 
         <MultiVendorOutput outputs={outputs} activeId={activeTab} onActiveChange={id => setActiveTab(id as VlanVendor)} />
       </div>
