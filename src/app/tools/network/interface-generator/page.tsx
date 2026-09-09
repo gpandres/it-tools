@@ -86,7 +86,7 @@ exit`;
       <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6">
         <ToolPanel>
           <ToolPanelHeader>
-            <ToolPanelTitle marker="IN">Interface Config</ToolPanelTitle>
+            <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">INPUT CONFIG</ToolPanelTitle>
           </ToolPanelHeader>
           <ToolPanelBody className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <ToolField

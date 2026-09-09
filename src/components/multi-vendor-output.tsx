@@ -4,6 +4,7 @@ import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { useNotification } from "@/components/notification-provider";
 import { ToolActionButton, ToolActionPanel } from "@/components/tool-action-panel";
+import { ToolTerminalOutput } from "@/components/tool-design";
 
 export type VendorOutput = {
   id: string;
@@ -37,8 +38,8 @@ export function MultiVendorOutput({ outputs, activeId, onActiveChange, label = "
   };
 
   return (
-    <section className="overflow-hidden rounded border border-[#1a1a1a] bg-[#050505]">
-      <ToolActionPanel label={label} className="rounded-none border-0 border-b border-[#1a1a1a] bg-[#0a0a0a]">
+    <section className="overflow-hidden border border-[#1a1a1a] bg-[#050505]">
+      <ToolActionPanel label={label} className="rounded-none border-0 bg-[#0a0a0a]">
         <div role="tablist" aria-label="Vendor output" className="flex min-w-0 flex-1 flex-wrap gap-1">
           {outputs.map(output => (
             <button
@@ -47,7 +48,7 @@ export function MultiVendorOutput({ outputs, activeId, onActiveChange, label = "
               role="tab"
               aria-selected={activeOutput.id === output.id}
               onClick={() => onActiveChange(output.id)}
-              className={`rounded border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+              className={`border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
                 activeOutput.id === output.id
                   ? "border-[#00ff9c]/60 bg-[#00ff9c]/10 text-[#00ff9c]"
                   : "border-[#1a1a1a] bg-black text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
@@ -63,9 +64,16 @@ export function MultiVendorOutput({ outputs, activeId, onActiveChange, label = "
         </ToolActionButton>
       </ToolActionPanel>
       <div role="tabpanel" aria-label={`${activeOutput.label} configuration`} className="min-w-0">
-        <pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words p-5 text-sm leading-relaxed text-[#00ff9c] [scrollbar-width:thin] [scrollbar-color:#333_transparent]">
-          {activeOutput.code}
-        </pre>
+        <ToolTerminalOutput
+          title={`${activeOutput.label} configuration`}
+          status="read only"
+          className="border-0 border-t border-[#1a1a1a]"
+          lines={activeOutput.code.split("\n").map((line, i) => ({
+            id: `line-${i}`,
+            content: line || " ",
+            tone: "success",
+          }))}
+        />
       </div>
     </section>
   );
