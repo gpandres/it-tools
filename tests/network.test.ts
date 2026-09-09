@@ -49,6 +49,8 @@ test("does not report cut points inside a redundant cycle and ignores groups", (
   assert.deepEqual(analysis.articulationNodeIds, []);
   assert.deepEqual(analysis.bridgeEdgeIds, []);
   assert.deepEqual(analysis.isolatedNodeIds, ["isolated"]);
+  assert.deepEqual(analysis.cycleNodeIds, ["a", "b", "c"]);
+  assert.deepEqual(analysis.cycleEdgeIds, ["ca"]);
   assert.equal(findNetworkPath(nodes, edges, "a", "isolated"), null);
 });
 

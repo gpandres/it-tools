@@ -7,12 +7,12 @@ import { toPng, toSvg } from 'html-to-image';
 import { Copy, FileArchive, Group, LayoutDashboard, Maximize2, Minimize2, Network as NetworkIcon, Redo2, Save, Settings2, Trash2, Undo2, Ungroup } from 'lucide-react';
 
 import { ToolLayout } from "@/components/tool-layout";
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { distributeEdgeLanes } from '@/lib/diagram-routing';
 import NetworkNodeComponent from './nodes/NetworkNode';
 import NetworkEdgeComponent from './edges/NetworkEdge';
 import Sidebar from './components/Sidebar';
 import { DiagramExportPanel, DiagramWorkspacePanel } from './components/DiagramSupportPanels';
+import { ToolActionButton, ToolActionPanel, ToolDialog } from '@/components/tool-design';
 import { TEMPLATES } from './components/Templates';
 import { hasStorageConsent, readLocalStorage, writeLocalStorage } from '@/lib/storage';
 import { parseDiagram, validateDiagram } from '@/lib/diagram-validation';
@@ -44,7 +44,8 @@ function DiagramFlow() {
   const [mobileToolboxOpen, setMobileToolboxOpen] = useState(false);
   const [diagramMetadata, setDiagramMetadata] = useState<DiagramMetadata>(DEFAULT_DIAGRAM_METADATA);
   const [savedDiagrams, setSavedDiagrams] = useState<SavedNetworkDiagram[]>([]);
-  const [fileDialogOpen, setFileDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [libraryDialogOpen, setLibraryDialogOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [appearance, setAppearance] = useState<DiagramAppearance>(DEFAULT_DIAGRAM_APPEARANCE);
   const [isShiftHeld, setIsShiftHeld] = useState(false);
@@ -61,6 +62,7 @@ function DiagramFlow() {
 
   const selectedNode = useMemo(() => selectedNodeIds.length === 1 ? nodes.find(node => node.id === selectedNodeIds[0]) as NetworkNode | undefined ?? null : null, [nodes, selectedNodeIds]);
   const selectedEdge = useMemo(() => selectedEdgeIds.length === 1 ? edges.find(edge => edge.id === selectedEdgeIds[0]) as NetworkEdge | undefined ?? null : null, [edges, selectedEdgeIds]);
+  const renderedEdges = useMemo(() => distributeEdgeLanes(edges), [edges]);
   const selectedNodes = useMemo(() => nodes.filter(node => selectedNodeIds.includes(node.id)), [nodes, selectedNodeIds]);
   const canGroup = selectedNodes.length >= 2 && selectedNodes.every(node => !node.parentId && node.data.type !== 'group');
   const canUngroup = selectedNodes.length === 1 && selectedNodes[0].data.type === 'group';
@@ -77,7 +79,7 @@ function DiagramFlow() {
   const replaceDiagram = useCallback((nextNodes: NetworkNode[], nextEdges: NetworkEdge[], remember = true) => {
     if (remember) recordHistory();
     const safeNodes = cloneNodes(nextNodes).map(node => ({ ...node, selected: false }));
-    const safeEdges = cloneEdges(nextEdges);
+    const safeEdges = distributeEdgeLanes(cloneEdges(nextEdges));
     nodesRef.current = safeNodes;
     edgesRef.current = safeEdges;
     setNodes(safeNodes);
@@ -85,7 +87,6 @@ function DiagramFlow() {
   }, [recordHistory]);
 
   // Load from local storage on mount
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     const saved = readLocalStorage('network_diagram');
     if (saved) {
@@ -93,6 +94,8 @@ function DiagramFlow() {
         const parsedValue = JSON.parse(saved);
         const parsed = parseDiagram(parsedValue);
         if (parsed) {
+          // Hydrate persisted metadata once after the browser storage read.
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           if (parsed.metadata) setDiagramMetadata(current => ({ ...current, ...parsed.metadata }));
           if (parsed.nodes.length > 0) {
             const { nodes: savedNodes, edges: savedEdges } = parsed;
@@ -169,7 +172,7 @@ function DiagramFlow() {
         return;
       }
       recordHistory();
-      const nextEdges = addEdge({ ...params, type: 'networkEdge', data: { connectionType: 'ethernet', vlanMode: 'unknown' } }, edgesRef.current);
+      const nextEdges = distributeEdgeLanes(addEdge({ ...params, type: 'networkEdge', data: { connectionType: 'ethernet', vlanMode: 'unknown' } }, edgesRef.current) as NetworkEdge[]);
       edgesRef.current = nextEdges;
       setEdges(nextEdges);
     },
@@ -227,7 +230,7 @@ function DiagramFlow() {
 
   const updateEdgeData = useCallback((edgeId: string, newData: Partial<NetworkEdge['data']>) => {
     recordHistory();
-    const nextEdges = edgesRef.current.map(edge => edge.id === edgeId ? { ...edge, data: { connectionType: edge.data?.connectionType ?? 'ethernet', ...edge.data, ...newData } } : edge) as NetworkEdge[];
+    const nextEdges = distributeEdgeLanes(edgesRef.current.map(edge => edge.id === edgeId ? { ...edge, data: { connectionType: edge.data?.connectionType ?? 'ethernet', ...edge.data, ...newData } } : edge) as NetworkEdge[]);
     edgesRef.current = nextEdges;
     setEdges(nextEdges);
   }, [recordHistory]);
@@ -432,6 +435,7 @@ function DiagramFlow() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (document.querySelector('[role=dialog]')) return;
       if (event.key === 'Shift') {
         setIsShiftHeld(true);
         return;
@@ -514,34 +518,25 @@ function DiagramFlow() {
       return;
     }
     downloadBlob(new Blob([serialized], { type: 'application/json;charset=utf-8' }), `network-diagram-${Date.now()}.json`);
+    notify('Diagram JSON exported.');
   };
 
-  const importDiagram = (file: File) => {
-    if (file.size > 2_000_000) {
-      notify("Diagram files are limited to 2 MB in the browser.", "error");
-      return;
+  const importDiagram = async (file: File): Promise<string | null> => {
+    if (file.size > 2 * 1024 * 1024) return 'Diagram files are limited to 2 MB.';
+    try {
+      const parsed = parseDiagram(JSON.parse(await file.text()));
+      if (!parsed) return 'Invalid diagram JSON format. Check the nodes and links.';
+      replaceDiagram(parsed.nodes as NetworkNode[], parsed.edges as NetworkEdge[]);
+      if (parsed.metadata) setDiagramMetadata(current => ({ ...current, ...parsed.metadata }));
+      setSelectedNodeIds([]);
+      setSelectedEdgeIds([]);
+      setLibraryDialogOpen(false);
+      notify('Diagram imported. Undo restores the previous topology.');
+      setTimeout(() => fitView({ padding: 0.2 }), 100);
+      return null;
+    } catch {
+      return 'Could not read a valid JSON diagram. Check the file and try again.';
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        if (content.length > 2_000_000) throw new Error("Diagram file is too large");
-        const parsed = parseDiagram(JSON.parse(content));
-        if (parsed) {
-          replaceDiagram(parsed.nodes as NetworkNode[], parsed.edges as NetworkEdge[]);
-          if (parsed.metadata) setDiagramMetadata(current => ({ ...current, ...parsed.metadata }));
-          setSelectedNodeIds([]);
-          setSelectedEdgeIds([]);
-          setTimeout(() => fitView({ padding: 0.2 }), 100);
-        } else {
-          notify("Invalid diagram JSON format.", "error");
-        }
-      } catch (err) {
-        notify("Failed to parse the diagram JSON file.", "error");
-      }
-    }
-    reader.onerror = () => notify("Could not read the diagram JSON file.", "error");
-    reader.readAsText(file);
   };
 
   const exportImage = (bgColor: 'black' | 'white' | 'transparent') => {
@@ -575,6 +570,7 @@ function DiagramFlow() {
     if (usesLightExport) element.classList.add('diagram-export-light');
 
     toPng(element, {
+      filter: node => !(node instanceof Element && node.matches('.react-flow__handle, .react-flow__resize-control')),
       backgroundColor,
       width: imageWidth,
       height: imageHeight,
@@ -586,6 +582,7 @@ function DiagramFlow() {
       },
     }).then((dataUrl) => {
       downloadUrl(dataUrl, `network-diagram-${bgColor}.png`);
+      notify('Diagram PNG exported.');
     }).catch(() => notify("Could not export the diagram image.", "error")).finally(() => {
       if (usesLightExport) element.classList.remove('diagram-export-light');
       exportInFlight.current = false;
@@ -615,6 +612,7 @@ function DiagramFlow() {
     exportInFlight.current = true;
 
     toSvg(element, {
+      filter: node => !(node instanceof Element && node.matches('.react-flow__handle, .react-flow__resize-control')),
       backgroundColor: '#0a0a0a',
       width: imageWidth,
       height: imageHeight,
@@ -625,6 +623,7 @@ function DiagramFlow() {
       },
     }).then((dataUrl) => {
       downloadUrl(dataUrl, `network-diagram-${Date.now()}.svg`);
+      notify('Diagram SVG exported.');
     }).catch(() => notify('Could not export the diagram as SVG.', 'error')).finally(() => {
       exportInFlight.current = false;
     });
@@ -633,11 +632,13 @@ function DiagramFlow() {
   const exportInventory = () => {
     const csv = serializeNetworkInventory(nodes, edges);
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `network-inventory-${Date.now()}.csv`);
+    notify('CSV inventory exported.');
   };
 
   const exportMarkdown = () => {
     const markdown = serializeNetworkMarkdown(nodes, edges, topologyAnalysis, validationIssues, diagramMetadata);
     downloadBlob(new Blob([markdown], { type: 'text/markdown;charset=utf-8' }), `network-documentation-${Date.now()}.md`);
+    notify('Markdown documentation exported.');
   };
 
   const saveWorkspaceSnapshot = () => {
@@ -665,6 +666,7 @@ function DiagramFlow() {
     setSelectedNodeIds([]);
     setSelectedEdgeIds([]);
     setTimeout(() => fitView({ padding: 0.2 }), 100);
+    setLibraryDialogOpen(false);
     notify(`Loaded local snapshot: ${snapshot.title}`, 'info');
   };
 
@@ -690,29 +692,31 @@ function DiagramFlow() {
 
   return (
     <>
-      <section className={`${focusMode ? 'fixed inset-0 z-50 h-dvh rounded-none border-0' : 'relative h-[min(800px,calc(100dvh-8rem))] min-h-[29rem] sm:min-h-[34rem] 2xl:h-[min(1080px,calc(100dvh-8rem))]'} flex w-full flex-col overflow-hidden rounded-xl border border-[#26272b] bg-[#090a0c] shadow-[0_16px_48px_rgba(0,0,0,0.24)]`} data-testid="network-diagram-editor" role="application" aria-label="Network diagram editor">
-        <header className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-[#242424] bg-[#0d0e10] px-3 py-2 sm:px-4">
+      <section className={`${focusMode ? 'fixed inset-0 z-50 h-dvh border-0' : 'relative h-[min(800px,calc(100dvh-8rem))] min-h-[29rem] sm:min-h-[34rem] 2xl:h-[min(1080px,calc(100dvh-8rem))]'} flex w-full flex-col overflow-hidden border border-[#1a1a1a] bg-[#050505]`} data-testid="network-diagram-editor" role="application" aria-label="Network diagram editor">
+        <ToolActionPanel className="shrink-0 gap-1.5 border-x-0 border-t-0 px-3 sm:px-4">
           <div className="hidden flex-1 items-center gap-1 sm:flex"><EditorButton label="Undo" icon={<Undo2 />} onClick={undo} disabled={history.length === 0} /><EditorButton label="Redo" icon={<Redo2 />} onClick={redo} disabled={future.length === 0} /><span className="mx-1 h-5 w-px bg-[#242424]" /><EditorButton label="Auto layout" icon={<LayoutDashboard />} onClick={runAutoLayout} /><EditorButton label="Clear" icon={<Trash2 />} onClick={clearCanvas} danger /><span className="mx-1 hidden h-5 w-px bg-[#242424] lg:block" /><span className="hidden lg:contents"><EditorButton label={showMinimap ? 'Hide map' : 'Show map'} icon={<NetworkIcon />} onClick={() => setShowMinimap(current => !current)} /><EditorButton label={focusMode ? 'Exit focus' : 'Focus'} icon={focusMode ? <Minimize2 /> : <Maximize2 />} onClick={() => setFocusMode(current => !current)} /></span></div>
           <div className="flex flex-1 items-center gap-1 sm:hidden"><EditorButton label="Undo" icon={<Undo2 />} onClick={undo} disabled={history.length === 0} /><EditorButton label="Redo" icon={<Redo2 />} onClick={redo} disabled={future.length === 0} /><EditorButton label={focusMode ? 'Exit focus' : 'Focus'} icon={focusMode ? <Minimize2 /> : <Maximize2 />} onClick={() => setFocusMode(current => !current)} /></div>
           {(selectedNodeIds.length > 0 || selectedEdgeIds.length > 0) && <div className="flex items-center gap-1 border-l border-[#242424] pl-2"><EditorButton label="Duplicate" icon={<Copy />} onClick={duplicateSelected} />{canGroup && <EditorButton label="Group" icon={<Group />} onClick={groupSelected} />}{canUngroup && <EditorButton label="Ungroup" icon={<Ungroup />} onClick={ungroupSelected} />}<EditorButton label="Delete" icon={<span>×</span>} onClick={deleteSelected} danger /></div>}
           <EditorButton label="Settings" icon={<Settings2 />} onClick={() => setSettingsOpen(true)} />
-          <Button type="button" onClick={saveWorkspaceSnapshot} variant="outline" size="sm" className="h-8 border-[#00ff9c]/35 bg-[#00ff9c]/[0.06] px-2.5 text-[10px] text-[#9cf5c1] hover:bg-[#00ff9c]/15"><Save className="mr-1 h-3.5 w-3.5" />Save</Button>
-          <Button type="button" onClick={() => setFileDialogOpen(true)} variant="outline" size="sm" className="h-8 border-[#242424] bg-black px-2.5 text-[10px] text-zinc-200 hover:border-sky-400/50"><FileArchive className="mr-1 h-3.5 w-3.5 text-sky-300" />Export</Button>
-        </header>
+          <ToolActionButton type="button" onClick={saveWorkspaceSnapshot} tone="accent" className="text-[10px]"><Save className="mr-1 h-3.5 w-3.5" />Save</ToolActionButton>
+          <ToolActionButton type="button" onClick={() => setLibraryDialogOpen(true)} className="text-[10px]"><NetworkIcon className="mr-1 h-3.5 w-3.5 text-[#00ff9c]" />Open / import</ToolActionButton>
+          <ToolActionButton type="button" onClick={() => setExportDialogOpen(true)} className="text-[10px]"><FileArchive className="mr-1 h-3.5 w-3.5 text-sky-300" />Export</ToolActionButton>
+        </ToolActionPanel>
         <div className="relative flex min-h-0 flex-1">
-          <button type="button" onClick={() => setMobileToolboxOpen(true)} className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded-md border border-[#242424] bg-[#090a0c]/95 px-3 py-2 text-[10px] font-semibold text-zinc-300 shadow-lg hover:border-[#00ff9c] hover:text-[#00ff9c] md:hidden" aria-label="Open diagram toolbox"><NetworkIcon className="h-3.5 w-3.5 text-[#00ff9c]" />Library</button>
+          <button type="button" onClick={() => setMobileToolboxOpen(true)} className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded-none border border-[#242424] bg-[#090a0c]/95 px-3 py-2 text-[10px] font-semibold text-zinc-300 shadow-lg hover:border-[#00ff9c] hover:text-[#00ff9c] md:hidden" aria-label="Open diagram toolbox"><NetworkIcon className="h-3.5 w-3.5 text-[#00ff9c]" />Library</button>
           {mobileToolboxOpen && <button type="button" onClick={() => setMobileToolboxOpen(false)} className="absolute inset-0 z-30 bg-black/35 md:hidden" aria-label="Close diagram toolbox overlay" />}
           <Sidebar selectedNode={selectedNode} selectedEdge={selectedEdge} selectedNodeCount={selectedNodeIds.length} selectedEdgeCount={selectedEdgeIds.length} updateNodeData={updateNodeData} updateEdgeData={updateEdgeData} onAddNode={addNode} validationIssues={validationIssues} topologyNodes={topologyNodes} topologyAnalysis={topologyAnalysis} findPath={findPath} validate={() => notify(validationIssues.length === 0 ? 'No topology issues detected.' : `${validationIssues.length} topology issue${validationIssues.length === 1 ? '' : 's'} found.`, validationIssues.some(issue => issue.severity === 'error') ? 'error' : 'info')} loadTemplate={loadTemplate} mobileOpen={mobileToolboxOpen} closeMobile={() => setMobileToolboxOpen(false)} />
-          <div className="min-h-0 min-w-0 flex-1" ref={reactFlowWrapper} data-testid="network-diagram-canvas" aria-label="Network diagram canvas"><ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeDragStart={onNodeDragStart} onDrop={onDrop} onDragOver={onDragOver} onSelectionChange={onSelectionChange} selectionKeyCode="Shift" multiSelectionKeyCode="Shift" selectionMode={SelectionMode.Partial} snapToGrid={isShiftHeld} snapGrid={[gridGap, gridGap]} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView colorMode="dark" style={canvasStyle} className={`select-none bg-[#07080a] diagram-devices-${appearance.deviceStyle} ${appearance.edgeLabels === 'selected' ? 'diagram-labels-selected' : ''}`}>
-            {appearance.grid !== 'off' && <Background color="#202124" variant={BackgroundVariant.Dots} gap={gridGap} size={appearance.grid === 'dense' ? 1.1 : 1.4} />}<Controls style={{ backgroundColor: '#0d0e10', border: '1px solid #292a2f' }} />
-            {showMinimap && <MiniMap pannable zoomable ariaLabel="Topology overview" nodeColor={node => { const data = node.data as { status?: string; type?: string; groupColor?: string } | undefined; return data?.type === 'group' ? data.groupColor || '#00ff9c' : data?.status === 'offline' ? '#ef4444' : '#00c782'; }} maskColor="rgba(0, 0, 0, 0.62)" nodeStrokeColor="#07080a" nodeBorderRadius={4} style={{ width: 184, height: 116, backgroundColor: 'rgba(16, 17, 21, 0.86)', border: 'none', borderRadius: 10, boxShadow: 'none', opacity: 1 }} />}
-            {nodes.length === 0 && <Panel position="top-center" className="!m-0 !mt-[max(2.5rem,6vh)] !w-[min(25rem,calc(100vw-3rem))]"><div className="rounded-xl border border-[#2b2d32] bg-[#101115]/95 p-5 text-center shadow-2xl backdrop-blur"><p className="text-sm font-semibold text-zinc-100">Start a topology</p><p className="mx-auto mt-1 max-w-xs text-[11px] leading-relaxed text-zinc-500">Set the context, then choose a starter or add a device from the library.</p><div className="mt-4 border-y border-[#2b2d32] py-3 text-left"><p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">Diagram details</p><div className="mt-3 space-y-2"><label className="block text-[10px] text-zinc-500">Title<input value={diagramMetadata.title || ''} onChange={event => setDiagramMetadata(current => ({ ...current, title: event.target.value }))} className="mt-1 h-8 w-full rounded-md border border-[#2b2d32] bg-black px-2 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /></label><label className="block text-[10px] text-zinc-500">Description<textarea value={diagramMetadata.description || ''} onChange={event => setDiagramMetadata(current => ({ ...current, description: event.target.value }))} placeholder="Purpose, scope, or change context…" className="mt-1 min-h-16 w-full resize-y rounded-md border border-[#2b2d32] bg-black px-2 py-1.5 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /></label></div></div><p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">Starters</p><div className="mt-2 grid grid-cols-2 gap-2">{['Small Office', 'Enterprise Core', 'DMZ', 'VLAN Segmentation'].map(template => <button key={template} type="button" onClick={() => loadTemplate(template)} className="rounded-md border border-[#2b2d32] bg-black px-2 py-2 text-[10px] text-zinc-300 transition-colors hover:border-[#00ff9c]/50 hover:bg-[#00ff9c]/[0.06] hover:text-[#a9f7c8]">{template}</button>)}</div></div></Panel>}
-            <Panel position="bottom-left" className="!m-3 !max-w-[calc(100%-1.5rem)] !rounded-md border border-[#292a2f] !bg-[#0d0e10]/95 px-2.5 py-1.5 text-[10px] text-zinc-500" aria-live="polite"><span className="text-[#73e9af]">{nodes.length}</span> devices · <span className="text-sky-300">{edges.length}</span> links · {validationIssues.length === 0 ? <span className="text-[#73e9af]">ready</span> : <span className="text-amber-300">{validationIssues.length} issue{validationIssues.length === 1 ? '' : 's'}</span>}</Panel>
+          <div className="min-h-0 min-w-0 flex-1" ref={reactFlowWrapper} data-testid="network-diagram-canvas" aria-label="Network diagram canvas"><ReactFlow nodes={nodes} edges={renderedEdges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeDragStart={onNodeDragStart} onDrop={onDrop} onDragOver={onDragOver} onSelectionChange={onSelectionChange} selectionKeyCode="Shift" multiSelectionKeyCode="Shift" selectionMode={SelectionMode.Partial} snapToGrid={isShiftHeld} snapGrid={[gridGap, gridGap]} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView colorMode="dark" style={canvasStyle} className={`select-none bg-[#07080a] diagram-devices-${appearance.deviceStyle} ${appearance.edgeLabels === 'selected' ? 'diagram-labels-selected' : ''}`}>
+            {appearance.grid !== 'off' && <Background color="#202124" variant={BackgroundVariant.Dots} gap={gridGap} size={appearance.grid === 'dense' ? 1.1 : 1.4} />}<Controls style={{ backgroundColor: '#050505', border: '1px solid #1a1a1a', borderRadius: 0 }} />
+            {showMinimap && <MiniMap pannable zoomable ariaLabel="Topology overview" nodeColor={node => { const data = node.data as { status?: string; type?: string; groupColor?: string } | undefined; return data?.type === 'group' ? data.groupColor || '#00ff9c' : data?.status === 'offline' ? '#ef4444' : '#00c782'; }} maskColor="rgba(0, 0, 0, 0.62)" nodeStrokeColor="#07080a" nodeBorderRadius={0} style={{ width: 184, height: 116, backgroundColor: 'rgba(8, 8, 8, 0.78)', border: '1px solid rgba(42,42,42,.9)', borderRadius: 0, boxShadow: 'none', opacity: 1 }} />}
+            {nodes.length === 0 && <Panel position="top-center" className="!m-0 !mt-[max(2.5rem,6vh)] !w-[min(25rem,calc(100vw-3rem))]"><div className="rounded-none border border-[#1a1a1a] bg-[#050505] p-5 text-center shadow-2xl backdrop-blur"><p className="text-sm font-semibold text-zinc-100">Start a topology</p><p className="mx-auto mt-1 max-w-xs text-[11px] leading-relaxed text-zinc-500">Set the context, then choose a starter or add a device from the library.</p><div className="mt-4 border-y border-[#2b2d32] py-3 text-left"><p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">Diagram details</p><div className="mt-3 space-y-2"><label className="block text-[10px] text-zinc-500">Title<input value={diagramMetadata.title || ''} onChange={event => setDiagramMetadata(current => ({ ...current, title: event.target.value }))} className="mt-1 h-8 w-full rounded-none border border-[#2b2d32] bg-black px-2 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /></label><label className="block text-[10px] text-zinc-500">Description<textarea value={diagramMetadata.description || ''} onChange={event => setDiagramMetadata(current => ({ ...current, description: event.target.value }))} placeholder="Purpose, scope, or change context…" className="mt-1 min-h-16 w-full resize-y rounded-none border border-[#2b2d32] bg-black px-2 py-1.5 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /></label></div></div><p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">Starters</p><div className="mt-2 grid grid-cols-2 gap-2">{['Small Office', 'Enterprise Core', 'DMZ', 'VLAN Segmentation'].map(template => <ToolActionButton key={template} type="button" onClick={() => loadTemplate(template)} className="rounded-none border border-[#2b2d32] bg-black px-2 py-2 text-[10px] text-zinc-300 transition-colors hover:border-[#00ff9c]/50 hover:bg-[#00ff9c]/[0.06] hover:text-[#a9f7c8]">{template}</ToolActionButton>)}</div></div></Panel>}
+            <Panel position="bottom-left" className="!m-3 !max-w-[calc(100%-1.5rem)] !rounded-none border border-[#292a2f] !bg-[#0d0e10]/95 px-2.5 py-1.5 text-[10px] text-zinc-500" aria-live="polite"><span className="text-[#73e9af]">{nodes.length}</span> devices · <span className="text-sky-300">{edges.length}</span> links · {validationIssues.length === 0 ? <span className="text-[#73e9af]">ready</span> : <span className="text-amber-300">{validationIssues.length} issue{validationIssues.length === 1 ? '' : 's'}</span>}</Panel>
           </ReactFlow></div>
         </div>
       </section>
-      <Dialog open={fileDialogOpen} onOpenChange={setFileDialogOpen}><DialogContent className="w-[min(92vw,56rem)] max-h-[min(86dvh,48rem)] overflow-y-auto border-[#292a2f] bg-[#101115] p-4 sm:!max-w-3xl sm:p-6"><DialogTitle className="text-sm text-zinc-100">Export topology</DialogTitle><DialogDescription className="text-xs text-zinc-500">Create a file or manage local snapshots without leaving the editor.</DialogDescription><div className="mt-2"><DiagramExportPanel exportImage={exportImage} exportSvg={exportSvg} exportInventory={exportInventory} exportDiagram={exportDiagram} exportMarkdown={exportMarkdown} importDiagram={importDiagram} /><DiagramWorkspacePanel diagrams={savedDiagrams} onSave={saveWorkspaceSnapshot} onLoad={loadWorkspaceSnapshot} onDelete={deleteWorkspaceSnapshot} /></div></DialogContent></Dialog>
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}><DialogContent className="w-[min(92vw,34rem)] border-[#292a2f] bg-[#101115] p-4 sm:!max-w-lg sm:p-6"><DialogTitle className="text-sm text-zinc-100">Diagram settings</DialogTitle><DialogDescription className="text-xs text-zinc-500">Tune the canvas presentation without changing topology data.</DialogDescription><DiagramSettings appearance={appearance} onChange={setAppearance} /></DialogContent></Dialog>
+      <ToolDialog open={exportDialogOpen} onOpenChange={setExportDialogOpen} title="Export topology" description="Create a local image, inventory, source file, or documentation." size="lg"><DiagramExportPanel exportImage={exportImage} exportSvg={exportSvg} exportInventory={exportInventory} exportDiagram={exportDiagram} exportMarkdown={exportMarkdown} /></ToolDialog>
+      <ToolDialog open={libraryDialogOpen} onOpenChange={setLibraryDialogOpen} title="Open or import diagram" description="Load a local snapshot or replace the canvas with a validated JSON file." size="lg"><DiagramWorkspacePanel diagrams={savedDiagrams} onSave={saveWorkspaceSnapshot} onLoad={loadWorkspaceSnapshot} onDelete={deleteWorkspaceSnapshot} importDiagram={importDiagram} /></ToolDialog>
+      <ToolDialog open={settingsOpen} onOpenChange={setSettingsOpen} title="Diagram settings" description="Tune the canvas presentation without changing topology data."><DiagramSettings appearance={appearance} onChange={setAppearance} /></ToolDialog>
     </>
   );
 }
@@ -734,7 +738,7 @@ export default function NetworkDiagramPage() {
 }
 
 function EditorButton({ label, icon, onClick, disabled = false, danger = false }: { label: string; icon: ReactNode; onClick: () => void; disabled?: boolean; danger?: boolean }) {
-  return <button type="button" onClick={onClick} disabled={disabled} title={label} aria-label={label} className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[10px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${danger ? 'text-red-300 hover:bg-red-500/10 hover:text-red-200' : 'text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-100'}`}><span className="grid h-3.5 w-3.5 place-items-center [&>svg]:h-3.5 [&>svg]:w-3.5">{icon}</span><span className="hidden xl:inline">{label}</span></button>;
+  return <ToolActionButton type="button" onClick={onClick} disabled={disabled} title={label} aria-label={label} tone={danger ? 'danger' : 'neutral'} className="px-2 text-[10px]"><span className="grid h-3.5 w-3.5 place-items-center [&>svg]:h-3.5 [&>svg]:w-3.5">{icon}</span><span className="hidden xl:inline">{label}</span></ToolActionButton>;
 }
 
 function DiagramSettings({ appearance, onChange }: { appearance: DiagramAppearance; onChange: (next: DiagramAppearance) => void }) {
@@ -743,26 +747,24 @@ function DiagramSettings({ appearance, onChange }: { appearance: DiagramAppearan
 }
 
 function DeviceStyleOptions({ value, onChange }: { value: DiagramAppearance['deviceStyle']; onChange: (value: DiagramAppearance['deviceStyle']) => void }) {
-  const options: Array<{ value: DiagramAppearance['deviceStyle']; label: string }> = [{ value: 'solid', label: 'Solid' }, { value: 'outline', label: 'Outline' }, { value: 'minimal', label: 'Minimal' }];
-  return <section><div className="mb-2"><h3 className="text-xs font-semibold text-zinc-200">Device visual style</h3><p className="mt-0.5 text-[10px] text-zinc-500">Each preview shows its dark and light export treatment.</p></div><div className="grid gap-2 sm:grid-cols-3">{options.map(option => <button key={option.value} type="button" onClick={() => onChange(option.value)} aria-pressed={value === option.value} className={`rounded-lg border p-1.5 text-left transition-colors ${value === option.value ? 'border-[#00ff9c]/70 bg-[#00ff9c]/[0.06]' : 'border-[#2b2d32] bg-black hover:border-zinc-500'}`}><DeviceStylePreview style={option.value} /><span className={`mt-1.5 block text-center text-[10px] font-medium ${value === option.value ? 'text-[#a9f7c8]' : 'text-zinc-400'}`}>{option.label}</span></button>)}</div></section>;
+  const options: Array<{ value: DiagramAppearance['deviceStyle']; label: string }> = [{ value: 'solid', label: '01 / Workbench canonical' }, { value: 'outline', label: '02 / Modern product' }, { value: 'minimal', label: '03 / Retro terminal' }];
+  return <section><div className="mb-2"><h3 className="text-xs font-semibold uppercase tracking-widest text-[#00ff9c]">Theme</h3><p className="mt-0.5 text-[10px] text-zinc-500">The three device box families from the diagram design reference.</p></div><div className="grid gap-2 sm:grid-cols-3">{options.map(option => <button key={option.value} type="button" onClick={() => onChange(option.value)} aria-pressed={value === option.value} className={`border p-2 text-left transition-colors ${value === option.value ? 'border-[#00ff9c]/70 bg-[#00ff9c]/[0.06]' : 'border-[#2a2a2a] bg-black hover:border-zinc-500'}`}><span className={`mb-2 flex min-h-7 items-start text-[9px] font-bold uppercase leading-tight tracking-widest ${value === option.value ? 'text-[#00ff9c]' : 'text-zinc-500'}`}>{option.label}</span><DeviceStylePreview style={option.value} /></button>)}</div></section>;
 }
 
 function DeviceStylePreview({ style }: { style: DiagramAppearance['deviceStyle'] }) {
-  return <div className="relative h-20 overflow-hidden rounded-md border border-[#34353a] bg-[#f8fafc]"><div className="absolute inset-y-0 left-0 w-[57%] bg-[#0b0d10]" style={{ clipPath: 'polygon(0 0, 100% 0, 82% 100%, 0 100%)' }} /><span className="absolute left-1.5 top-1.5 text-[7px] font-semibold tracking-wider text-zinc-500">DARK</span><span className="absolute right-1.5 top-1.5 text-[7px] font-semibold tracking-wider text-slate-400">LIGHT</span><PreviewDevice style={style} tone="dark" side="left" /><PreviewDevice style={style} tone="light" side="right" /></div>;
+  return <div className="grid gap-2"><PreviewDevice style={style} tone="dark" /><PreviewDevice style={style} tone="light" /></div>;
 }
 
-function PreviewDevice({ style, tone, side }: { style: DiagramAppearance['deviceStyle']; tone: 'dark' | 'light'; side: 'left' | 'right' }) {
+function PreviewDevice({ style, tone }: { style: DiagramAppearance['deviceStyle']; tone: 'dark' | 'light' }) {
   const isDark = tone === 'dark';
-  const sideClass = side === 'left' ? 'left-2' : 'right-2';
-  const text = isDark ? 'bg-zinc-600' : 'bg-slate-400';
-  const icon = isDark ? 'bg-[#00e59a]' : 'bg-emerald-500';
-  if (style === 'solid') return <div className={`absolute top-6 ${sideClass} flex h-10 w-[4.3rem] flex-col justify-center rounded-md border border-l-2 border-l-[#00e59a] ${isDark ? 'border-zinc-700 bg-[#17191d] shadow-[0_4px_8px_rgba(0,0,0,.28)]' : 'border-slate-300 bg-white shadow-sm'} px-1.5`}><span className={`mb-1 h-2 w-2 rounded-sm ${icon}`} /><span className={`h-1 w-9 rounded ${text}`} /><span className={`mt-1 h-1 w-6 rounded ${isDark ? 'bg-zinc-700' : 'bg-slate-200'}`} /></div>;
-  if (style === 'outline') return <div className={`absolute top-6 ${sideClass} flex h-10 w-[4.3rem] flex-col justify-center border border-l-2 border-l-[#00e59a] ${isDark ? 'border-zinc-500 bg-[#0b0d10] shadow-[inset_0_0_0_3px_rgba(255,255,255,.04)]' : 'border-slate-600 bg-white shadow-[inset_0_0_0_3px_#f1f5f9]'} px-2`}><span className={`mb-1 h-2 w-2 ${icon}`} /><span className={`h-1 w-9 ${text}`} /><span className={`mt-1 h-1 w-6 ${isDark ? 'bg-zinc-700' : 'bg-slate-200'}`} /></div>;
-  return <div className={`absolute top-7 ${sideClass} flex h-7 w-[4.3rem] items-center gap-1.5 border-b ${isDark ? 'border-zinc-500 bg-gradient-to-r from-emerald-400/10 to-transparent' : 'border-slate-400 bg-gradient-to-r from-emerald-50 to-transparent'} px-1`}><span className={`h-3 w-3 rounded-sm ${icon}`} /><div><span className={`block h-1 w-8 ${text}`} /><span className={`mt-1 block h-1 w-5 ${isDark ? 'bg-zinc-700' : 'bg-slate-200'}`} /></div></div>;
+  const family = style === 'solid' ? 'workbench' : style === 'outline' ? 'modern' : 'retro';
+  const familyClass = family === 'workbench' ? (isDark ? 'border-[#1a1a1a] bg-[#050505] text-zinc-100' : 'border-slate-400 bg-white text-slate-900') : family === 'modern' ? (isDark ? 'rounded-xl border-sky-400/50 bg-[#111827] text-zinc-100 shadow-[0_12px_30px_rgba(0,0,0,0.35)]' : 'rounded-xl border-slate-300 bg-white text-slate-900 shadow-lg') : (isDark ? 'border-[#00ff9c]/70 bg-[#06120d] text-[#b7ffd9] shadow-[3px_3px_0_#176b52]' : 'border-slate-700 bg-[#f8f4e8] text-slate-900 shadow-[3px_3px_0_#64748b]');
+  const accent = family === 'retro' ? (isDark ? 'text-[#00ff9c]' : 'text-slate-700') : family === 'modern' ? (isDark ? 'text-sky-300' : 'text-blue-700') : (isDark ? 'text-[#00ff9c]' : 'text-slate-600');
+  return <div className={`relative flex h-[68px] w-full flex-col justify-center border p-2 font-mono ${familyClass}`}>{family === 'retro' && <div className="pointer-events-none absolute inset-1 border border-dashed border-current opacity-20" />}{family === 'workbench' && <div className={`absolute inset-x-0 top-0 border-b px-1.5 py-1 text-[7px] font-bold uppercase tracking-widest ${isDark ? 'border-[#1a1a1a] text-[#00ff9c]' : 'border-slate-200 text-slate-500'}`}>[NODE]</div>}<div className={`flex items-center gap-1.5 ${family === 'workbench' ? 'mt-2' : ''}`}><NetworkIcon className={`h-4 w-4 shrink-0 ${accent}`} /><div className="min-w-0"><div className={`truncate text-[9px] font-bold ${family === 'workbench' && isDark ? 'text-[#ffb000]' : ''}`}>{isDark ? (family === 'modern' ? 'Firewall' : family === 'retro' ? 'Archive DB' : 'Router') : 'Light export'}</div><div className={`truncate text-[8px] ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>{isDark ? '10.0.0.1 · active' : 'print / report mode'}</div></div></div><div className={`mt-1 text-[7px] uppercase tracking-widest ${isDark ? 'text-[#72e6b4]' : 'text-emerald-700'}`}>● active</div></div>;
 }
 
 function SettingsOption({ label, description, value, options, onChange }: { label: string; description: string; value: string; options: Array<[string, string]>; onChange: (value: string) => void }) {
-  return <section><div className="mb-2"><h3 className="text-xs font-semibold text-zinc-200">{label}</h3><p className="mt-0.5 text-[10px] text-zinc-500">{description}</p></div><div className="flex flex-wrap gap-1.5">{options.map(([optionValue, optionLabel]) => <button key={optionValue} type="button" onClick={() => onChange(optionValue)} aria-pressed={value === optionValue} className={`rounded-md border px-2.5 py-1.5 text-[10px] transition-colors ${value === optionValue ? 'border-[#00ff9c]/60 bg-[#00ff9c]/10 text-[#a9f7c8]' : 'border-[#2b2d32] bg-black text-zinc-400 hover:border-zinc-500 hover:text-zinc-200'}`}>{optionLabel}</button>)}</div></section>;
+  return <section><div className="mb-2"><h3 className="text-xs font-semibold text-zinc-200">{label}</h3><p className="mt-0.5 text-[10px] text-zinc-500">{description}</p></div><div className="flex flex-wrap gap-1.5">{options.map(([optionValue, optionLabel]) => <ToolActionButton key={optionValue} tone={value === optionValue ? 'accent' : 'neutral'} type="button" onClick={() => onChange(optionValue)} aria-pressed={value === optionValue} className={`rounded-none border px-2.5 py-1.5 text-[10px] transition-colors ${value === optionValue ? 'border-[#00ff9c]/60 bg-[#00ff9c]/10 text-[#a9f7c8]' : 'border-[#2a2a2a] bg-black text-zinc-400 hover:border-zinc-500 hover:text-zinc-200'}`}>{optionLabel}</ToolActionButton>)}</div></section>;
 }
 
 function cloneNodes(nodes: NetworkNode[]): NetworkNode[] {

@@ -23,6 +23,8 @@ export type TopologyAnalysis = {
   isolatedNodeIds: string[];
   articulationNodeIds: string[];
   bridgeEdgeIds: string[];
+  cycleNodeIds: string[];
+  cycleEdgeIds: string[];
 };
 
 type AdjacencyEntry = { neighborId: string; edgeId: string };
@@ -43,7 +45,11 @@ export function analyzeNetworkTopology(nodes: TopologyNode[], edges: TopologyEdg
   const lowLink = new Map<string, number>();
   const articulationNodeIds = new Set<string>();
   const bridgeEdgeIds = new Set<string>();
+  const cycleNodeIds = new Set<string>();
+  const cycleEdgeIds = new Set<string>();
   const components: string[][] = [];
+  const activePath: string[] = [];
+  const activePathIndex = new Map<string, number>();
   let clock = 0;
 
   const visit = (nodeId: string, parentEdgeId: string | null, component: string[]) => {
@@ -51,6 +57,8 @@ export function analyzeNetworkTopology(nodes: TopologyNode[], edges: TopologyEdg
     lowLink.set(nodeId, clock);
     clock += 1;
     component.push(nodeId);
+    activePathIndex.set(nodeId, activePath.length);
+    activePath.push(nodeId);
     let childCount = 0;
 
     for (const { neighborId, edgeId } of adjacency.get(nodeId) ?? []) {
@@ -67,10 +75,17 @@ export function analyzeNetworkTopology(nodes: TopologyNode[], edges: TopologyEdg
         }
       } else {
         lowLink.set(nodeId, Math.min(lowLink.get(nodeId) ?? 0, discovery.get(neighborId) ?? 0));
+        if ((discovery.get(neighborId) ?? Infinity) < (discovery.get(nodeId) ?? -1)) {
+          const cycleStart = activePathIndex.get(neighborId) ?? activePath.length - 1;
+          activePath.slice(cycleStart).forEach(id => cycleNodeIds.add(id));
+          cycleEdgeIds.add(edgeId);
+        }
       }
     }
 
     if (parentEdgeId === null && childCount > 1) articulationNodeIds.add(nodeId);
+    activePath.pop();
+    activePathIndex.delete(nodeId);
   };
 
   for (const node of activeNodes) {
@@ -88,6 +103,8 @@ export function analyzeNetworkTopology(nodes: TopologyNode[], edges: TopologyEdg
     isolatedNodeIds: components.filter(component => component.length === 1 && (adjacency.get(component[0])?.length ?? 0) === 0).flat(),
     articulationNodeIds: activeNodes.filter(node => articulationNodeIds.has(node.id)).map(node => node.id),
     bridgeEdgeIds: validEdges.filter(edge => bridgeEdgeIds.has(edge.id)).map(edge => edge.id),
+    cycleNodeIds: activeNodes.filter(node => cycleNodeIds.has(node.id)).map(node => node.id),
+    cycleEdgeIds: validEdges.filter(edge => cycleEdgeIds.has(edge.id)).map(edge => edge.id),
   };
 }
 

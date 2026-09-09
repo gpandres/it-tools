@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ToolLayout } from "@/components/tool-layout";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Download, Upload, Plus, Trash2, FolderOpen, Loader2, ArrowRight } from "lucide-react";
+import { Save, Download, Upload, Plus, Trash2, FolderOpen, Loader2 } from "lucide-react";
 import { InvestigationCase } from './components/types';
 import * as db from './db';
 import IOCManager from './components/IOCManager';
@@ -16,9 +15,10 @@ import { parseInvestigationCase } from '@/lib/investigation-validation';
 import { useNotification } from '@/components/notification-provider';
 import { downloadTextFile, safeDownloadName } from '@/lib/browser-download';
 import { createEvidenceBundle, investigationFromEvidenceBundle, parseEvidenceBundle } from '@/lib/evidence-bundle';
-import { ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody, ToolField, ToolActionButton, ToolEmptyState } from "@/components/tool-design";
+import { ToolPanel, ToolPanelHeader, ToolPanelBody, ToolField, ToolActionButton, ToolEmptyState } from "@/components/tool-design";
 
 export default function InvestigationWorkspace() {
+  const importInput = useRef<HTMLInputElement>(null);
   const [cases, setCases] = useState<InvestigationCase[]>([]);
   const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
   const [activeCase, setActiveCase] = useState<InvestigationCase | null>(null);
@@ -280,20 +280,20 @@ export default function InvestigationWorkspace() {
                 <ToolActionButton onClick={exportEvidenceBundle} tone="neutral">
                   <Download className="mr-2 h-4 w-4" /> Bundle
                 </ToolActionButton>
-                <ToolActionButton tone="neutral" asChild>
-                  <label className="cursor-pointer">
-                    <Upload className="mr-2 h-4 w-4" /> Import
-                    <input 
-                      type="file" 
-                      accept=".json"
-                      className="sr-only" 
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) importJSON(e.target.files[0]);
-                        e.target.value = "";
-                      }} 
-                    />
-                  </label>
+                <ToolActionButton tone="neutral" onClick={() => importInput.current?.click()}>
+                  <Upload className="mr-2 h-4 w-4" /> Import
                 </ToolActionButton>
+                <input
+                  ref={importInput}
+                  aria-label="Import investigation JSON"
+                  type="file"
+                  accept=".json"
+                  className="sr-only"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) importJSON(e.target.files[0]);
+                    e.target.value = "";
+                  }}
+                />
               </div>
               <ToolActionButton onClick={deleteCurrentCase} tone="danger" aria-label={deletePending ? "Confirm delete case" : "Delete case"}>
                 <Trash2 className="mr-2 h-4 w-4" />{deletePending ? <span className="uppercase tracking-widest">Confirm</span> : "Delete"}

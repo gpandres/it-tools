@@ -37,6 +37,7 @@ export function ToolFileDropzone({
 
   const receive = (files: File[]) => {
     const next = multiple ? files : files.slice(0, 1);
+    if (next.length === 0) return;
     const tooLarge = maxSizeBytes ? next.find(file => file.size > maxSizeBytes) : undefined;
     if (tooLarge) {
       const message = `${tooLarge.name} exceeds the ${formatBytes(maxSizeBytes!)} limit.`;
@@ -73,14 +74,14 @@ export function ToolFileDropzone({
         multiple={multiple}
         aria-label={typeof label === "string" ? `Choose files for ${label}` : "Choose files"}
         className="sr-only"
-        onChange={event => receive(Array.from(event.target.files ?? []))}
+        onChange={event => { receive(Array.from(event.target.files ?? [])); event.currentTarget.value = ""; }}
       />
       <ToolActionButton type="button" className="mt-3 rounded-none" onClick={() => inputRef.current?.click()}>{browseLabel}</ToolActionButton>
     </div>
     {error && <ToolStatus tone="error">{error}</ToolStatus>}
     {selected.map(file => <div key={`${file.name}-${file.lastModified}`} className="flex min-w-0 items-center justify-between gap-3 border border-[#1a1a1a] bg-black p-2 text-[10px]">
       <span className="flex min-w-0 items-center gap-2 text-zinc-400"><File className="h-3.5 w-3.5 shrink-0 text-[#00ff9c]" aria-hidden="true" /><span className="truncate" title={file.name}>{file.name}</span></span>
-      <span className="shrink-0 text-[#9fffd1]">{formatBytes(file.size)} · Ready</span>
+      <span className="shrink-0 text-[#9fffd1]">{formatBytes(file.size)} · Selected</span>
     </div>)}
   </div>;
 }

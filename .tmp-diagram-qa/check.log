@@ -1,0 +1,326 @@
+
+> toolbox@0.1.2 check
+> npm run typecheck && npm test && npm run lint:ratchet && npm run build
+
+
+> toolbox@0.1.2 typecheck
+> tsc --noEmit --incremental false
+
+
+> toolbox@0.1.2 test
+> node --experimental-strip-types --test tests/**/*.test.ts
+
+(node:17344) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/backup-calculations.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ backup calculations apply throughput efficiency and storage overhead (0.7713ms)
+✔ backup calculations clamp invalid operational inputs (0.5769ms)
+(node:21308) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/catalogue.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ every tool route is registered once and every registry entry resolves to a page (43.0169ms)
+✔ search reuses aliases, vendors and fuzzy matching (23.4631ms)
+✔ workflows reuse real tools and related tools do not link to themselves (0.6548ms)
+✔ featured workspaces and role recommendations reuse real tools (0.2153ms)
+✔ network and PDF dependencies are excluded from the no external services filter (0.6659ms)
+✔ saved preferences reject invalid versions, oversized data and malformed JSON (1.4741ms)
+✔ saved preferences discard unknown ids and duplicates and recent visits stay bounded (0.5909ms)
+(node:11420) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/command-risk.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ flags destructive commands (1.4886ms)
+✔ flags high-impact commands (1.0205ms)
+✔ does not warn on read-only commands (0.8074ms)
+(node:17064) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/config-audit.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ config audit returns a useful source position and excerpt (4.9603ms)
+✔ config audit does not mutate global regular expressions (0.326ms)
+(node:12396) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/diagram-routing.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ identical looking cables share a lane, even with different labels or explicit defaults (2.7831ms)
+✔ different colors, textures and widths fan out; matching cables keep one lane (0.4501ms)
+✔ incoming and outgoing cables sharing a physical handle use the same lane allocation (0.2229ms)
+✔ different handles stay independent and removing a treatment resets lanes (0.1936ms)
+✔ wireless and VPN defaults are dashed, but an explicit solid texture overrides them (0.1523ms)
+✔ unknown imported connection types retain the safe Ethernet rendering fallback (0.0924ms)
+(node:21012) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/dns-recon.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ DNS Recon accepts normalized FQDNs only (1.831ms)
+✔ DNS Recon parses bounded typed responses and deduplicates records (0.8696ms)
+✔ DNS Recon Markdown export keeps table cells intact (0.4737ms)
+(node:9488) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/dockerfile-audit.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Dockerfile audit understands stages and instruction semantics (1.8075ms)
+✔ Dockerfile audit does not flag placeholder secrets (0.3461ms)
+(node:23424) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/email-ad-audit.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ email audit unfolds headers and evaluates authentication alignment (5.504ms)
+✔ AD audit only treats recognized relationship fields as evidence (1.2119ms)
+✔ email audit covers attachment, header and infrastructure indicators (0.8848ms)
+(node:372) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/evidence-bundle.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ evidence bundles round-trip into an investigation case (3.8762ms)
+✔ evidence bundle validation rejects duplicate indicators and unknown sources (1.1384ms)
+(node:21600) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/github-actions-audit.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ GitHub Actions audit checks workflow and job structure (8.5444ms)
+✔ GitHub Actions audit reports malformed YAML without throwing (1.1008ms)
+(node:11160) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/kubernetes-audit.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Kubernetes audit parses multiple documents and reports container-level issues (5.4602ms)
+✔ Kubernetes audit reports malformed YAML without throwing (0.6795ms)
+✔ Kubernetes audit covers workload hardening and decoded Secret values (0.944ms)
+(node:8632) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/log-timeline.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ extracts ISO, Apache and syslog timestamps (2.9524ms)
+✔ sorts timestamped entries while preserving untimestamped order (1.0244ms)
+✔ exports CSV cells safely (0.334ms)
+(node:9464) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/mitre-db.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ MITRE catalog keeps unique IDs and complete metadata (1.2141ms)
+✔ new supply-chain, discovery, evasion and firewall techniques are simulator-ready (0.147ms)
+✔ Reconnaissance is complete for the Enterprise v19.2 catalog (0.2169ms)
+✔ Resource Development is complete for the Enterprise v19.2 catalog (0.1919ms)
+✔ Initial Access is complete for the Enterprise v19.2 catalog (0.1654ms)
+✔ Execution is complete for the Enterprise v19.2 catalog (0.3583ms)
+✔ Persistence covers the Enterprise v19.2 catalog and preserves cross-tactic entries (0.3471ms)
+✔ Privilege Escalation covers the Enterprise v19.2 catalog (0.2342ms)
+✔ Stealth covers the Enterprise v19.2 catalog (0.2657ms)
+✔ Defense Impairment covers the current Enterprise catalog (0.3788ms)
+✔ Credential Access covers the Enterprise catalog (0.331ms)
+✔ Discovery covers the Enterprise catalog (0.2039ms)
+✔ Lateral Movement covers the Enterprise catalog (0.2186ms)
+✔ Collection covers the Enterprise catalog (0.2234ms)
+✔ Command and Control covers the Enterprise catalog (0.1951ms)
+✔ Exfiltration covers the Enterprise catalog (0.1547ms)
+✔ Impact covers the Enterprise catalog (0.2103ms)
+(node:21016) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/network-target.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ allows public IPv4 and IPv6 destinations (4.8669ms)
+✔ rejects private, reserved and IPv4-mapped IPv6 destinations (1.2873ms)
+(node:12136) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/network.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ analyzes topology cut points, bridge links and shortest paths (5.269ms)
+✔ does not report cut points inside a redundant cycle and ignores groups (0.338ms)
+✔ generates safe network documentation with inventory and resilience findings (0.9816ms)
+✔ sanitizes the local diagram library and keeps the newest snapshots first (1.1628ms)
+✔ rejects malformed IPv4 values instead of truncating them (1.0461ms)
+✔ calculates the IPv4 /0 network correctly (0.2737ms)
+✔ rejects IPv6 groups longer than four hexadecimal characters (0.3128ms)
+✔ rejects malformed ACL ports and reversed ranges (0.4166ms)
+✔ rejects zero-host VLSM requests instead of allocating a fake /31 (0.4342ms)
+✔ allocates a conventional subnet for a one-host VLSM request (0.2547ms)
+✔ rejects duplicate diagram node and edge identifiers (0.3053ms)
+✔ reports actionable diagram topology issues (0.7695ms)
+✔ does not report visual groups as isolated when their children carry links (0.9309ms)
+✔ reviews edge redundancy independently from the local handoff (0.3672ms)
+✔ auto layout terminates for cyclic network topologies (0.6411ms)
+✔ auto layout keeps grouped children in their parent coordinate space (0.2539ms)
+✔ auto layout sizes each column from its widest node (0.2458ms)
+✔ auto layout remains deterministic with parallel links and disconnected nodes (0.3109ms)
+✔ auto layout leaves a single group coordinate space untouched (0.1221ms)
+✔ auto layout handles the maximum supported 500-node topology (6.6667ms)
+✔ validates connection semantics and VLAN lists (1.0914ms)
+✔ validates explicit subnet overlaps, reused ports and single-homed infrastructure (0.4237ms)
+✔ rejects malformed explicit subnet declarations (0.1412ms)
+✔ diagram imports keep only safe editable fields and preserve dimensions (1.9909ms)
+✔ network JSON export is safe and round-trippable (0.2828ms)
+✔ network inventory export preserves columns and escapes CSV content (0.3107ms)
+(node:10248) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/playbook-document.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ playbook documents migrate legacy runbook exports and preserve incident context (1.459ms)
+✔ playbook markdown includes command context and workflow steps (0.3719ms)
+(node:22932) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/preferences-store.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ preferences consent, migration, revocation, cross-tab updates and quota failures (2.7464ms)
+(node:22344) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/runbook-pdf.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ list-only PDF preserves the steps and decision targets without a diagram page (1.5865ms)
+✔ list + diagram PDF embeds the supplied image on a separate page within A4 bounds (0.7922ms)
+(node:17880) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/secrets-scanner.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ detects provider tokens with line and redacted context (2.3216ms)
+✔ uses entropy for generic assignments and ignores placeholders (0.6112ms)
+✔ supports intentional finding suppression (0.1308ms)
+✔ detects common CI and cloud provider credentials (1.4527ms)
+✔ decodes low-entropy Basic Auth values in assignments (0.2879ms)
+(node:13280) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/seo.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ tool SEO data uses canonical registry URLs and readable titles (0.7682ms)
+✔ catalog SEO data exposes every registered tool once (0.5495ms)
+(node:18340) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/sigma.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Sigma validator accepts a valid rule and rejects unknown conditions (3.2626ms)
+✔ Sigma validator catches malformed YAML and invalid metadata (0.983ms)
+(node:22716) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/andre/Pictures/proyectov2/toolbox/tests/terraform-audit.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\andre\Pictures\proyectov2\toolbox\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Terraform audit evaluates HCL assignments without treating placeholders as secrets (2.3012ms)
+✔ Terraform audit reports unbalanced HCL without throwing (0.5065ms)
+✔ Terraform audit distinguishes public databases and covers cloud hardening (0.9027ms)
+ℹ tests 100
+ℹ suites 0
+ℹ pass 100
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 516.2034
+
+> toolbox@0.1.2 lint:ratchet
+> node scripts/check-lint.mjs
+
+No new lint findings. Existing debt: 67 errors, 58 warnings. Run npm run lint for full details.
+
+> toolbox@0.1.2 build
+> next build
+
+▲ Next.js 16.3.4 (Turbopack)
+✓ Running next.config.ts took 23ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.6s
+  Running TypeScript ...
+  Finished TypeScript in 2.5s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/87) ...
+  Generating static pages using 11 workers (21/87) 
+Couldn't load fs
+Couldn't load zlib
+  Generating static pages using 11 workers (43/87) 
+  Generating static pages using 11 workers (65/87) 
+✓ Generating static pages using 11 workers (87/87) in 771ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/analyze-domain
+├ ○ /design-system
+├ ○ /robots.txt
+├ ○ /sitemap.xml
+├ ○ /tools/crypto/file-hash
+├ ○ /tools/crypto/hash
+├ ○ /tools/crypto/password
+├ ○ /tools/crypto/uuid
+├ ○ /tools/dev/gitignore
+├ ○ /tools/dev/sql-beautifier
+├ ○ /tools/dev/sql-minifier
+├ ○ /tools/devops/chmod
+├ ○ /tools/devops/docker
+├ ○ /tools/devops/dockerfile-linter
+├ ○ /tools/devops/github-actions-auditor
+├ ○ /tools/devops/kubernetes-auditor
+├ ○ /tools/devops/sbom-generator
+├ ○ /tools/devops/secrets-scanner
+├ ○ /tools/devops/terraform-analyzer
+├ ○ /tools/encoding/base64
+├ ○ /tools/encoding/json-yaml
+├ ○ /tools/encoding/jwt
+├ ○ /tools/encoding/number-base
+├ ○ /tools/encoding/timestamp
+├ ○ /tools/encoding/url
+├ ○ /tools/network/bandwidth
+├ ○ /tools/network/cidr
+├ ○ /tools/network/command-reference
+├ ○ /tools/network/diagram
+├ ○ /tools/network/interface-generator
+├ ○ /tools/network/ip-converter
+├ ○ /tools/network/ipv6
+├ ○ /tools/network/mac
+├ ○ /tools/network/mtu
+├ ○ /tools/network/subnet
+├ ○ /tools/network/vlan
+├ ○ /tools/network/vlsm
+├ ○ /tools/other/cheatsheets
+├ ○ /tools/other/color
+├ ○ /tools/other/cron
+├ ○ /tools/other/qr
+├ ○ /tools/redteam/attack-surface
+├ ○ /tools/redteam/dns-recon
+├ ○ /tools/redteam/hash-identifier
+├ ○ /tools/redteam/http-request
+├ ○ /tools/redteam/payload-encoder
+├ ○ /tools/redteam/reverse-shell-reference
+├ ○ /tools/redteam/web-payload-lab
+├ ○ /tools/redteam/wordlist
+├ ○ /tools/security/acl-builder
+├ ○ /tools/security/acl-simulator
+├ ○ /tools/security/ad-path-analyzer
+├ ○ /tools/security/defanger
+├ ○ /tools/security/email-analyzer
+├ ○ /tools/security/exif
+├ ○ /tools/security/hibp
+├ ○ /tools/security/incident-report
+├ ○ /tools/security/investigation
+├ ○ /tools/security/linux-events
+├ ○ /tools/security/log-parser
+├ ○ /tools/security/log-timeline
+├ ○ /tools/security/magic-bytes
+├ ○ /tools/security/mitre
+├ ○ /tools/security/mitre-simulator
+├ ○ /tools/security/nat-generator
+├ ○ /tools/security/pcap
+├ ○ /tools/security/playbook
+├ ○ /tools/security/roe-builder
+├ ○ /tools/security/scorecard
+├ ○ /tools/security/sigma-builder
+├ ○ /tools/security/windows-events
+├ ○ /tools/security/x509
+├ ○ /tools/sysadmin/backup
+├ ○ /tools/sysadmin/raid
+├ ○ /tools/sysadmin/rpo-rto
+├ ○ /tools/sysadmin/runbook
+├ ○ /tools/sysadmin/storage
+├ ○ /tools/sysadmin/systemd
+├ ○ /tools/sysadmin/ups
+├ ○ /tools/text/counter
+├ ○ /tools/text/diff
+├ ○ /tools/text/json
+├ ○ /tools/text/lorem
+└ ○ /tools/text/regex
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

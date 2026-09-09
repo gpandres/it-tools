@@ -185,59 +185,72 @@
   display: none;
 }
 
-/* Device appearances deliberately change the full node silhouette, not only its paint. */
-.diagram-devices-solid .diagram-device-card {
-  border-radius: 0.75rem !important;
-  background: #101115 !important;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28) !important;
+/* The third-party resizer defaults to white. Keep its visible selection affordance
+   above the node outline without turning the Retro card into a white grid. */
+.react-flow__resize-control.handle {
+  border: 2px solid #00ff9c !important;
+  border-radius: 0 !important;
+  background: #050505 !important;
 }
+.react-flow__resize-control.line { border-color: rgb(0 255 156 / .6) !important; }
+
+/* The three device families intentionally mirror the DiagramDesignDemo. */
+.diagram-device-marker { display: none; }
+
+.react-flow__node.selected .diagram-device-card {
+  outline: 1px solid #00ff9c;
+  outline-offset: 2px;
+}
+
+.diagram-devices-solid .diagram-device-card {
+  border: 1px solid #1a1a1a !important;
+  border-radius: 0 !important;
+  background: #050505 !important;
+  box-shadow: none !important;
+}
+
+.diagram-devices-solid .diagram-device-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: block;
+  border-bottom: 1px solid #1a1a1a;
+  padding: 0.25rem 0.5rem;
+  color: #00ff9c;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+
+.diagram-devices-solid .diagram-device-content { margin-top: 1.1rem; }
+.diagram-devices-solid .diagram-device-icon { color: #00ff9c; }
+.diagram-devices-solid .diagram-device-title { color: #ffb000; }
 
 .diagram-devices-outline .diagram-device-card {
-  border: 1px solid #52525b !important;
-  border-left-width: 3px !important;
-  border-radius: 0 !important;
-  background: rgba(10, 11, 13, 0.72) !important;
-  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.025) !important;
+  border: 1px solid rgb(56 189 248 / .5) !important;
+  border-radius: .75rem !important;
+  background: #111827 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .35) !important;
 }
+.diagram-devices-outline .diagram-device-icon { color: #7dd3fc; }
 
-.diagram-devices-outline .diagram-device-card::before {
+.diagram-devices-minimal .diagram-device-card {
+  border: 1px solid rgb(0 255 156 / .7) !important;
+  border-radius: 0 !important;
+  background: #06120d !important;
+  box-shadow: 3px 3px 0 #176b52 !important;
+}
+.diagram-devices-minimal .diagram-device-card::before {
   content: '';
   pointer-events: none;
   position: absolute;
-  inset: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.11);
+  inset: 4px;
+  border: 1px dashed rgb(0 255 156 / .2);
 }
-
-.diagram-devices-outline .diagram-device-card > :not(.react-flow__handle) {
-  position: relative;
-  z-index: 1;
-}
-
-.diagram-devices-minimal .diagram-device-card {
-  min-height: 3.7rem !important;
-  flex-direction: row !important;
-  justify-content: flex-start !important;
-  gap: 0.65rem;
-  border: 0 !important;
-  border-bottom: 1px solid #52525b !important;
-  border-radius: 0 !important;
-  background: linear-gradient(90deg, rgba(22, 163, 74, 0.14), transparent 65%) !important;
-  box-shadow: none !important;
-  padding: 0.55rem 0.7rem !important;
-}
-
-.diagram-devices-minimal .diagram-device-icon {
-  margin: 0 !important;
-  opacity: 0.9;
-}
-
-.diagram-devices-minimal .diagram-device-card .font-mono {
-  text-align: left !important;
-}
-
-.diagram-devices-minimal .diagram-device-card .mt-1 {
-  justify-content: flex-start;
-}
+.diagram-devices-minimal .diagram-device-content { position: relative; z-index: 1; }
+.diagram-devices-minimal .diagram-device-title { color: #b7ffd9; }
+.diagram-devices-minimal .diagram-device-icon { color: #00ff9c; }
 
 .diagram-export-light .diagram-device-card {
   background: #ffffff !important;
@@ -246,19 +259,17 @@
   color: #0f172a !important;
 }
 
-.diagram-export-light.diagram-devices-outline .diagram-device-card {
-  border-color: #475569 !important;
+.diagram-devices-outline .diagram-export-light .diagram-device-card {
+  border-color: #cbd5e1 !important;
+  border-radius: .75rem !important;
   background: #ffffff !important;
   box-shadow: inset 0 0 0 4px #f1f5f9 !important;
 }
 
-.diagram-export-light.diagram-devices-outline .diagram-device-card::before {
-  border-color: #cbd5e1;
-}
-
-.diagram-export-light.diagram-devices-minimal .diagram-device-card {
-  border-color: #94a3b8 !important;
-  background: linear-gradient(90deg, #ecfdf5, #ffffff 65%) !important;
+.diagram-devices-minimal .diagram-export-light .diagram-device-card {
+  border-color: #475569 !important;
+  background: #f8f4e8 !important;
+  box-shadow: 3px 3px 0 #64748b !important;
 }
 
 .diagram-export-light .diagram-device-title { color: #0f172a !important; }

@@ -6,7 +6,7 @@ export type DiagramIssue = { id: string; severity: 'error' | 'warning'; title: s
 
 const MAX_LABEL_LENGTH = 1000;
 const NODE_DATA_FIELDS = ['label', 'type', 'ip', 'subnet', 'vlan', 'hostname', 'vendor', 'model', 'role', 'zone', 'status', 'notes', 'interfaces', 'groupColor'];
-const EDGE_DATA_FIELDS = ['connectionType', 'label', 'sourcePort', 'targetPort', 'bandwidth', 'vlanMode', 'vlans'];
+const EDGE_DATA_FIELDS = ['connectionType', 'label', 'sourcePort', 'targetPort', 'bandwidth', 'vlanMode', 'vlans', 'color', 'texture'];
 const CONNECTION_TYPES = new Set(['ethernet', 'fiber', 'wireless', 'vpn']);
 const VLAN_MODES = new Set(['access', 'trunk', 'routed', 'unknown']);
 

@@ -1,0 +1,113 @@
+
+> toolbox@0.1.2 build
+> next build
+
+▲ Next.js 16.3.4 (Turbopack)
+✓ Running next.config.ts took 25ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.5s
+  Running TypeScript ...
+  Finished TypeScript in 2.4s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/87) ...
+  Generating static pages using 11 workers (21/87) 
+Couldn't load fs
+Couldn't load zlib
+  Generating static pages using 11 workers (43/87) 
+  Generating static pages using 11 workers (65/87) 
+✓ Generating static pages using 11 workers (87/87) in 798ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/analyze-domain
+├ ○ /design-system
+├ ○ /robots.txt
+├ ○ /sitemap.xml
+├ ○ /tools/crypto/file-hash
+├ ○ /tools/crypto/hash
+├ ○ /tools/crypto/password
+├ ○ /tools/crypto/uuid
+├ ○ /tools/dev/gitignore
+├ ○ /tools/dev/sql-beautifier
+├ ○ /tools/dev/sql-minifier
+├ ○ /tools/devops/chmod
+├ ○ /tools/devops/docker
+├ ○ /tools/devops/dockerfile-linter
+├ ○ /tools/devops/github-actions-auditor
+├ ○ /tools/devops/kubernetes-auditor
+├ ○ /tools/devops/sbom-generator
+├ ○ /tools/devops/secrets-scanner
+├ ○ /tools/devops/terraform-analyzer
+├ ○ /tools/encoding/base64
+├ ○ /tools/encoding/json-yaml
+├ ○ /tools/encoding/jwt
+├ ○ /tools/encoding/number-base
+├ ○ /tools/encoding/timestamp
+├ ○ /tools/encoding/url
+├ ○ /tools/network/bandwidth
+├ ○ /tools/network/cidr
+├ ○ /tools/network/command-reference
+├ ○ /tools/network/diagram
+├ ○ /tools/network/interface-generator
+├ ○ /tools/network/ip-converter
+├ ○ /tools/network/ipv6
+├ ○ /tools/network/mac
+├ ○ /tools/network/mtu
+├ ○ /tools/network/subnet
+├ ○ /tools/network/vlan
+├ ○ /tools/network/vlsm
+├ ○ /tools/other/cheatsheets
+├ ○ /tools/other/color
+├ ○ /tools/other/cron
+├ ○ /tools/other/qr
+├ ○ /tools/redteam/attack-surface
+├ ○ /tools/redteam/dns-recon
+├ ○ /tools/redteam/hash-identifier
+├ ○ /tools/redteam/http-request
+├ ○ /tools/redteam/payload-encoder
+├ ○ /tools/redteam/reverse-shell-reference
+├ ○ /tools/redteam/web-payload-lab
+├ ○ /tools/redteam/wordlist
+├ ○ /tools/security/acl-builder
+├ ○ /tools/security/acl-simulator
+├ ○ /tools/security/ad-path-analyzer
+├ ○ /tools/security/defanger
+├ ○ /tools/security/email-analyzer
+├ ○ /tools/security/exif
+├ ○ /tools/security/hibp
+├ ○ /tools/security/incident-report
+├ ○ /tools/security/investigation
+├ ○ /tools/security/linux-events
+├ ○ /tools/security/log-parser
+├ ○ /tools/security/log-timeline
+├ ○ /tools/security/magic-bytes
+├ ○ /tools/security/mitre
+├ ○ /tools/security/mitre-simulator
+├ ○ /tools/security/nat-generator
+├ ○ /tools/security/pcap
+├ ○ /tools/security/playbook
+├ ○ /tools/security/roe-builder
+├ ○ /tools/security/scorecard
+├ ○ /tools/security/sigma-builder
+├ ○ /tools/security/windows-events
+├ ○ /tools/security/x509
+├ ○ /tools/sysadmin/backup
+├ ○ /tools/sysadmin/raid
+├ ○ /tools/sysadmin/rpo-rto
+├ ○ /tools/sysadmin/runbook
+├ ○ /tools/sysadmin/storage
+├ ○ /tools/sysadmin/systemd
+├ ○ /tools/sysadmin/ups
+├ ○ /tools/text/counter
+├ ○ /tools/text/diff
+├ ○ /tools/text/json
+├ ○ /tools/text/lorem
+└ ○ /tools/text/regex
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

@@ -36,6 +36,10 @@ export type NetworkEdgeData = {
   bandwidth?: string;
   vlanMode?: 'access' | 'trunk' | 'routed' | 'unknown';
   vlans?: string;
+  color?: string;
+  texture?: 'solid' | 'dashed' | 'dotted' | 'dash-dot';
+  lane?: number;
+  targetLane?: number;
 };
 
 export type NetworkNode = Node<NetworkNodeData, 'networkNode'>;
