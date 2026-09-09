@@ -45,7 +45,9 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "font-src 'self' data:",
-              "connect-src 'self'",
+              // These tools make opt-in, browser-originated requests and disclose the
+              // destination in their UI. Keep this list aligned with toolsRegistry.
+              "connect-src 'self' https://api.pwnedpasswords.com https://cloudflare-dns.com",
               "worker-src 'self' blob:",
               "upgrade-insecure-requests",
             ].join('; '),

@@ -16,6 +16,8 @@ interface AnalysisResult {
     validTo: string;
     subject: string;
     fingerprint: string;
+    valid: boolean;
+    validationError?: string;
   } | null;
   dns: {
     spf: string | null;
@@ -38,7 +40,8 @@ export default function SecurityScorecard() {
     try {
       const res = await fetch(`/api/analyze-domain?domain=${encodeURIComponent(domain)}`);
       if (!res.ok) {
-        throw new Error("Failed to analyze domain. Make sure it is reachable.");
+        const payload = await res.json().catch(() => null) as { error?: string } | null;
+        throw new Error(payload?.error || "Failed to analyze domain. Make sure it is reachable.");
       }
       const data = await res.json();
       setResult(data);
@@ -78,7 +81,7 @@ export default function SecurityScorecard() {
     if (!getHeaderStatus("Referrer-Policy")) score -= 10;
     if (!result.dns.spf) score -= 10;
     if (!result.dns.dmarc) score -= 10;
-    if (!result.tls) score -= 10;
+    if (!result.tls?.valid) score -= 10;
 
     if (score >= 90) grade = "A";
     else if (score >= 80) grade = "B";
@@ -102,7 +105,7 @@ export default function SecurityScorecard() {
 - Referrer-Policy: ${getHeaderStatus("Referrer-Policy") ? "PASS" : "FAIL"}
 
 ## TLS / SSL
-- Certificate: ${result.tls ? "PRESENT" : "MISSING"}
+- Certificate: ${result.tls?.valid ? "VALID" : result.tls ? "PRESENT BUT INVALID" : "MISSING"}
 - Issuer: ${result.tls?.issuer || "N/A"}
 - Subject: ${result.tls?.subject || "N/A"}
 - Expires: ${result.tls?.validTo ? new Date(result.tls.validTo).toUTCString() : "N/A"}
@@ -136,7 +139,7 @@ export default function SecurityScorecard() {
         <div className="bg-[#00ff9c]/10 border border-[#00ff9c]/30 p-4 flex items-start gap-3">
           <Shield className="w-5 h-5 text-[#00ff9c] shrink-0 mt-0.5" />
           <div className="text-sm text-[#00ff9c]/90">
-            <strong>Privacy Notice:</strong> Everything is processed in your browser. The only server-side action is a single API call from your local server to fetch the raw headers, TLS certificate, and DNS records from the target domain. No data is stored, tracked, or sent to any third party.
+            <strong>Privacy Notice:</strong> This tool asks this app&apos;s server to query the domain you submit for headers, TLS metadata, and DNS records. The submitted domain is not stored by the app.
           </div>
         </div>
 
@@ -244,13 +247,14 @@ export default function SecurityScorecard() {
                     {result.tls ? (
                       <>
                         <div className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-[#00ff9c]" />
-                          <span className="text-zinc-300 font-mono text-sm truncate">Cert Present</span>
+                          {result.tls.valid ? <CheckCircle className="w-4 h-4 text-[#00ff9c]" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                          <span className={`font-mono text-sm truncate ${result.tls.valid ? "text-zinc-300" : "text-red-400"}`}>{result.tls.valid ? "Certificate valid" : "Certificate invalid"}</span>
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] text-zinc-500 uppercase tracking-widest">Issuer</Label>
                           <div className="text-xs font-mono text-zinc-300 truncate">{result.tls.issuer}</div>
                         </div>
+                        {!result.tls.valid && <p className="text-xs text-red-400">{result.tls.validationError || "The certificate could not be validated for this host."}</p>}
                         <div className="space-y-1">
                           <Label className="text-[10px] text-zinc-500 uppercase tracking-widest">Expires</Label>
                           <div className="text-xs font-mono text-zinc-300">{new Date(result.tls.validTo).toLocaleDateString()}</div>

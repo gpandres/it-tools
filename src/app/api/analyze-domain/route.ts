@@ -4,61 +4,10 @@ import dns from "dns/promises";
 import net from "net";
 import type { IncomingHttpHeaders } from "http";
 import type { PeerCertificate, TLSSocket } from "tls";
+import { isPublicInternetAddress } from "@/lib/network-target";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const requestWindows = new Map<string, { startedAt: number; count: number }>();
-const RATE_WINDOW_MS = 60_000;
-const RATE_LIMIT = 12;
-
-function allowRequest(request: Request): boolean {
-  const key = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-  const now = Date.now();
-  if (requestWindows.size > 10_000) {
-    for (const [entryKey, entry] of requestWindows) {
-      if (now - entry.startedAt >= RATE_WINDOW_MS) requestWindows.delete(entryKey);
-    }
-  }
-  const current = requestWindows.get(key);
-  if (!current || now - current.startedAt >= RATE_WINDOW_MS) {
-    requestWindows.set(key, { startedAt: now, count: 1 });
-    return true;
-  }
-  if (current.count >= RATE_LIMIT) return false;
-  current.count += 1;
-  return true;
-}
-
-function isPublicAddress(address: string): boolean {
-  if (net.isIPv4(address)) {
-    const [a, b] = address.split(".").map(Number);
-    return !(
-      a === 0 || a === 10 || a === 127 ||
-      (a === 100 && b >= 64 && b <= 127) ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && (b === 0 || b === 168)) ||
-      (a === 198 && b >= 18 && b <= 19) ||
-      a >= 224
-    );
-  }
-
-  if (net.isIPv6(address)) {
-    const normalized = address.toLowerCase();
-    // Block unspecified, loopback, link-local, ULA and IPv4-mapped private space.
-    return !(
-      normalized === "::" || normalized === "::1" ||
-      normalized.startsWith("fe80:") || normalized.startsWith("fc") ||
-      normalized.startsWith("fd") || normalized.startsWith("ff") ||
-      normalized.startsWith("::ffff:10.") ||
-      normalized.startsWith("::ffff:127.") ||
-      normalized.startsWith("::ffff:192.168.")
-    );
-  }
-
-  return false;
-}
 
 type TlsInfo = {
   issuer: string;
@@ -66,6 +15,8 @@ type TlsInfo = {
   validTo?: string;
   subject: string;
   fingerprint?: string;
+  valid: boolean;
+  validationError?: string;
 };
 
 function toHeaderRecord(headers: IncomingHttpHeaders): Record<string, string> {
@@ -82,9 +33,6 @@ function certificateName(value: string | string[] | undefined): string {
 
 export async function GET(request: Request) {
   try {
-    if (!allowRequest(request)) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": "60" } });
-    }
     const { searchParams } = new URL(request.url);
     const domain = searchParams.get("domain");
 
@@ -102,8 +50,8 @@ export async function GET(request: Request) {
     }
 
     const resolved = await dns.lookup(cleanDomain, { all: true, verbatim: true });
-    const publicAddress = resolved.find(({ address }) => isPublicAddress(address))?.address;
-    if (!publicAddress || resolved.some(({ address }) => !isPublicAddress(address))) {
+    const publicAddress = resolved.find(({ address }) => isPublicInternetAddress(address))?.address;
+    if (!publicAddress || resolved.some(({ address }) => !isPublicInternetAddress(address))) {
       return NextResponse.json({ error: "The target resolves to a private or restricted address" }, { status: 400 });
     }
 
@@ -139,6 +87,10 @@ export async function GET(request: Request) {
             validTo: cert.valid_to,
             subject: certificateName(cert.subject?.CN),
             fingerprint: cert.fingerprint256 || cert.fingerprint,
+            valid: socket.authorized,
+            validationError: socket.authorizationError instanceof Error
+              ? socket.authorizationError.message
+              : socket.authorizationError || undefined,
           };
         }
 
