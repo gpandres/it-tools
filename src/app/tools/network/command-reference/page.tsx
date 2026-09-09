@@ -5,6 +5,18 @@ import { ToolLayout } from "@/components/tool-layout";
 import { useNotification } from "@/components/notification-provider";
 import { COMMAND_DB, COMMAND_VENDORS } from "@/lib/network-command-catalog";
 import { Search, Server, Shield, Activity, Share2, FileText, ChevronRight, Network, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  ToolPanel,
+  ToolPanelHeader,
+  ToolPanelTitle,
+  ToolPanelBody,
+  ToolField,
+  ToolStatus,
+  ToolStatGrid,
+  ToolBadge
+} from "@/components/tool-design";
 
 function CommandReferenceContent() {
   const [query, setQuery] = useState("");
@@ -48,68 +60,82 @@ function CommandReferenceContent() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6">
       
       {/* Search Header */}
-      <div className="border border-[#1a1a1a] bg-[#050505] p-6 space-y-4">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search intent, concept, or command (e.g. 'routing table', 'nat', 'ospf')"
-            className="w-full bg-black border border-[#1a1a1a] p-4 pl-12 text-[#00ff9c] font-mono text-lg focus:border-[#00ff9c] focus:outline-none transition-colors"
-          />
-        </div>
+      <ToolPanel>
+        <ToolPanelHeader>
+          <ToolPanelTitle marker="IN" className="text-[#ffb000] glow-amber">SEARCH COMMANDS</ToolPanelTitle>
+        </ToolPanelHeader>
+        <ToolPanelBody className="space-y-6">
+          <ToolField htmlFor="search" label="Search intent, concept, or command">
+            <div className="relative flex items-center">
+              <Search className="absolute left-3 w-4 h-4 text-zinc-500" />
+              <Input
+                id="search"
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="e.g. 'routing table', 'nat', 'ospf'"
+                className="pl-9 font-mono h-12 rounded-none border-[#1a1a1a] bg-black text-[#00ff9c] focus-visible:ring-[#00ff9c]"
+                spellCheck={false}
+              />
+            </div>
+          </ToolField>
 
-        <div className="flex flex-wrap gap-2">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-3 py-1.5 text-xs font-mono uppercase tracking-widest border transition-colors ${
-                activeCategory === cat 
-                  ? "bg-[#00ff9c]/10 border-[#00ff9c]/50 text-[#00ff9c]" 
-                  : "bg-black border-[#1a1a1a] text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
+          <div className="flex flex-wrap gap-2">
+            {categories.map(cat => (
+              <Button
+                key={cat}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveCategory(cat)}
+                className={`h-7 rounded-none px-3 py-1 text-[10px] font-mono uppercase tracking-widest border transition-colors ${
+                  activeCategory === cat 
+                    ? "bg-[#00ff9c]/10 border-[#00ff9c]/50 text-[#00ff9c] hover:bg-[#00ff9c]/20 hover:text-[#00ff9c]" 
+                    : "bg-black border-[#1a1a1a] text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
+                }`}
+              >
+                {cat}
+              </Button>
+            ))}
+          </div>
+        </ToolPanelBody>
+      </ToolPanel>
 
       {/* Results */}
       <div className="space-y-6">
         {filteredCommands.length === 0 ? (
-          <div className="text-center p-12 border border-[#1a1a1a] bg-[#050505] text-zinc-500 font-mono text-sm">
+          <ToolStatus tone="neutral">
             No commands found matching "{query}"
-          </div>
+          </ToolStatus>
         ) : (
           filteredCommands.map((cmd) => (
-            <div key={cmd.id} className="border border-[#1a1a1a] bg-[#050505] overflow-hidden">
-              <header className="px-6 py-4 border-b border-[#1a1a1a] bg-[#0a0a0a] flex items-center gap-3">
-                <div className="p-2 bg-[#00ff9c]/10 text-[#00ff9c] rounded-sm">
-                  {cmd.category === "Routing" && <Share2 className="w-4 h-4" />}
-                  {cmd.category === "Interfaces" && <Server className="w-4 h-4" />}
-                  {cmd.category === "Firewall & NAT" && <Shield className="w-4 h-4" />}
-                  {cmd.category === "Diagnostics" && <Activity className="w-4 h-4" />}
-                  {cmd.category === "System" && <FileText className="w-4 h-4" />}
-                  {cmd.category === "Discovery" && <Network className="w-4 h-4" />}
-                  {cmd.category === "Services" && <Server className="w-4 h-4" />}
-                </div>
-                <div>
-                  <h3 className="text-[#00ff9c] font-bold tracking-wide">{cmd.intent}</h3>
-                  <div className="flex gap-2 mt-1">
-                    {cmd.keywords.slice(0, 3).map(k => (
-                      <span key={k} className="text-[10px] text-zinc-500 font-mono uppercase bg-black px-1 border border-[#1a1a1a]">#{k}</span>
-                    ))}
+            <ToolPanel key={cmd.id}>
+              <ToolPanelHeader className="flex flex-row items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="text-[#00ff9c]">
+                    {cmd.category === "Routing" && <Share2 className="w-4 h-4" />}
+                    {cmd.category === "Interfaces" && <Server className="w-4 h-4" />}
+                    {cmd.category === "Firewall & NAT" && <Shield className="w-4 h-4" />}
+                    {cmd.category === "Diagnostics" && <Activity className="w-4 h-4" />}
+                    {cmd.category === "System" && <FileText className="w-4 h-4" />}
+                    {cmd.category === "Discovery" && <Network className="w-4 h-4" />}
+                    {cmd.category === "Services" && <Server className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <ToolPanelTitle className="text-sm normal-case tracking-normal">{cmd.intent}</ToolPanelTitle>
                   </div>
                 </div>
-              </header>
+                <div className="flex gap-2">
+                  {cmd.keywords.slice(0, 3).map(k => (
+                    <ToolBadge key={k} tone="neutral">#{k}</ToolBadge>
+                  ))}
+                </div>
+              </ToolPanelHeader>
 
-              <div className="grid grid-cols-1 gap-px bg-[#1a1a1a] sm:grid-cols-2 xl:grid-cols-3">
+              <ToolStatGrid className="sm:grid-cols-2 xl:grid-cols-3">
                 {COMMAND_VENDORS.map(vendor => (
                   <div key={vendor.id} className="group flex min-w-0 flex-col bg-[#050505] p-4 transition-colors hover:bg-[#00ff9c]/5">
                     <span className="mb-3 flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
@@ -129,8 +155,8 @@ function CommandReferenceContent() {
                     </button>
                   </div>
                 ))}
-              </div>
-            </div>
+              </ToolStatGrid>
+            </ToolPanel>
           ))
         )}
       </div>
@@ -142,7 +168,7 @@ function CommandReferenceContent() {
 export default function CommandReferenceTool() {
   return (
     <ToolLayout
-      title="Cross-Vendor Command Reference"
+      title="CROSS-VENDOR COMMAND REFERENCE"
       description="Translate operational intents into CLI commands for Cisco, MikroTik, FortiGate, Linux, Juniper, and Arista."
     >
       <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading database...</div>}>
