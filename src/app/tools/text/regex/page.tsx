@@ -121,7 +121,7 @@ export default function RegexTester() {
       <div className="flex flex-col gap-6 max-w-5xl mx-auto">
         
         {/* Regex Input Header */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col relative">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col relative rounded-none">
           <div className="absolute left-0 top-0 bottom-0 w-2 bg-[#ffb000]"></div>
           <div className="pl-6 pr-4 py-4 flex flex-col md:flex-row items-center gap-4">
             <span className="text-zinc-500 font-mono text-2xl hidden md:block">/</span>
@@ -192,11 +192,11 @@ export default function RegexTester() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[500px]">
           
           {/* Test String Input */}
-          <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-full">
+          <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-full rounded-none">
             <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
               <div className="flex items-center gap-2">
-                <span className="text-zinc-500 text-xs">[IN]</span>
-                <span className="text-zinc-300 text-sm font-semibold uppercase tracking-widest">Test String</span>
+                <span className="text-[#00ff9c] text-xs">[IN]</span>
+                <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Test String</span>
               </div>
             </header>
             <div className="p-0 flex-1 flex flex-col relative">
@@ -214,14 +214,14 @@ export default function RegexTester() {
           <div className="flex flex-col gap-6 h-full">
             
             {/* Highlighted Text */}
-            <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col flex-1 min-h-0">
+            <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col flex-1 min-h-0 rounded-none">
               <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
                 <div className="flex items-center gap-2">
                   <span className="text-[#00ff9c] text-xs">[OUT]</span>
                   <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest">Highlighted</span>
                 </div>
                 {regexData.matches.length > 0 && (
-                  <span className="bg-[#00ff9c]/10 text-[#00ff9c] px-2 py-0.5 text-[10px] font-mono border border-[#00ff9c]/30">
+                  <span className="bg-[#00ff9c]/10 text-[#00ff9c] px-2 py-0.5 text-[10px] font-mono border border-[#00ff9c]/30 rounded-none">
                     {regexData.matches.length} Match{regexData.matches.length !== 1 ? 'es' : ''}
                   </span>
                 )}
@@ -232,7 +232,7 @@ export default function RegexTester() {
             </article>
 
             {/* Match Data / Groups */}
-            <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col flex-1 min-h-0">
+            <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col flex-1 min-h-0 rounded-none">
               <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
                 <div className="flex items-center gap-2">
                   <span className="text-[#00ff9c] text-xs">[OUT]</span>

@@ -37,7 +37,7 @@ export default function JsonFormatter() {
       description="Format, validate, and minify JSON data."
     >
       <div className="flex justify-end mb-4 gap-2">
-        <div className="flex bg-black border border-[#1a1a1a]">
+        <div className="flex bg-black border border-[#1a1a1a] rounded-none">
           <button 
             onClick={() => setIndent(2)}
             className={`font-mono text-xs px-3 py-1.5 transition-colors ${indent === 2 ? "bg-[#00ff9c]/10 text-[#00ff9c]" : "text-zinc-500 hover:text-zinc-300 hover:bg-[#1a1a1a]"}`}
@@ -69,7 +69,7 @@ export default function JsonFormatter() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-[calc(100vh-250px)]">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-[calc(100vh-250px)] rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[IN]</span>
@@ -99,7 +99,7 @@ export default function JsonFormatter() {
           </div>
         </article>
 
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-[calc(100vh-250px)]">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-[calc(100vh-250px)] rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[OUT]</span>
@@ -123,9 +123,9 @@ export default function JsonFormatter() {
               </div>
             ) : error ? (
               <div className="p-6">
-                <div className="bg-red-950/30 border border-red-900/50 p-4">
+                <div className="bg-red-950/30 border border-red-900/50 p-4 rounded-none">
                   <h3 className="text-red-400 font-mono text-sm mb-2 flex items-center gap-2">
-                    <span className="bg-red-500 text-white px-1 text-xs">ERROR</span> Invalid JSON
+                    <span className="bg-red-500 text-white px-1 text-xs rounded-none">ERROR</span> Invalid JSON
                   </h3>
                   <p className="text-red-300/70 font-mono text-xs">{error}</p>
                 </div>

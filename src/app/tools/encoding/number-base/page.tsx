@@ -136,8 +136,8 @@ export default function NumberBaseConverter() {
       </div>
       
       {error && (
-        <div className="mt-6 p-4 bg-red-950/30 border border-red-900/50 max-w-5xl mx-auto flex items-center gap-3">
-          <span className="bg-red-500 text-white px-2 py-0.5 text-xs font-mono">ERROR</span>
+        <div className="mt-6 p-4 bg-red-950/30 border border-red-900/50 max-w-5xl mx-auto flex items-center gap-3 rounded-none">
+          <span className="bg-red-500 text-white px-2 py-0.5 text-xs font-mono rounded-none">ERROR</span>
           <span className="text-red-400 font-mono text-sm">{error}</span>
         </div>
       )}
@@ -163,9 +163,12 @@ function BaseInputBox({
   prefix: string
 }) {
   return (
-    <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
+    <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
       <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-        <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">{title}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>
+          <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">{title}</span>
+        </div>
         <Button 
           variant="ghost"
           size="sm"

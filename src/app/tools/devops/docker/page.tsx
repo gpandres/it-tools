@@ -194,7 +194,7 @@ function DockerConverterContent() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         
         {/* Input */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col min-h-[400px]">
+        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col min-h-[400px]">
           <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <span className="text-[#00ff9c] text-xs">[IN]</span>
             <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Docker Run Command</span>
@@ -210,7 +210,7 @@ function DockerConverterContent() {
         </article>
 
         {/* Output */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col min-h-[400px]">
+        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col min-h-[400px]">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[OUT]</span>

@@ -120,7 +120,7 @@ export default function WordlistAnalyzerPage() {
       <div className="w-full max-w-7xl mx-auto space-y-6">
 
         {/* INPUT / LOAD */}
-        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6 text-center border-dashed">
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-6 text-center border-dashed">
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -131,7 +131,7 @@ export default function WordlistAnalyzerPage() {
           <FileText className="w-10 h-10 mx-auto text-[#00ff9c] mb-4 opacity-80" />
           <h2 className="text-lg font-bold text-white mb-2">Select a wordlist file</h2>
           <p className="text-sm text-zinc-500 mb-6">File is processed entirely in your browser. No data leaves your machine.</p>
-          <Button onClick={() => fileInputRef.current?.click()} className="bg-[#00ff9c] text-black hover:bg-[#00cc7d]">
+          <Button onClick={() => fileInputRef.current?.click()} className="bg-[#00ff9c] text-black hover:bg-[#00cc7d] rounded-none">
             <Upload className="w-4 h-4 mr-2" /> Browse File
           </Button>
         </div>
@@ -141,10 +141,10 @@ export default function WordlistAnalyzerPage() {
             
             {/* STATS PANEL */}
             <div className="lg:col-span-1 space-y-4">
-              <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden">
+              <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none overflow-hidden">
                 <div className="bg-[#111] border-b border-[#1a1a1a] p-3 flex items-center justify-between">
                   <h2 className="text-xs font-bold text-white uppercase tracking-wider truncate">Stats: {filename}</h2>
-                  <Button variant="ghost" size="icon" onClick={clearData} className="h-6 w-6 text-zinc-500 hover:text-red-400">
+                  <Button variant="ghost" size="icon" onClick={clearData} className="h-6 w-6 text-zinc-500 hover:text-red-400 rounded-none">
                     <Trash2 className="w-3 h-3" />
                   </Button>
                 </div>
@@ -161,25 +161,25 @@ export default function WordlistAnalyzerPage() {
               </div>
 
               {/* MUTATIONS (Modify base array) */}
-              <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 space-y-2">
+              <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-4 space-y-2">
                 <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Transformations</h3>
-                <Button onClick={removeDuplicates} variant="outline" className="w-full justify-start text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white">
+                <Button onClick={removeDuplicates} variant="outline" className="w-full justify-start text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white rounded-none">
                   <CheckSquare className="w-3 h-3 mr-2" /> Remove Duplicates
                 </Button>
-                <Button onClick={removeEmptyLines} variant="outline" className="w-full justify-start text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white">
+                <Button onClick={removeEmptyLines} variant="outline" className="w-full justify-start text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white rounded-none">
                   <Filter className="w-3 h-3 mr-2" /> Remove Empty Lines
                 </Button>
-                <Button onClick={sortLines} variant="outline" className="w-full justify-start text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white">
+                <Button onClick={sortLines} variant="outline" className="w-full justify-start text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white rounded-none">
                   <SortAsc className="w-3 h-3 mr-2" /> Sort Alphabetically
                 </Button>
-                <Button onClick={normalizeLowercase} variant="outline" className="w-full justify-start text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white">
+                <Button onClick={normalizeLowercase} variant="outline" className="w-full justify-start text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white rounded-none">
                   <FileText className="w-3 h-3 mr-2" /> Normalize Lowercase
                 </Button>
               </div>
             </div>
 
             {/* PREVIEW & EXPORT PANEL */}
-            <div className="lg:col-span-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden flex flex-col min-h-[500px]">
+            <div className="lg:col-span-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-none overflow-hidden flex flex-col min-h-[500px]">
               
               <div className="bg-[#111] border-b border-[#1a1a1a] p-3 flex flex-col sm:flex-row items-center justify-between gap-4">
                 
@@ -191,7 +191,7 @@ export default function WordlistAnalyzerPage() {
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
                       placeholder="Search lines..."
-                      className="h-8 pl-8 text-xs bg-black border-[#333]"
+                      className="h-8 pl-8 text-xs bg-black border-[#333] rounded-none focus-visible:ring-[#00ff9c]"
                     />
                   </div>
                   <Input 
@@ -199,18 +199,18 @@ export default function WordlistAnalyzerPage() {
                     value={minLength}
                     onChange={e => setMinLength(e.target.value ? Number(e.target.value) : '')}
                     placeholder="Min Len"
-                    className="h-8 w-20 text-xs bg-black border-[#333] text-center"
+                    className="h-8 w-20 text-xs bg-black border-[#333] text-center rounded-none focus-visible:ring-[#00ff9c]"
                   />
                   <Input 
                     type="number"
                     value={maxLength}
                     onChange={e => setMaxLength(e.target.value ? Number(e.target.value) : '')}
                     placeholder="Max Len"
-                    className="h-8 w-20 text-xs bg-black border-[#333] text-center"
+                    className="h-8 w-20 text-xs bg-black border-[#333] text-center rounded-none focus-visible:ring-[#00ff9c]"
                   />
                 </div>
 
-                <Button onClick={exportTxt} className="h-8 text-xs bg-[#00ff9c] text-black hover:bg-[#00cc7d]">
+                <Button onClick={exportTxt} className="h-8 text-xs bg-[#00ff9c] text-black hover:bg-[#00cc7d] rounded-none">
                   <Download className="w-3 h-3 mr-1" /> Export TXT
                 </Button>
               </div>

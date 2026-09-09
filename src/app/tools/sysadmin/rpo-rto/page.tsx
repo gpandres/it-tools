@@ -48,7 +48,7 @@ function RpoRtoCalculatorContent() {
       
       {/* Controls */}
       <div className="lg:col-span-4 space-y-6">
-        <div className="border border-[#1a1a1a] bg-[#050505] p-6 space-y-6">
+        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 space-y-6">
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 flex items-center gap-2">
               <Clock className="w-4 h-4" /> Tolerance Config
@@ -63,7 +63,7 @@ function RpoRtoCalculatorContent() {
                   type="number" min="0" step="0.5"
                   value={rpoHours} 
                   onChange={(e) => setRpoHours(e.target.value)} 
-                  className="flex-1 min-w-0 bg-black border border-[#1a1a1a] p-3 text-zinc-300 font-mono text-xl focus:border-[#00ff9c] focus:outline-none transition-colors"
+                  className="flex-1 min-w-0 bg-black border border-[#1a1a1a] p-3 text-zinc-300 font-mono text-xl focus:border-[#00ff9c] focus:outline-none transition-colors rounded-none focus-visible:ring-[#00ff9c]"
                 />
                 <span className="shrink-0 bg-[#1a1a1a] text-zinc-500 font-mono px-4 flex items-center justify-center">Hours</span>
               </div>
@@ -79,7 +79,7 @@ function RpoRtoCalculatorContent() {
                   type="number" min="0" step="0.5"
                   value={rtoHours} 
                   onChange={(e) => setRtoHours(e.target.value)} 
-                  className="flex-1 min-w-0 bg-black border border-[#1a1a1a] p-3 text-zinc-300 font-mono text-xl focus:border-[#00ff9c] focus:outline-none transition-colors"
+                  className="flex-1 min-w-0 bg-black border border-[#1a1a1a] p-3 text-zinc-300 font-mono text-xl focus:border-[#00ff9c] focus:outline-none transition-colors rounded-none focus-visible:ring-[#00ff9c]"
                 />
                 <span className="shrink-0 bg-[#1a1a1a] text-zinc-500 font-mono px-4 flex items-center justify-center">Hours</span>
               </div>
@@ -91,7 +91,7 @@ function RpoRtoCalculatorContent() {
 
       {/* Visual Timeline */}
       <div className="lg:col-span-8 flex flex-col gap-6">
-        <div className="border border-[#1a1a1a] bg-[#050505] p-8 h-full flex flex-col">
+        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-8 h-full flex flex-col">
           <h3 className="text-sm font-bold text-[#00ff9c] glow uppercase tracking-widest border-b border-[#1a1a1a] pb-2 mb-8">
             Disaster Timeline
           </h3>
@@ -114,14 +114,14 @@ function RpoRtoCalculatorContent() {
               <div className="absolute top-4 left-0 right-0 flex text-xs font-mono">
                 <div className="text-center relative transition-all duration-700 ease-out" style={{ width: `${rpoWidth}%` }}>
                   {/* Absolute bracket guarantees crisp borders that cannot be cut off */}
-                  <div className="absolute left-6 right-6 top-0 border-t-2 border-l-2 border-r-2 border-blue-500/60 h-3 rounded-t-sm"></div>
+                  <div className="absolute left-6 right-6 top-0 border-t-2 border-l-2 border-r-2 border-blue-500/60 h-3 rounded-none"></div>
                   <div className="pt-5">
                     <span className="text-blue-400 font-bold">RPO: {rpo} hrs</span>
                     <span className="block text-[9px] text-zinc-500 uppercase mt-1">Data Loss Window</span>
                   </div>
                 </div>
                 <div className="text-center relative transition-all duration-700 ease-out" style={{ width: `${rtoWidth}%` }}>
-                  <div className="absolute left-6 right-6 top-0 border-t-2 border-l-2 border-r-2 border-red-500/60 h-3 rounded-t-sm"></div>
+                  <div className="absolute left-6 right-6 top-0 border-t-2 border-l-2 border-r-2 border-red-500/60 h-3 rounded-none"></div>
                   <div className="pt-5">
                     <span className="text-red-400 font-bold">RTO: {rto} hrs</span>
                     <span className="block text-[9px] text-zinc-500 uppercase mt-1">Downtime Window</span>

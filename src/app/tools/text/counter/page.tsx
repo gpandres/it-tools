@@ -28,7 +28,7 @@ export default function WordCounter() {
       description="Calculate word count, character count, and reading time metrics."
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <article className="lg:col-span-2 border border-[#1a1a1a] bg-[#050505] flex flex-col h-[calc(100vh-200px)]">
+        <article className="lg:col-span-2 border border-[#1a1a1a] bg-[#050505] flex flex-col h-[calc(100vh-200px)] rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[IN]</span>
@@ -58,7 +58,7 @@ export default function WordCounter() {
           </div>
         </article>
 
-        <article className="lg:col-span-1 border border-[#1a1a1a] bg-[#050505] flex flex-col h-fit sticky top-24">
+        <article className="lg:col-span-1 border border-[#1a1a1a] bg-[#050505] flex flex-col h-fit sticky top-24 rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[OUT]</span>

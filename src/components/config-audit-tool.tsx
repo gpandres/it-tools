@@ -113,7 +113,7 @@ export function ConfigAuditTool({ title, description, placeholder, rules = EMPTY
                       key={option} 
                       type="button" 
                       onClick={() => setSeverityFilter(option)} 
-                      className={`border px-2 py-1 text-[10px] font-mono uppercase tracking-wider transition-colors ${severityFilter === option ? "border-[#00ff9c] bg-[#00ff9c]/10 text-[#00ff9c]" : "border-[#242424] text-zinc-600 hover:border-zinc-500 hover:text-zinc-300"}`}
+                      className={`border px-2 py-1 text-[10px] font-mono uppercase tracking-wider transition-colors rounded-none ${severityFilter === option ? "border-[#00ff9c] bg-[#00ff9c]/10 text-[#00ff9c]" : "border-[#242424] text-zinc-600 hover:border-zinc-500 hover:text-zinc-300"}`}
                     >
                       {option} <span className="ml-1 opacity-70">{count}</span>
                     </button>
@@ -129,7 +129,7 @@ export function ConfigAuditTool({ title, description, placeholder, rules = EMPTY
             )}
             {input && findings.length > 0 && visibleFindings.length === 0 && <p className="py-8 text-center text-xs text-zinc-600">No findings match this severity filter.</p>}
             {visibleFindings.map(finding => (
-              <article key={finding.id} className={`border p-4 ${severityStyles[finding.severity]}`}>
+              <article key={finding.id} className={`border p-4 rounded-none ${severityStyles[finding.severity]}`}>
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                   <div className="min-w-0">

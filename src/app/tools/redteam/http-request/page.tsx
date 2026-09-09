@@ -108,7 +108,7 @@ export default function HttpRequestBuilderPage() {
         {/* BUILDER SIDE */}
         <div className="space-y-6">
           
-          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden">
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none overflow-hidden">
             <div className="bg-[#111] border-b border-[#1a1a1a] p-3 flex items-center gap-2">
               <Globe className="w-4 h-4 text-[#00ff9c]" />
               <h2 className="text-xs font-bold text-white uppercase tracking-wider">Request Configuration</h2>
@@ -117,10 +117,10 @@ export default function HttpRequestBuilderPage() {
               
               <div className="flex gap-2">
                 <Select value={method} onValueChange={(v) => setMethod(v as HttpMethod)}>
-                  <SelectTrigger className="w-[120px] bg-[#111] border-[#333] text-white">
+                  <SelectTrigger className="w-[120px] bg-[#111] border-[#333] text-white rounded-none">
                     <SelectValue placeholder="Method" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#111] border-[#333] text-white">
+                  <SelectContent className="bg-[#111] border-[#333] text-white rounded-none">
                     {["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].map(m => (
                       <SelectItem key={m} value={m}>{m}</SelectItem>
                     ))}
@@ -131,14 +131,14 @@ export default function HttpRequestBuilderPage() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://api.example.com/v1/..."
-                  className="flex-1 bg-[#111] border-[#333] font-mono text-sm"
+                  className="flex-1 bg-[#111] border-[#333] font-mono text-sm rounded-none focus-visible:ring-[#00ff9c]"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Headers</h3>
-                  <Button variant="ghost" size="sm" onClick={handleAddHeader} className="h-6 text-xs text-[#00ff9c] hover:text-[#00cc7d] hover:bg-transparent px-2">
+                  <Button variant="ghost" size="sm" onClick={handleAddHeader} className="h-6 text-xs text-[#00ff9c] hover:text-[#00cc7d] hover:bg-transparent px-2 rounded-none">
                     <Plus className="w-3 h-3 mr-1" /> Add Header
                   </Button>
                 </div>
@@ -149,15 +149,15 @@ export default function HttpRequestBuilderPage() {
                         value={header.key}
                         onChange={(e) => handleHeaderChange(idx, 'key', e.target.value)}
                         placeholder="Name"
-                        className="w-1/3 bg-[#111] border-[#333] font-mono text-xs h-8"
+                        className="w-1/3 bg-[#111] border-[#333] font-mono text-xs h-8 rounded-none focus-visible:ring-[#00ff9c]"
                       />
                       <Input 
                         value={header.value}
                         onChange={(e) => handleHeaderChange(idx, 'value', e.target.value)}
                         placeholder="Value"
-                        className="flex-1 bg-[#111] border-[#333] font-mono text-xs h-8"
+                        className="flex-1 bg-[#111] border-[#333] font-mono text-xs h-8 rounded-none focus-visible:ring-[#00ff9c]"
                       />
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveHeader(idx)} className="h-8 w-8 text-zinc-500 hover:text-red-400">
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveHeader(idx)} className="h-8 w-8 text-zinc-500 hover:text-red-400 rounded-none">
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -172,10 +172,10 @@ export default function HttpRequestBuilderPage() {
                 <div className="flex items-center justify-between mb-2 mt-6">
                   <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Body</h3>
                   <Select value={bodyType} onValueChange={(v) => setBodyType(v as BodyType)}>
-                    <SelectTrigger className="w-[160px] h-6 text-xs bg-[#111] border-[#333] text-white">
+                    <SelectTrigger className="w-[160px] h-6 text-xs bg-[#111] border-[#333] text-white rounded-none">
                       <SelectValue placeholder="Type" />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#111] border-[#333] text-white">
+                    <SelectContent className="bg-[#111] border-[#333] text-white rounded-none">
                       <SelectItem value="None">None</SelectItem>
                       <SelectItem value="Raw">Raw</SelectItem>
                       <SelectItem value="JSON">JSON</SelectItem>
@@ -188,7 +188,7 @@ export default function HttpRequestBuilderPage() {
                   <Textarea 
                     value={bodyContent}
                     onChange={(e) => setBodyContent(e.target.value)}
-                    className="min-h-[150px] bg-[#111] border-[#333] font-mono text-xs"
+                    className="min-h-[150px] bg-[#111] border-[#333] font-mono text-xs rounded-none focus-visible:ring-[#00ff9c]"
                     placeholder={`Enter ${bodyType} body content here...`}
                   />
                 )}
@@ -200,7 +200,7 @@ export default function HttpRequestBuilderPage() {
 
         {/* OUTPUT SIDE */}
         <div className="space-y-6">
-          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden flex flex-col h-full">
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none overflow-hidden flex flex-col h-full">
             <div className="bg-[#111] border-b border-[#1a1a1a] p-3 flex items-center gap-2">
               <Code2 className="w-4 h-4 text-[#00ff9c]" />
               <h2 className="text-xs font-bold text-white uppercase tracking-wider">Export Snippets</h2>
@@ -231,12 +231,12 @@ function SnippetBlock({ title, code, copiedId, onCopy }: { title: string, code: 
           variant="ghost" 
           size="sm" 
           onClick={() => onCopy(code, title)}
-          className="h-5 px-2 text-xs text-zinc-400 hover:text-white"
+          className="h-5 px-2 text-xs text-zinc-400 hover:text-white rounded-none"
         >
           {copiedId === title ? <span className="text-[#00ff9c]">Copied!</span> : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
         </Button>
       </div>
-      <pre className="bg-[#111] border border-[#333] rounded p-3 text-xs font-mono text-zinc-300 overflow-x-auto whitespace-pre-wrap break-all">
+      <pre className="bg-[#111] border border-[#333] rounded-none p-3 text-xs font-mono text-zinc-300 overflow-x-auto whitespace-pre-wrap break-all">
         {code}
       </pre>
     </div>

@@ -62,7 +62,7 @@ function BackupCalculatorContent() {
       
       {/* Controls */}
       <div className="lg:col-span-5 space-y-6">
-        <div className="border border-[#1a1a1a] bg-[#050505] p-6 space-y-6">
+        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 space-y-6">
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 flex items-center gap-2">
               <Database className="w-4 h-4" /> Data Profile
@@ -75,13 +75,13 @@ function BackupCalculatorContent() {
                   type="number" min="0" step="0.1"
                   value={dataSize} 
                   onChange={(e) => setDataSize(e.target.value)} 
-                  className="flex-1 bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono font-bold focus:border-[#00ff9c] focus:outline-none"
+                  className="flex-1 bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono font-bold focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
                   placeholder="e.g. 5"
                 />
                 <select 
                   value={sizeUnit} 
                   onChange={(e) => setSizeUnit(e.target.value)} 
-                  className="w-24 bg-black border border-[#1a1a1a] p-2 text-zinc-400 font-mono focus:border-[#00ff9c] focus:outline-none"
+                  className="w-24 bg-black border border-[#1a1a1a] p-2 text-zinc-400 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
                 >
                   <option value="GB">GB</option>
                   <option value="TB">TB</option>
@@ -115,13 +115,13 @@ function BackupCalculatorContent() {
                   type="number" min="0" step="0.1"
                   value={transferSpeed} 
                   onChange={(e) => setTransferSpeed(e.target.value)} 
-                  className="flex-1 bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none"
+                  className="flex-1 bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
                   placeholder="e.g. 1"
                 />
                 <select 
                   value={speedUnit} 
                   onChange={(e) => setSpeedUnit(e.target.value)} 
-                  className="w-24 bg-black border border-[#1a1a1a] p-2 text-zinc-400 font-mono focus:border-[#00ff9c] focus:outline-none"
+                  className="w-24 bg-black border border-[#1a1a1a] p-2 text-zinc-400 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
                 >
                   <option value="Gbps">Gbps</option>
                   <option value="MB/s">MB/s</option>
@@ -149,7 +149,7 @@ function BackupCalculatorContent() {
                 type="number" min="1" step="1"
                 value={retention} 
                 onChange={(e) => setRetention(e.target.value)} 
-                className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none"
+                className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
                 placeholder="e.g. 30"
               />
               <p className="text-[10px] text-zinc-600 font-mono mt-1">Number of daily incrementals to keep alongside the Full Backup.</p>
@@ -176,13 +176,13 @@ function BackupCalculatorContent() {
       <div className="lg:col-span-7 flex flex-col gap-6">
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="border border-[#1a1a1a] bg-[#050505] p-6 flex flex-col items-center justify-center min-h-[160px]">
+          <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 flex flex-col items-center justify-center min-h-[160px]">
             <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">Full Backup Time</span>
             <span className="text-4xl font-mono text-zinc-200">{calc.fullTime}</span>
             <span className="text-xs text-zinc-600 font-mono mt-2">To transfer {size} {sizeUnit}</span>
           </div>
 
-          <div className="border border-[#1a1a1a] bg-[#050505] p-6 flex flex-col items-center justify-center min-h-[160px] relative overflow-hidden group">
+          <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 flex flex-col items-center justify-center min-h-[160px] relative overflow-hidden group">
             <div className="absolute inset-0 bg-[#00ff9c]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4 z-10">Daily Incremental Time</span>
             <span className="text-4xl font-mono text-[#00ff9c] glow-green z-10">{calc.incTime}</span>
@@ -190,7 +190,7 @@ function BackupCalculatorContent() {
           </div>
         </div>
 
-        <div className="border border-[#1a1a1a] bg-[#050505] p-6 flex flex-col items-center justify-center">
+        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 flex flex-col items-center justify-center">
           <HardDrive className="w-8 h-8 text-[#00ff9c] mb-3 opacity-80" />
           <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Total Destination Storage Needed</span>
           <span className="text-5xl font-mono text-zinc-200 tracking-tighter">
@@ -201,7 +201,7 @@ function BackupCalculatorContent() {
           </span>
         </div>
 
-        <div className="border border-amber-500/30 bg-amber-500/5 p-6 flex flex-col items-center justify-center">
+        <div className="border border-amber-500/30 bg-amber-500/5 rounded-none p-6 flex flex-col items-center justify-center">
           <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Recommended Capacity</span>
           <span className="text-3xl font-mono text-amber-300 tracking-tighter">
             {calc.recommendedStorageTB} <span className="text-xl text-amber-500/70">TB</span>
@@ -209,7 +209,7 @@ function BackupCalculatorContent() {
           <span className="text-xs text-zinc-600 font-mono mt-2 text-center">Includes {storageOverhead}% operational overhead.</span>
         </div>
 
-        <div className="border border-[#1a1a1a] bg-[#0a0a0a] p-4 flex gap-3 text-zinc-400 mt-auto">
+        <div className="border border-[#1a1a1a] bg-[#0a0a0a] rounded-none p-4 flex gap-3 text-zinc-400 mt-auto">
           <Info className="w-5 h-5 shrink-0 text-zinc-500" />
           <p className="text-sm font-mono leading-relaxed opacity-80">
             <strong>Note:</strong> The effective throughput and recommended capacity values account for the assumptions selected above. Validate them against deduplication, compression, backup type and the retention policy used by your platform.

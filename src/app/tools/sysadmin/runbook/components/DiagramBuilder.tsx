@@ -342,7 +342,7 @@ function DiagramBuilderCanvas({ runbook, onChange, onExportReady }: DiagramBuild
         <ToolActionButton type="button" variant="outline" disabled={isExporting} onClick={exportPng}><Download className="mr-2 h-3.5 w-3.5" /> {isExporting ? 'Exporting…' : 'Export PNG'}</ToolActionButton>
       </ToolActionPanel>
       {exportError && <p role="alert" className="text-sm text-red-400">{exportError}</p>}
-      <div ref={diagramRef} id="runbook-diagram" onDragOver={event => event.preventDefault()} onDrop={handlePaletteDrop} className="runbook-diagram relative h-[800px] w-full overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#0a0a0a]">
+      <div ref={diagramRef} id="runbook-diagram" onDragOver={event => event.preventDefault()} onDrop={handlePaletteDrop} className="runbook-diagram relative h-[800px] w-full overflow-hidden rounded-none border border-[#1a1a1a] bg-[#0a0a0a]">
         <ReactFlow
         nodes={nodes}
         edges={edges}

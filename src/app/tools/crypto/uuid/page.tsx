@@ -47,11 +47,11 @@ export default function UuidGenerator() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
         
         {/* Configuration */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-fit">
+        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col h-fit">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
-              <span className="text-zinc-600 text-xs">[CMD]</span>
-              <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest">Configuration</span>
+              <span className="text-[#00ff9c] text-xs">[IN]</span>
+              <span className="text-[#ffb000] text-sm font-semibold uppercase tracking-widest glow-amber">Configuration</span>
             </div>
           </header>
           <div className="p-6 flex flex-col gap-6">
@@ -61,28 +61,28 @@ export default function UuidGenerator() {
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => setType("uuid-v4")}
-                  className={`text-left px-4 py-2 font-mono text-sm border transition-colors ${type === "uuid-v4" ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
+                  className={`text-left px-4 py-2 font-mono text-sm border transition-colors rounded-none ${type === "uuid-v4" ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
                 >
                   <span className="block font-bold">UUID v4</span>
                   <span className="block text-[10px] mt-1 opacity-70">100% Random (CSPRNG). Most common.</span>
                 </button>
                 <button
                   onClick={() => setType("uuid-v7")}
-                  className={`text-left px-4 py-2 font-mono text-sm border transition-colors ${type === "uuid-v7" ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
+                  className={`text-left px-4 py-2 font-mono text-sm border transition-colors rounded-none ${type === "uuid-v7" ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
                 >
                   <span className="block font-bold">UUID v7</span>
                   <span className="block text-[10px] mt-1 opacity-70">Time-sorted + Random. Database friendly.</span>
                 </button>
                 <button
                   onClick={() => setType("ulid")}
-                  className={`text-left px-4 py-2 font-mono text-sm border transition-colors ${type === "ulid" ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
+                  className={`text-left px-4 py-2 font-mono text-sm border transition-colors rounded-none ${type === "ulid" ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
                 >
                   <span className="block font-bold">ULID</span>
                   <span className="block text-[10px] mt-1 opacity-70">Universally Unique Lexicographically Sortable.</span>
                 </button>
                 <button
                   onClick={() => setType("uuid-v1")}
-                  className={`text-left px-4 py-2 font-mono text-sm border transition-colors ${type === "uuid-v1" ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
+                  className={`text-left px-4 py-2 font-mono text-sm border transition-colors rounded-none ${type === "uuid-v1" ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
                 >
                   <span className="block font-bold">UUID v1</span>
                   <span className="block text-[10px] mt-1 text-red-400/80">Uses MAC + Time. Privacy risks.</span>
@@ -113,14 +113,14 @@ export default function UuidGenerator() {
         </article>
 
         {/* Output */}
-        <article className="lg:col-span-2 border border-[#1a1a1a] bg-[#050505] flex flex-col min-h-[500px]">
+        <article className="lg:col-span-2 border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col min-h-[500px]">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#ffb000] text-xs">[OUT]</span>
               <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Generated IDs</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono text-purple-400 mr-2 border border-purple-400/30 px-2 py-0.5 bg-purple-900/10 hidden sm:block">
+              <span className="text-[10px] font-mono text-purple-400 mr-2 border border-purple-400/30 px-2 py-0.5 bg-purple-900/10 hidden sm:block rounded-none">
                 CSPRNG / High Entropy
               </span>
               <Button 

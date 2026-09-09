@@ -253,7 +253,7 @@ export default function JwtDecoder() {
       description="Decode and edit JSON Web Tokens locally. Verify signatures or sign your own payload."
     >
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col xl:h-[calc(100vh-200px)]">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col xl:h-[calc(100vh-200px)] rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>
@@ -353,7 +353,7 @@ export default function JwtDecoder() {
           </div>
         </article>
 
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col xl:h-[calc(100vh-200px)] min-w-0">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col xl:h-[calc(100vh-200px)] min-w-0 rounded-none">
           <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a] shrink-0">
             <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>
             <span className="text-[#00ff9c] text-sm font-semibold glow flex items-center gap-2 uppercase tracking-widest">
@@ -444,7 +444,7 @@ export default function JwtDecoder() {
                         </span>
                       )}
                       
-                      <div className="flex items-center bg-black border border-[#1a1a1a]">
+                      <div className="flex items-center bg-black border border-[#1a1a1a] rounded-none">
                         <button 
                           onClick={() => toggleMode("verify")}
                           className={`font-mono text-[10px] uppercase tracking-widest px-2 py-1 transition-colors ${sigMode === "verify" ? "text-blue-400 bg-blue-400/10" : "text-zinc-500 hover:text-zinc-300"}`}

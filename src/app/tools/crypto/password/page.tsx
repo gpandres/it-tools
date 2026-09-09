@@ -134,7 +134,7 @@ function PasswordGeneratorContent() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full max-w-7xl mx-auto">
         
         {/* SETTINGS PANEL */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col lg:col-span-4 h-fit">
+        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col lg:col-span-4 h-fit">
           <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <span className="text-[#00ff9c] text-xs">[IN]</span>
             <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Generator</span>
@@ -187,7 +187,7 @@ function PasswordGeneratorContent() {
         </article>
 
         {/* OUTPUT & ANALYSIS PANEL */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col lg:col-span-8">
+        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col lg:col-span-8">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[OUT]</span>
@@ -222,7 +222,7 @@ function PasswordGeneratorContent() {
             {analysis && password && (
               <div className="flex flex-col gap-6 animate-in fade-in zoom-in-95 duration-300">
                 {/* Score Header */}
-                <div className={`p-4 border flex items-center justify-between ${getScoreColor(analysis.score)}`}>
+                <div className={`p-4 border flex items-center justify-between rounded-none ${getScoreColor(analysis.score)}`}>
                   <div className="flex items-center gap-3">
                     {analysis.score < 3 ? <ShieldAlert className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
                     <div className="font-mono">
@@ -238,7 +238,7 @@ function PasswordGeneratorContent() {
 
                 {/* Warnings and Suggestions */}
                 {(analysis.feedback.warning || analysis.feedback.suggestions.length > 0) && (
-                  <div className="bg-orange-500/5 border border-orange-500/20 p-4 space-y-3">
+                  <div className="bg-orange-500/5 border border-orange-500/20 p-4 space-y-3 rounded-none">
                     {analysis.feedback.warning && (
                       <div className="flex items-start gap-2 text-orange-400 font-mono text-sm">
                         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
@@ -254,7 +254,7 @@ function PasswordGeneratorContent() {
                 )}
 
                 {/* Cracking Times Table */}
-                <div className="border border-[#1a1a1a] bg-[#050505]">
+                <div className="border border-[#1a1a1a] bg-[#050505] rounded-none">
                   <header className="px-4 py-2 border-b border-[#1a1a1a] bg-[#0a0a0a]">
                     <span className="text-blue-400 text-xs font-mono uppercase tracking-widest">Estimated Cracking Times</span>
                   </header>
@@ -283,7 +283,7 @@ function PasswordGeneratorContent() {
                     <span className="uppercase tracking-widest mb-2 block text-zinc-500">Pattern Matches Detected:</span>
                     <div className="flex flex-wrap gap-2">
                       {analysis.sequence.map((match: any, idx: number) => (
-                        <span key={idx} className="bg-[#1a1a1a] px-2 py-1 border border-[#2a2a2a]">
+                        <span key={idx} className="bg-[#1a1a1a] px-2 py-1 border border-[#2a2a2a] rounded-none">
                           {match.pattern} ({match.token})
                         </span>
                       ))}
@@ -324,7 +324,7 @@ function ToggleOption({ label, active, onClick }: { label: string, active: boole
   return (
     <button 
       onClick={onClick}
-      className={`flex items-center gap-3 p-3 border font-mono text-xs transition-all text-left ${
+      className={`flex items-center gap-3 p-3 border font-mono text-xs transition-all text-left rounded-none ${
         active 
           ? "border-[#00ff9c]/50 bg-[#00ff9c]/5 text-[#00ff9c]" 
           : "border-[#1a1a1a] bg-black text-zinc-500 hover:border-[#2a2a2a] hover:text-zinc-400"

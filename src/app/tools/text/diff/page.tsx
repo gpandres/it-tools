@@ -36,9 +36,12 @@ export default function TextDiffChecker() {
         
         {/* Input Textareas */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-[250px]">
-          <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-full">
+          <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-full rounded-none">
             <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-              <span className="text-zinc-500 text-sm font-semibold uppercase tracking-widest">Original Text</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[#00ff9c] text-xs">[IN]</span>
+                <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Original Text</span>
+              </div>
               {original && (
                 <Button 
                   variant="ghost"
@@ -63,9 +66,12 @@ export default function TextDiffChecker() {
             </div>
           </article>
 
-          <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-full">
+          <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-full rounded-none">
             <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-              <span className="text-zinc-500 text-sm font-semibold uppercase tracking-widest">Modified Text</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[#00ff9c] text-xs">[IN]</span>
+                <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Modified Text</span>
+              </div>
               {modified && (
                 <Button 
                   variant="ghost"
@@ -92,10 +98,13 @@ export default function TextDiffChecker() {
         </div>
 
         {/* Diff Output */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col flex-1 min-h-[300px]">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col flex-1 min-h-[300px] rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-4">
-              <span className="text-blue-400 text-sm font-semibold uppercase tracking-widest">Diff Result</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[#00ff9c] text-xs">[OUT]</span>
+                <span className="text-[#00ff9c] text-sm font-semibold glow uppercase tracking-widest">Diff Result</span>
+              </div>
               {(original || modified) && (
                 <div className="flex items-center gap-3 text-xs font-mono">
                   {hasDifferences ? (
@@ -110,7 +119,7 @@ export default function TextDiffChecker() {
               )}
             </div>
             
-            <div className="flex items-center bg-black border border-[#1a1a1a]">
+            <div className="flex items-center bg-black border border-[#1a1a1a] rounded-none">
               <button 
                 onClick={() => setDiffMode("lines")}
                 className={`font-mono text-[10px] uppercase tracking-widest px-2 py-1 transition-colors ${diffMode === "lines" ? "text-blue-400 bg-blue-400/10" : "text-zinc-500 hover:text-zinc-300"}`}

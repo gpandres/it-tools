@@ -40,7 +40,7 @@ export default function CronParser() {
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
         
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
           <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <span className="text-[#00ff9c] text-xs">[IN]</span>
             <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Cron Expression</span>
@@ -89,7 +89,7 @@ export default function CronParser() {
                   <button
                     key={ex.val}
                     onClick={() => setCronExp(ex.val)}
-                    className="px-3 py-1.5 font-mono text-xs border border-[#1a1a1a] bg-black text-zinc-400 hover:text-[#ffb000] hover:border-[#ffb000]/50 transition-colors"
+                    className="px-3 py-1.5 font-mono text-xs border border-[#1a1a1a] bg-black text-zinc-400 hover:text-[#ffb000] hover:border-[#ffb000]/50 transition-colors rounded-none"
                   >
                     {ex.label}
                   </button>
@@ -99,10 +99,10 @@ export default function CronParser() {
           </div>
         </article>
 
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
           <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-blue-400 text-xs">[OUT]</span>
-            <span className="text-blue-400 text-sm font-semibold uppercase tracking-widest">Human Readable</span>
+            <span className="text-[#00ff9c] text-xs">[OUT]</span>
+            <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest glow">Human Readable</span>
           </header>
           <div className="p-8 flex items-center justify-center flex-1 min-h-[250px] bg-zinc-950 dotted-bg">
             {error ? (

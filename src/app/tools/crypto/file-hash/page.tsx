@@ -189,7 +189,7 @@ function FileHashContent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Upload & Compare Section */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col space-y-4">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col space-y-4 rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[IN]</span>
@@ -205,7 +205,7 @@ function FileHashContent() {
           <div className="px-6 flex-1 flex flex-col justify-start">
             {!file ? (
               <div 
-                className={`border-2 border-dashed ${isDragging ? 'border-[#00ff9c] bg-[#00ff9c]/10' : 'border-[#1a1a1a] bg-black'} p-12 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-[#00ff9c]/50 hover:bg-[#00ff9c]/5 transition-all mt-4`}
+                className={`border border-dashed ${isDragging ? 'border-[#00ff9c] bg-[#00ff9c]/10' : 'border-[#1a1a1a] bg-black'} p-12 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-[#00ff9c]/50 hover:bg-[#00ff9c]/5 transition-all mt-4 rounded-none`}
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={onDragOver}
                 onDragLeave={onDragLeave}
@@ -218,7 +218,7 @@ function FileHashContent() {
                 </div>
               </div>
             ) : (
-              <div className="border border-[#1a1a1a] bg-black p-6 flex flex-col items-center justify-center gap-4 relative mt-4">
+              <div className="border border-[#1a1a1a] bg-black p-6 flex flex-col items-center justify-center gap-4 relative mt-4 rounded-none">
                 <FileIcon className={`w-12 h-12 ${isHashing ? 'text-[#00ff9c] animate-pulse' : 'text-[#ffb000]'}`} />
                 <div className="text-center">
                   <p className="text-sm font-mono text-zinc-200 break-all">{file.name}</p>
@@ -228,7 +228,7 @@ function FileHashContent() {
                 {!results && !isHashing && (
                   <Button 
                     onClick={startHashing}
-                    className="mt-4 bg-black border border-[#00ff9c] text-[#00ff9c] hover:bg-[#00ff9c] hover:text-black font-mono transition-colors"
+                    className="mt-4 bg-black border border-[#00ff9c] text-[#00ff9c] hover:bg-[#00ff9c] hover:text-black font-mono transition-colors rounded-none"
                   >
                     Analyze File Hashes
                   </Button>
@@ -245,7 +245,7 @@ function FileHashContent() {
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-zinc-900 h-2 rounded-none overflow-hidden">
                       <div className="bg-[#00ff9c] h-full transition-all duration-200" style={{ width: `${progress}%` }}></div>
                     </div>
 
@@ -260,7 +260,7 @@ function FileHashContent() {
                     <Button 
                       onClick={cancelHashing}
                       variant="ghost"
-                      className="w-full text-red-500 hover:text-red-400 hover:bg-red-500/10 font-mono text-xs border border-red-500/30 h-8"
+                      className="w-full text-red-500 hover:text-red-400 hover:bg-red-500/10 font-mono text-xs border border-red-500/30 h-8 rounded-none"
                     >
                       <XCircle className="w-4 h-4 mr-2" /> Cancel Analysis
                     </Button>
@@ -294,7 +294,7 @@ function FileHashContent() {
         </article>
 
         {/* Results Section */}
-        <article className="border border-[#1a1a1a] bg-[#050505]">
+        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none">
           <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <span className="text-[#00ff9c] text-xs">[OUT]</span>
             <span className="text-[#00ff9c] text-sm font-semibold glow uppercase tracking-widest">Calculated Hashes</span>
@@ -308,7 +308,7 @@ function FileHashContent() {
               <div className="space-y-4">
                 
                 {targetHash && (
-                  <div className={`p-4 border font-mono text-xs flex items-start gap-3 ${matchStatus !== 'none' ? 'bg-[#00ff9c]/10 border-[#00ff9c]/30 text-[#00ff9c]' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
+                  <div className={`p-4 border font-mono text-xs flex items-start gap-3 rounded-none ${matchStatus !== 'none' ? 'bg-[#00ff9c]/10 border-[#00ff9c]/30 text-[#00ff9c]' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
                     {matchStatus !== 'none' ? (
                       <>
                         <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" />
@@ -350,17 +350,17 @@ function HashRow({ label, value, copied, onCopy, matched }: { label: string, val
           {label} {matched && "(MATCH)"}
         </label>
       </div>
-      <div className={`flex bg-black border p-1 items-center group relative overflow-hidden transition-colors ${matched ? 'border-[#00ff9c]' : 'border-[#1a1a1a]'}`}>
+      <div className={`flex bg-black border p-1 items-center group relative overflow-hidden transition-colors rounded-none ${matched ? 'border-[#00ff9c]' : 'border-[#1a1a1a]'}`}>
         <Input 
           readOnly 
           value={value}
-          className={`font-mono text-xs bg-transparent border-none pr-10 ${matched ? 'text-[#00ff9c]' : 'text-zinc-300'}`}
+          className={`font-mono text-xs bg-transparent border-none pr-10 rounded-none focus-visible:ring-[#00ff9c] ${matched ? 'text-[#00ff9c]' : 'text-zinc-300'}`}
         />
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={onCopy} 
-          className="absolute right-1 top-1 h-7 w-7 text-zinc-500 hover:text-zinc-200 bg-black/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute right-1 top-1 h-7 w-7 text-zinc-500 hover:text-zinc-200 bg-black/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity rounded-none"
         >
           {copied ? <Check className="w-4 h-4 text-[#00ff9c]" /> : <Copy className="w-4 h-4" />}
         </Button>

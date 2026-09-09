@@ -116,7 +116,7 @@ export default function HashIdentifierPage() {
       <div className="w-full max-w-5xl mx-auto space-y-6">
 
         {/* DISCLAIMER */}
-        <div className="bg-amber-950/30 border border-amber-900/50 rounded-lg p-4 flex items-start gap-3">
+        <div className="bg-amber-950/30 border border-amber-900/50 rounded-none p-4 flex items-start gap-3">
           <ShieldAlert className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
           <div className="text-sm text-amber-200">
             <strong>Important Note:</strong> Because many hash functions produce hexadecimal strings of the same length (e.g. MD5 and NTLM are both 32 hex chars), it is <em>mathematically impossible</em> to guarantee the algorithm just by looking at it. The results below are only <strong>compatible possibilities</strong>.
@@ -124,14 +124,14 @@ export default function HashIdentifierPage() {
         </div>
 
         {/* INPUT */}
-        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 space-y-4">
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-4 space-y-4">
           <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
             <Search className="w-4 h-4 text-[#00ff9c]" /> Input String
           </h3>
           <Textarea 
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="min-h-[100px] bg-[#111] border-[#333] font-mono text-sm text-[#00ff9c] resize-none"
+            className="min-h-[100px] bg-[#111] border-[#333] font-mono text-sm text-[#00ff9c] resize-none rounded-none focus-visible:ring-[#00ff9c]"
             placeholder="Paste your hash, encoded string, or token here..."
           />
           {input.trim() && (
@@ -150,7 +150,7 @@ export default function HashIdentifierPage() {
             </h3>
             
             {matches.length === 0 ? (
-              <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-8 text-center text-zinc-500 flex flex-col items-center">
+              <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-8 text-center text-zinc-500 flex flex-col items-center">
                 <HelpCircle className="w-8 h-8 mb-2 opacity-50" />
                 <p>No standard hashes or encodings recognized.</p>
                 <p className="text-xs mt-1">This could be plain text, a proprietary format, or salted/custom.</p>
@@ -158,11 +158,11 @@ export default function HashIdentifierPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {matches.map((match, i) => (
-                  <div key={i} className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 flex flex-col justify-between hover:bg-[#111] transition-colors">
+                  <div key={i} className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-4 flex flex-col justify-between hover:bg-[#111] transition-colors">
                     <div>
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-bold text-white text-base">{match.name}</h4>
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${getConfidenceColor(match.confidence)}`}>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-none border ${getConfidenceColor(match.confidence)}`}>
                           {match.confidence} Match
                         </span>
                       </div>
@@ -181,17 +181,17 @@ export default function HashIdentifierPage() {
           <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-3">Related Generation Tools</h4>
           <div className="flex flex-wrap gap-2">
             <Link href="/tools/crypto/hash">
-              <Button variant="outline" size="sm" className="h-8 text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white">
+              <Button variant="outline" size="sm" className="h-8 text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white rounded-none">
                 Hash Generators
               </Button>
             </Link>
             <Link href="/tools/crypto/file-hash">
-              <Button variant="outline" size="sm" className="h-8 text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white">
+              <Button variant="outline" size="sm" className="h-8 text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white rounded-none">
                 File Hash Analyzer
               </Button>
             </Link>
             <Link href="/tools/encoding/base64">
-              <Button variant="outline" size="sm" className="h-8 text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white">
+              <Button variant="outline" size="sm" className="h-8 text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white rounded-none">
                 Base64 Encoder
               </Button>
             </Link>

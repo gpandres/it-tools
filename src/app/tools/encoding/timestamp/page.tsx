@@ -63,7 +63,7 @@ function TimestampConverterContent() {
       
       {/* Input */}
       <div className="lg:col-span-5 space-y-6">
-        <div className="border border-[#1a1a1a] bg-[#050505] p-6 space-y-6">
+        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 space-y-6">
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 flex items-center gap-2">
               <Clock className="w-4 h-4" /> Timestamp or Date String
@@ -75,26 +75,26 @@ function TimestampConverterContent() {
                 value={input} 
                 onChange={(e) => setInput(e.target.value)} 
                 placeholder="e.g. 1709240000 or 2024-03-01T12:00:00Z"
-                className="w-full bg-black border border-[#1a1a1a] p-4 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors"
+                className="w-full bg-black border border-[#1a1a1a] p-4 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors rounded-none focus-visible:ring-[#00ff9c]"
               />
             </div>
             
             <div className="flex gap-2">
-              <Button onClick={handleUseCurrent} variant="ghost" className="text-xs font-mono bg-[#1a1a1a] hover:bg-[#00ff9c]/20 hover:text-[#00ff9c] text-zinc-400">
+              <Button onClick={handleUseCurrent} variant="ghost" className="text-xs font-mono bg-[#1a1a1a] hover:bg-[#00ff9c]/20 hover:text-[#00ff9c] text-zinc-400 rounded-none">
                 Current Unix Time
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="border border-[#1a1a1a] bg-[#0a0a0a] p-4 flex gap-3 text-zinc-400">
+        <div className="border border-[#1a1a1a] bg-[#0a0a0a] rounded-none p-4 flex gap-3 text-zinc-400">
           <Info className="w-5 h-5 shrink-0 text-zinc-500" />
           <p className="text-xs font-mono leading-relaxed">
             Auto-detects Unix Epoch (seconds), JS Timestamps (milliseconds), ISO 8601, and RFC 2822 date formats.
           </p>
         </div>
 
-        <div className="border border-[#1a1a1a] bg-black p-4 flex justify-between items-center text-xs font-mono text-zinc-500">
+        <div className="border border-[#1a1a1a] bg-black rounded-none p-4 flex justify-between items-center text-xs font-mono text-zinc-500">
           <span>Live Epoch:</span>
           <span className="text-zinc-300">{currentTime !== null ? Math.floor(currentTime / 1000) : "..."}</span>
         </div>
@@ -102,17 +102,17 @@ function TimestampConverterContent() {
 
       {/* Output */}
       <div className="lg:col-span-7">
-        <div className="border border-[#1a1a1a] bg-[#050505] p-6 h-full flex flex-col">
+        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 h-full flex flex-col">
           <h3 className="text-sm font-bold text-[#00ff9c] glow uppercase tracking-widest border-b border-[#1a1a1a] pb-2 mb-6">
             Converted Results
           </h3>
 
           {!input.trim() ? (
-            <div className="flex-1 flex items-center justify-center border border-dashed border-[#1a1a1a] text-zinc-600 font-mono text-sm">
+            <div className="flex-1 flex items-center justify-center border border-dashed border-[#1a1a1a] text-zinc-600 font-mono text-sm rounded-none">
               Waiting for input...
             </div>
           ) : !dateObj ? (
-            <div className="flex-1 flex items-center justify-center border border-red-500/30 bg-red-500/5 text-red-400 font-mono text-sm">
+            <div className="flex-1 flex items-center justify-center border border-red-500/30 bg-red-500/5 text-red-400 font-mono text-sm rounded-none">
               Invalid date format.
             </div>
           ) : (
@@ -187,17 +187,17 @@ function OutputRow({ label, value, copied, onCopy, highlight = false }: { label:
   return (
     <div className="flex flex-col space-y-1">
       <span className={`text-[10px] font-mono uppercase tracking-widest ${highlight ? 'text-[#00ff9c]' : 'text-zinc-500'}`}>{label}</span>
-      <div className="flex bg-black border border-[#1a1a1a] p-1 items-center group relative">
+      <div className="flex bg-black border border-[#1a1a1a] p-1 items-center group relative rounded-none">
         <input 
           readOnly 
           value={value}
-          className="flex-1 font-mono text-sm bg-transparent border-none px-2 text-zinc-300 focus:outline-none"
+          className="flex-1 font-mono text-sm bg-transparent border-none px-2 text-zinc-300 focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
         />
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={onCopy} 
-          className="h-7 w-7 text-zinc-500 hover:text-zinc-200 bg-[#1a1a1a]"
+          className="h-7 w-7 text-zinc-500 hover:text-zinc-200 bg-[#1a1a1a] rounded-none"
         >
           {copied ? <Check className="w-4 h-4 text-[#00ff9c]" /> : <Copy className="w-4 h-4" />}
         </Button>

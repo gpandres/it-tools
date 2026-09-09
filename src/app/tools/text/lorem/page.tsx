@@ -96,9 +96,9 @@ export default function LoremIpsumGenerator() {
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         
         {/* Controls */}
-        <article className="xl:col-span-1 border border-[#1a1a1a] bg-[#050505] flex flex-col h-fit sticky top-24">
+        <article className="xl:col-span-1 border border-[#1a1a1a] bg-[#050505] flex flex-col h-fit sticky top-24 rounded-none">
           <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-zinc-600 text-xs">[CMD]</span>
+            <span className="text-[#00ff9c] text-xs">[IN]</span>
             <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest">Configuration</span>
           </header>
           <div className="p-6 flex flex-col gap-6">
@@ -110,7 +110,7 @@ export default function LoremIpsumGenerator() {
                   <button
                     key={t}
                     onClick={() => setType(t)}
-                    className={`text-left px-4 py-2 font-mono text-sm border transition-colors ${type === t ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
+                    className={`text-left px-4 py-2 font-mono text-sm border transition-colors rounded-none ${type === t ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
                   >
                     {t.charAt(0).toUpperCase() + t.slice(1)}
                   </button>
@@ -140,7 +140,7 @@ export default function LoremIpsumGenerator() {
         </article>
 
         {/* Output */}
-        <article className="xl:col-span-3 border border-[#1a1a1a] bg-[#050505] flex flex-col min-h-[500px]">
+        <article className="xl:col-span-3 border border-[#1a1a1a] bg-[#050505] flex flex-col min-h-[500px] rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[OUT]</span>

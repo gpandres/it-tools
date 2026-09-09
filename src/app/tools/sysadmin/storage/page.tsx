@@ -49,7 +49,7 @@ function StorageCalculatorContent() {
       
       {/* Input */}
       <div className="lg:col-span-5 space-y-6">
-        <div className="border border-[#1a1a1a] bg-[#050505] p-6">
+        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6">
           <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 flex items-center gap-2 mb-6">
             <Scale className="w-4 h-4" /> Capacity Input
           </h3>
@@ -62,12 +62,12 @@ function StorageCalculatorContent() {
                   type="number" min="0" step="any"
                   value={value} 
                   onChange={(e) => setValue(e.target.value)} 
-                  className="flex-1 min-w-0 bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-xl focus:border-[#00ff9c] focus:outline-none transition-colors"
+                  className="flex-1 min-w-0 bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-xl focus:border-[#00ff9c] focus:outline-none transition-colors rounded-none focus-visible:ring-[#00ff9c]"
                 />
                 <select 
                   value={unit} 
                   onChange={(e) => setUnit(e.target.value)} 
-                  className="w-28 shrink-0 bg-black border border-[#1a1a1a] p-3 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none"
+                  className="w-28 shrink-0 bg-black border border-[#1a1a1a] p-3 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
                 >
                   <optgroup label="Decimal (Base 10)">
                     <option value="KB">KB</option>
@@ -90,14 +90,14 @@ function StorageCalculatorContent() {
 
             {/* Quick Presets */}
             <div className="flex gap-2 pt-2">
-              <Button onClick={() => { setValue("1"); setUnit("TB") }} variant="ghost" className="h-6 text-[10px] font-mono bg-[#1a1a1a] hover:bg-[#00ff9c]/20 hover:text-[#00ff9c]">1 TB</Button>
-              <Button onClick={() => { setValue("500"); setUnit("GB") }} variant="ghost" className="h-6 text-[10px] font-mono bg-[#1a1a1a] hover:bg-[#00ff9c]/20 hover:text-[#00ff9c]">500 GB</Button>
-              <Button onClick={() => { setValue("1"); setUnit("TiB") }} variant="ghost" className="h-6 text-[10px] font-mono bg-[#1a1a1a] hover:bg-[#00ff9c]/20 hover:text-[#00ff9c]">1 TiB</Button>
+              <Button onClick={() => { setValue("1"); setUnit("TB") }} variant="ghost" className="h-6 text-[10px] font-mono bg-[#1a1a1a] hover:bg-[#00ff9c]/20 hover:text-[#00ff9c] rounded-none">1 TB</Button>
+              <Button onClick={() => { setValue("500"); setUnit("GB") }} variant="ghost" className="h-6 text-[10px] font-mono bg-[#1a1a1a] hover:bg-[#00ff9c]/20 hover:text-[#00ff9c] rounded-none">500 GB</Button>
+              <Button onClick={() => { setValue("1"); setUnit("TiB") }} variant="ghost" className="h-6 text-[10px] font-mono bg-[#1a1a1a] hover:bg-[#00ff9c]/20 hover:text-[#00ff9c] rounded-none">1 TiB</Button>
             </div>
           </div>
         </div>
 
-        <div className="border border-[#1a1a1a] bg-[#0a0a0a] p-4 flex gap-3 text-zinc-400">
+        <div className="border border-[#1a1a1a] bg-[#0a0a0a] rounded-none p-4 flex gap-3 text-zinc-400">
           <Info className="w-5 h-5 shrink-0 text-zinc-500" />
           <p className="text-sm font-mono leading-relaxed">
             <strong>Why is my 1TB drive only showing 931GB?</strong>
@@ -113,7 +113,7 @@ function StorageCalculatorContent() {
 
       {/* Output Grid */}
       <div className="lg:col-span-7">
-        <div className="border border-[#1a1a1a] bg-[#050505] p-6 h-full">
+        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 h-full">
           <h3 className="text-sm font-bold text-[#00ff9c] glow uppercase tracking-widest border-b border-[#1a1a1a] pb-2 mb-6">
             Conversions
           </h3>

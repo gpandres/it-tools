@@ -63,7 +63,7 @@ export default function SqlBeautifier() {
               <Database className="w-4 h-4" /> Input SQL
             </h3>
             <select
-              className="bg-black border-2 border-[#1a1a1a] text-zinc-300 text-xs p-1 focus:border-[#00ff9c] focus:outline-none transition-colors"
+              className="bg-black border border-[#1a1a1a] text-zinc-300 text-xs p-1 focus:border-[#00ff9c] focus:outline-none transition-colors rounded-none focus-visible:ring-[#00ff9c]"
               value={dialect}
               onChange={(e) => setDialect(e.target.value)}
             >
@@ -73,14 +73,14 @@ export default function SqlBeautifier() {
             </select>
           </div>
           <textarea
-            className="w-full h-[400px] bg-black border-2 border-[#1a1a1a] p-4 text-zinc-300 font-mono text-xs focus:border-[#00ff9c] focus:outline-none transition-colors resize-none custom-scrollbar"
+            className="w-full h-[400px] bg-black border border-[#1a1a1a] p-4 text-zinc-300 font-mono text-xs focus:border-[#00ff9c] focus:outline-none transition-colors resize-none custom-scrollbar rounded-none focus-visible:ring-[#00ff9c]"
             placeholder="SELECT id,name,email FROM users WHERE status='active' ORDER BY created_at DESC;"
             value={inputSql}
             onChange={(e) => setInputSql(e.target.value)}
           />
           <Button 
             onClick={formatSql}
-            className="w-full bg-[#00ff9c] hover:bg-[#00cc7d] text-black font-bold"
+            className="w-full bg-[#00ff9c] hover:bg-[#00cc7d] text-black font-bold rounded-none"
           >
             <RefreshCw className="w-4 h-4 mr-2" /> Format SQL
           </Button>
@@ -96,7 +96,7 @@ export default function SqlBeautifier() {
               onClick={copyToClipboard}
               variant="outline"
               size="sm"
-              className="h-7 text-xs border-[#1a1a1a] hover:bg-[#1a1a1a] text-zinc-400 hover:text-zinc-200"
+              className="h-7 text-xs border-[#1a1a1a] hover:bg-[#1a1a1a] text-zinc-400 hover:text-zinc-200 rounded-none"
               disabled={!outputSql}
             >
               {copied ? <Check className="w-3 h-3 mr-2 text-[#00ff9c]" /> : <Copy className="w-3 h-3 mr-2" />}
@@ -106,7 +106,7 @@ export default function SqlBeautifier() {
           
           <div className="relative">
             <textarea
-              className={`w-full h-[400px] border-2 p-4 font-mono text-xs focus:outline-none transition-colors resize-none custom-scrollbar ${
+              className={`w-full h-[400px] border p-4 font-mono text-xs focus:outline-none transition-colors resize-none custom-scrollbar rounded-none focus-visible:ring-[#00ff9c] ${
                 error ? "border-red-900 bg-red-950/20 text-red-400" : "bg-[#050505] border-[#1a1a1a] text-[#00ff9c]"
               }`}
               readOnly

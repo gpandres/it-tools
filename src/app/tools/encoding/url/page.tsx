@@ -70,7 +70,7 @@ export default function UrlConverter() {
         <div className="flex justify-end">
           <button 
             onClick={toggleMode}
-            className={`font-mono text-xs px-3 py-1.5 border transition-colors ${
+            className={`font-mono text-xs px-3 py-1.5 border transition-colors rounded-none ${
               useComponent 
                 ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" 
                 : "border-[#1a1a1a] text-zinc-500 bg-black hover:border-zinc-700"
@@ -80,7 +80,7 @@ export default function UrlConverter() {
           </button>
         </div>
 
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>
@@ -113,7 +113,7 @@ export default function UrlConverter() {
           </div>
         </div>
 
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>

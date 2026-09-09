@@ -166,11 +166,11 @@ export default function CheatsheetsPage() {
       <div className="flex flex-col md:flex-row gap-6 w-full max-w-7xl mx-auto items-start min-h-[calc(100vh-12rem)]">
         
         {/* Sidebar */}
-        <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-2 sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto custom-scrollbar">
+        <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-2 sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto custom-scrollbar">
           
           <button
             onClick={() => setSelectedPlatform("All Categories")}
-            className={`flex items-center gap-3 px-3 py-2 mt-1 mb-2 rounded-md text-sm transition-colors text-left ${selectedPlatform === "All Categories" ? 'bg-[#1a1a1a] text-[#00ff9c] font-medium' : 'text-zinc-400 hover:text-white hover:bg-[#111]'}`}
+            className={`flex items-center gap-3 px-3 py-2 mt-1 mb-2 rounded-none text-sm transition-colors text-left ${selectedPlatform === "All Categories" ? 'bg-[#1a1a1a] text-[#00ff9c] font-medium' : 'text-zinc-400 hover:text-white hover:bg-[#111]'}`}
           >
             <Layers className={`w-4 h-4 ${selectedPlatform === "All Categories" ? 'text-[#00ff9c]' : 'text-zinc-500'}`} />
             All Categories
@@ -183,7 +183,7 @@ export default function CheatsheetsPage() {
                 <div key={category.name} className="">
                   <button 
                     onClick={() => toggleCategory(category.name)}
-                    className="flex items-center w-full text-[10px] font-bold text-zinc-600 hover:text-zinc-400 uppercase tracking-wider mb-1 px-3 py-1 rounded transition-colors"
+                    className="flex items-center w-full text-[10px] font-bold text-zinc-600 hover:text-zinc-400 uppercase tracking-wider mb-1 px-3 py-1 rounded-none transition-colors"
                   >
                     <ChevronRight className={`w-3 h-3 mr-1 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
                     {category.name}
@@ -198,7 +198,7 @@ export default function CheatsheetsPage() {
                           <button
                             key={p}
                             onClick={() => setSelectedPlatform(p)}
-                            className={`flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-colors text-left ${isActive ? 'bg-[#1a1a1a] text-[#00ff9c] font-medium' : 'text-zinc-400 hover:text-white hover:bg-[#111]'}`}
+                            className={`flex items-center gap-3 px-3 py-1.5 rounded-none text-sm transition-colors text-left ${isActive ? 'bg-[#1a1a1a] text-[#00ff9c] font-medium' : 'text-zinc-400 hover:text-white hover:bg-[#111]'}`}
                           >
                             <Icon className={`w-4 h-4 ${isActive ? 'text-[#00ff9c]' : 'text-zinc-500'}`} />
                             {p}
@@ -225,10 +225,10 @@ export default function CheatsheetsPage() {
               placeholder="Search commands, platforms, aliases (e.g. 'routing table', 'ufw')..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-10 bg-[#0a0a0a] border-[#1a1a1a] focus-visible:ring-[#333] h-12 text-sm"
+              className="pl-10 bg-[#0a0a0a] border-[#1a1a1a] focus-visible:ring-[#00ff9c] h-12 text-sm rounded-none"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
-              <kbd className="hidden sm:inline-flex items-center justify-center px-1.5 py-0.5 border border-[#333] rounded text-[10px] text-zinc-500 bg-black font-mono">
+              <kbd className="hidden sm:inline-flex items-center justify-center px-1.5 py-0.5 border border-[#333] rounded-none text-[10px] text-zinc-500 bg-black font-mono">
                 /
               </kbd>
             </div>
@@ -236,7 +236,7 @@ export default function CheatsheetsPage() {
           <Button 
             onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
             variant="outline" 
-            className={`h-12 border-[#1a1a1a] transition-colors ${showOnlyFavorites ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20' : 'bg-[#0a0a0a] text-zinc-400 hover:text-white'}`}
+            className={`h-12 border-[#1a1a1a] transition-colors rounded-none ${showOnlyFavorites ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20' : 'bg-[#0a0a0a] text-zinc-400 hover:text-white'}`}
           >
             <Star className={`w-4 h-4 mr-2 ${showOnlyFavorites ? 'fill-yellow-400 text-yellow-400' : ''}`} />
             Favorites
@@ -246,7 +246,7 @@ export default function CheatsheetsPage() {
         {/* Results */}
         <div className="space-y-8">
           {Object.keys(filteredAndGrouped).length === 0 ? (
-            <div className="text-center py-12 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
+            <div className="text-center py-12 bg-[#0a0a0a] border border-[#1a1a1a] rounded-none">
               <Terminal className="w-8 h-8 mx-auto text-zinc-700 mb-3" />
               <p className="text-zinc-500 text-sm">No commands found for your query.</p>
             </div>
@@ -261,7 +261,7 @@ export default function CheatsheetsPage() {
                     const risk = assessCommandRisk(entry.command);
                     
                     return (
-                      <div key={entry.id} className="bg-black border border-[#1a1a1a] rounded-lg overflow-hidden flex flex-col group hover:border-[#333] transition-colors">
+                      <div key={entry.id} className="bg-black border border-[#1a1a1a] rounded-none overflow-hidden flex flex-col group hover:border-[#333] transition-colors">
                         {/* Header */}
                         <div className="bg-[#050505] border-b border-[#1a1a1a] px-4 py-2 flex justify-between items-center">
                           <div className="flex items-center gap-2">
@@ -282,7 +282,7 @@ export default function CheatsheetsPage() {
 
                           {risk.risk !== "safe" && (
                             <div
-                              className={`mb-3 flex items-start gap-2 rounded border px-3 py-2 text-xs ${risk.risk === "destructive" ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-amber-500/40 bg-amber-500/10 text-amber-300'}`}
+                              className={`mb-3 flex items-start gap-2 rounded-none border px-3 py-2 text-xs ${risk.risk === "destructive" ? 'border-red-500/40 bg-red-500/10 text-red-300' : 'border-amber-500/40 bg-amber-500/10 text-amber-300'}`}
                               role="note"
                             >
                               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -290,13 +290,13 @@ export default function CheatsheetsPage() {
                             </div>
                           )}
                           
-                          <div className="relative mt-auto bg-[#0a0a0a] rounded border border-[#1a1a1a] group-hover:border-[#333] transition-colors">
+                          <div className="relative mt-auto bg-[#0a0a0a] rounded-none border border-[#1a1a1a] group-hover:border-[#333] transition-colors">
                             <pre className="p-3 text-sm text-[#00ff9c] font-mono overflow-x-auto custom-scrollbar">
                               {entry.command}
                             </pre>
                             <button
                               onClick={() => copyCommand(entry.id, entry.command)}
-                              className="absolute top-2 right-2 bg-black border border-[#1a1a1a] p-1.5 rounded text-zinc-500 hover:text-white hover:bg-[#1a1a1a] transition-all opacity-0 group-hover:opacity-100"
+                              className="absolute top-2 right-2 bg-black border border-[#1a1a1a] p-1.5 rounded-none text-zinc-500 hover:text-white hover:bg-[#1a1a1a] transition-all opacity-0 group-hover:opacity-100"
                               title={risk.risk === "destructive" ? "Copy command (confirmation required)" : "Copy command"}
                             >
                               {copiedId === entry.id ? <Check className="w-4 h-4 text-[#00ff9c]" /> : <Copy className="w-4 h-4" />}

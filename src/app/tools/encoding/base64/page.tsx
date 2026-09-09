@@ -76,7 +76,7 @@ export default function Base64Converter() {
       description="Convert text or data to and from Base64 encoding. Supports UTF-8 characters."
     >
       <div className="flex flex-col gap-6 max-w-4xl mx-auto">
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>
@@ -109,7 +109,7 @@ export default function Base64Converter() {
           </div>
         </div>
 
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>

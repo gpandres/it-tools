@@ -67,7 +67,7 @@ export default function GitignoreGenerator() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl">
         {/* Left Side: Search and Selection */}
         <div className="space-y-6">
-          <div className="space-y-4 border-2 border-[#1a1a1a] p-4 bg-[#050505]">
+          <div className="space-y-4 border border-[#1a1a1a] p-4 bg-[#050505] rounded-none">
             <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
               <Search className="w-4 h-4" /> Add Templates
             </h3>
@@ -76,7 +76,7 @@ export default function GitignoreGenerator() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <input
                 type="text"
-                className="w-full bg-black border-2 border-[#1a1a1a] py-2 pl-10 pr-4 text-zinc-300 font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors placeholder-zinc-700"
+                className="w-full bg-black border border-[#1a1a1a] py-2 pl-10 pr-4 text-zinc-300 font-mono text-sm focus:border-[#00ff9c] focus:outline-none transition-colors placeholder-zinc-700 rounded-none focus-visible:ring-[#00ff9c]"
                 placeholder="Search templates (e.g. Node, React, Python...)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -91,7 +91,7 @@ export default function GitignoreGenerator() {
                   <button
                     key={name}
                     onClick={() => toggleSelect(name)}
-                    className="flex items-center gap-1 bg-black border border-zinc-800 hover:border-[#00ff9c] hover:text-[#00ff9c] text-zinc-400 px-3 py-1 text-xs font-mono transition-colors"
+                    className="flex items-center gap-1 bg-black border border-zinc-800 hover:border-[#00ff9c] hover:text-[#00ff9c] text-zinc-400 px-3 py-1 text-xs font-mono transition-colors rounded-none"
                   >
                     <Plus className="w-3 h-3" /> {name}
                   </button>
@@ -100,7 +100,7 @@ export default function GitignoreGenerator() {
             </div>
           </div>
 
-          <div className="space-y-4 border-2 border-[#1a1a1a] p-4 bg-[#050505] min-h-[150px]">
+          <div className="space-y-4 border border-[#1a1a1a] p-4 bg-[#050505] min-h-[150px] rounded-none">
              <h3 className="text-sm font-bold text-[#00ff9c] uppercase tracking-widest flex justify-between items-center">
               <span>Selected ({selected.length})</span>
               {selected.length > 0 && (
@@ -118,7 +118,7 @@ export default function GitignoreGenerator() {
                   <button
                     key={name}
                     onClick={() => toggleSelect(name)}
-                    className="flex items-center gap-1 bg-[#00ff9c]/10 border border-[#00ff9c] text-[#00ff9c] hover:bg-red-900/20 hover:border-red-500 hover:text-red-500 px-3 py-1 text-xs font-mono transition-colors group"
+                    className="flex items-center gap-1 bg-[#00ff9c]/10 border border-[#00ff9c] text-[#00ff9c] hover:bg-red-900/20 hover:border-red-500 hover:text-red-500 px-3 py-1 text-xs font-mono transition-colors group rounded-none"
                   >
                     {name} <span className="text-xl leading-none ml-1 opacity-50 group-hover:opacity-100">&times;</span>
                   </button>
@@ -139,7 +139,7 @@ export default function GitignoreGenerator() {
                 onClick={copyToClipboard}
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs border-[#1a1a1a] hover:bg-[#1a1a1a] text-zinc-400 hover:text-zinc-200"
+                className="h-7 text-xs border-[#1a1a1a] hover:bg-[#1a1a1a] text-zinc-400 hover:text-zinc-200 rounded-none"
                 disabled={!generatedGitignore}
               >
                 {copied ? <Check className="w-3 h-3 mr-2 text-[#00ff9c]" /> : <Copy className="w-3 h-3 mr-2" />}
@@ -147,7 +147,7 @@ export default function GitignoreGenerator() {
               </Button>
               <Button
                 onClick={downloadFile}
-                className="h-7 text-xs bg-[#00ff9c] hover:bg-[#00cc7d] text-black disabled:bg-zinc-800 disabled:text-zinc-500"
+                className="h-7 text-xs bg-[#00ff9c] hover:bg-[#00cc7d] text-black disabled:bg-zinc-800 disabled:text-zinc-500 rounded-none"
                 disabled={!generatedGitignore}
               >
                 <Download className="w-3 h-3 mr-2" /> Download
@@ -157,7 +157,7 @@ export default function GitignoreGenerator() {
           
           <div className="relative">
             <textarea
-              className="w-full h-[500px] bg-[#050505] border-2 border-[#1a1a1a] p-4 text-[#00ff9c] font-mono text-xs focus:outline-none transition-colors resize-none custom-scrollbar"
+              className="w-full h-[500px] bg-[#050505] border border-[#1a1a1a] p-4 text-[#00ff9c] font-mono text-xs focus:outline-none transition-colors resize-none custom-scrollbar rounded-none focus-visible:ring-[#00ff9c]"
               readOnly
               value={generatedGitignore}
               placeholder="Your .gitignore content will appear here..."

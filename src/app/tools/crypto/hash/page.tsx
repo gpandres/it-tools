@@ -55,7 +55,7 @@ export default function HashGenerator() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl mx-auto">
         
         {/* Input */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-[250px] lg:h-auto lg:sticky lg:top-24">
+        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col h-[250px] lg:h-auto lg:sticky lg:top-24">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[IN]</span>
@@ -86,7 +86,7 @@ export default function HashGenerator() {
           
           <div className="p-4 border-t border-[#1a1a1a] flex items-center justify-between bg-black">
             <Label className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Output Encoding</Label>
-            <div className="flex items-center border border-[#1a1a1a]">
+            <div className="flex items-center border border-[#1a1a1a] rounded-none">
               <button 
                 onClick={() => setEncoding("hex")}
                 className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest transition-colors ${encoding === "hex" ? "bg-[#ffb000]/10 text-[#ffb000]" : "text-zinc-500 hover:text-zinc-300"}`}
@@ -107,13 +107,13 @@ export default function HashGenerator() {
         {/* Outputs */}
         <div className="flex flex-col gap-4">
           {Object.entries(hashes).map(([algo, hash]) => (
-            <article key={algo} className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
+            <article key={algo} className="border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col">
               <header className="flex items-center justify-between px-4 py-2 border-b border-[#1a1a1a] bg-[#0a0a0a]">
                 <div className="flex items-center gap-2">
-                  <span className="text-blue-400 text-xs">[OUT]</span>
-                  <span className="text-blue-400 text-sm font-semibold uppercase tracking-widest">{algo}</span>
+                  <span className="text-[#00ff9c] text-xs">[OUT]</span>
+                  <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest glow">{algo}</span>
                   {algo === "MD5" && (
-                    <span className="bg-red-500/10 text-red-400 text-[10px] px-2 py-0.5 border border-red-500/20 ml-2">Legacy / Insecure</span>
+                    <span className="bg-red-500/10 text-red-400 text-[10px] px-2 py-0.5 border border-red-500/20 ml-2 rounded-none">Legacy / Insecure</span>
                   )}
                 </div>
                 <Button 

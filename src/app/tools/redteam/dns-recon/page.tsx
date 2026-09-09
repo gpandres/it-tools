@@ -86,7 +86,7 @@ export default function DnsReconPage() {
       <div className="w-full max-w-7xl mx-auto space-y-6">
 
         {/* DISCLAIMER */}
-        <div className="bg-blue-950/30 border border-blue-900/50 rounded-lg p-4 flex items-start gap-3">
+        <div className="bg-blue-950/30 border border-blue-900/50 rounded-none p-4 flex items-start gap-3">
           <Globe className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
           <div className="text-sm text-blue-200">
             <strong>External Queries Notice:</strong> By default, this workspace is local. If you use the "Resolve" feature, your browser will make a direct HTTPS request to <code>cloudflare-dns.com</code> (DNS over HTTPS) to fetch the records. No data is sent to our servers.
@@ -96,14 +96,14 @@ export default function DnsReconPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* RESOLVER TOOL */}
-          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 space-y-4">
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-4 space-y-4">
             <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Resolve Records (DoH)</h3>
             <div className="flex gap-2">
               <Select value={queryType} onValueChange={(v) => setQueryType(v as DnsRecordType)}>
-                <SelectTrigger className="w-[100px] bg-[#111] border-[#333] text-white">
+                <SelectTrigger className="w-[100px] bg-[#111] border-[#333] text-white rounded-none">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#111] border-[#333] text-white">
+                <SelectContent className="bg-[#111] border-[#333] text-white rounded-none">
                   {DNS_RECORD_TYPES.map(t => (
                     <SelectItem key={t} value={t}>{t}</SelectItem>
                   ))}
@@ -114,11 +114,11 @@ export default function DnsReconPage() {
                 value={queryDomain}
                 onChange={e => setQueryDomain(e.target.value)}
                 placeholder="example.com"
-                className="flex-1 bg-[#111] border-[#333] font-mono text-sm"
+                className="flex-1 bg-[#111] border-[#333] font-mono text-sm rounded-none focus-visible:ring-[#00ff9c]"
                 onKeyDown={(e) => e.key === 'Enter' && fetchDns()}
               />
               
-              <Button onClick={fetchDns} disabled={isLoading} className="bg-[#00ff9c] text-black hover:bg-[#00cc7d]">
+              <Button onClick={fetchDns} disabled={isLoading} className="bg-[#00ff9c] text-black hover:bg-[#00cc7d] rounded-none">
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Resolve'}
               </Button>
             </div>
@@ -126,14 +126,14 @@ export default function DnsReconPage() {
           </div>
 
           {/* MANUAL ADD TOOL */}
-          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 space-y-4">
+          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-4 space-y-4">
             <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Manually Add Record</h3>
             <div className="flex gap-2">
               <Select value={manualType} onValueChange={(v) => setManualType(v as DnsRecordType)}>
-                <SelectTrigger className="w-[100px] bg-[#111] border-[#333] text-white">
+                <SelectTrigger className="w-[100px] bg-[#111] border-[#333] text-white rounded-none">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-[#111] border-[#333] text-white">
+                <SelectContent className="bg-[#111] border-[#333] text-white rounded-none">
                   {DNS_RECORD_TYPES.map(t => (
                     <SelectItem key={t} value={t}>{t}</SelectItem>
                   ))}
@@ -144,18 +144,18 @@ export default function DnsReconPage() {
                 value={manualDomain}
                 onChange={e => setManualDomain(e.target.value)}
                 placeholder="domain"
-                className="w-1/3 bg-[#111] border-[#333] font-mono text-sm"
+                className="w-1/3 bg-[#111] border-[#333] font-mono text-sm rounded-none focus-visible:ring-[#00ff9c]"
               />
 
               <Input 
                 value={manualValue}
                 onChange={e => setManualValue(e.target.value)}
                 placeholder="value / IP"
-                className="flex-1 bg-[#111] border-[#333] font-mono text-sm"
+                className="flex-1 bg-[#111] border-[#333] font-mono text-sm rounded-none focus-visible:ring-[#00ff9c]"
                 onKeyDown={(e) => e.key === 'Enter' && handleManualAdd()}
               />
               
-              <Button onClick={handleManualAdd} variant="outline" className="border-[#333] text-zinc-300 hover:text-white">
+              <Button onClick={handleManualAdd} variant="outline" className="border-[#333] text-zinc-300 hover:text-white rounded-none">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
@@ -164,17 +164,17 @@ export default function DnsReconPage() {
         </div>
 
         {/* WORKSPACE TABLE */}
-        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden flex flex-col min-h-[400px]">
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none overflow-hidden flex flex-col min-h-[400px]">
           <div className="bg-[#111] border-b border-[#1a1a1a] p-3 flex items-center justify-between">
             <h2 className="text-xs font-bold text-white uppercase tracking-wider">Workspace Data ({records.length})</h2>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => exportData('markdown')} className="h-6 text-xs text-zinc-400 hover:text-white" disabled={records.length === 0}>
+              <Button variant="ghost" size="sm" onClick={() => exportData('markdown')} className="h-6 text-xs text-zinc-400 hover:text-white rounded-none" disabled={records.length === 0}>
                 <Download className="w-3 h-3 mr-1" /> MD
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => exportData('json')} className="h-6 text-xs text-zinc-400 hover:text-white" disabled={records.length === 0}>
+              <Button variant="ghost" size="sm" onClick={() => exportData('json')} className="h-6 text-xs text-zinc-400 hover:text-white rounded-none" disabled={records.length === 0}>
                 <Download className="w-3 h-3 mr-1" /> JSON
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setRecords([])} className="h-6 text-xs text-zinc-400 hover:text-red-400" disabled={records.length === 0}>
+              <Button variant="ghost" size="sm" onClick={() => setRecords([])} className="h-6 text-xs text-zinc-400 hover:text-red-400 rounded-none" disabled={records.length === 0}>
                 <Trash2 className="w-3 h-3 mr-1" /> Clear
               </Button>
             </div>
@@ -214,11 +214,11 @@ export default function DnsReconPage() {
                           value={record.notes}
                           onChange={(e) => updateNote(record.id, e.target.value)}
                           placeholder="Add note..."
-                          className="h-7 text-xs bg-transparent border-[#333]"
+                          className="h-7 text-xs bg-transparent border-[#333] rounded-none focus-visible:ring-[#00ff9c]"
                         />
                       </td>
                       <td className="px-4 py-2">
-                        <Button variant="ghost" size="icon" onClick={() => removeRecord(record.id)} className="h-6 w-6 text-zinc-600 hover:text-red-400">
+                        <Button variant="ghost" size="icon" onClick={() => removeRecord(record.id)} className="h-6 w-6 text-zinc-600 hover:text-red-400 rounded-none">
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </td>

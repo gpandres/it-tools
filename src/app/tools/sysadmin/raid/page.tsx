@@ -92,7 +92,7 @@ function RaidCalculatorContent() {
       
       {/* Controls */}
       <div className="lg:col-span-4 space-y-6">
-        <div className="border border-[#1a1a1a] bg-[#050505] p-6 space-y-6">
+        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 space-y-6">
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2">Array Configuration</h3>
             
@@ -103,7 +103,7 @@ function RaidCalculatorContent() {
               <select 
                 value={raidLevel} 
                 onChange={(e) => setRaidLevel(e.target.value)} 
-                className="w-full bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-bold font-mono focus:border-[#00ff9c] focus:outline-none"
+                className="w-full bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-bold font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
               >
                 <option value="0">RAID 0 (Stripe)</option>
                 <option value="1">RAID 1 (Mirror)</option>
@@ -135,12 +135,12 @@ function RaidCalculatorContent() {
                   min="0.1" step="0.1"
                   value={driveSize} 
                   onChange={(e) => setDriveSize(e.target.value)} 
-                  className="flex-1 bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none" 
+                  className="flex-1 bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]" 
                 />
                 <select 
                   value={sizeUnit} 
                   onChange={(e) => setSizeUnit(e.target.value)} 
-                  className="w-24 bg-black border border-[#1a1a1a] p-2 text-zinc-400 font-mono focus:border-[#00ff9c] focus:outline-none"
+                  className="w-24 bg-black border border-[#1a1a1a] p-2 text-zinc-400 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
                 >
                   <option value="GB">GB</option>
                   <option value="TB">TB</option>
@@ -152,7 +152,7 @@ function RaidCalculatorContent() {
 
         {/* Warning if invalid */}
         {!specs.isValid && (
-        <div className="border border-red-500/50 bg-red-500/10 p-4 flex gap-3 text-red-500">
+        <div className="border border-red-500/50 bg-red-500/10 rounded-none p-4 flex gap-3 text-red-500">
             <AlertTriangle className="w-5 h-5 shrink-0" />
             <div className="text-sm font-mono leading-tight">
               {size <= 0
@@ -169,7 +169,7 @@ function RaidCalculatorContent() {
         
         {/* Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="border border-[#1a1a1a] bg-[#050505] p-4 flex flex-col">
+          <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-4 flex flex-col">
             <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Usable Capacity</span>
             <span className="text-3xl font-mono text-[#00ff9c] glow-green truncate">
               {specs.isValid ? specs.usable.toFixed(1).replace(/\.0$/, '') : "0"} <span className="text-lg opacity-70">{sizeUnit}</span>
@@ -177,14 +177,14 @@ function RaidCalculatorContent() {
             <span className="text-zinc-600 text-xs font-mono mt-1 mt-auto">Efficiency: {specs.isValid ? ((specs.usable / (count * size)) * 100).toFixed(0) : 0}%</span>
           </div>
 
-          <div className="border border-[#1a1a1a] bg-[#050505] p-4 flex flex-col">
+          <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-4 flex flex-col">
             <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Fault Tolerance</span>
             <span className="text-lg font-mono text-zinc-200 mt-2 leading-tight">
               {specs.isValid ? specs.faultTolerance : "-"}
             </span>
           </div>
 
-          <div className="border border-[#1a1a1a] bg-[#050505] p-4 flex flex-col">
+          <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-4 flex flex-col">
             <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">Theoretical Perf</span>
             <div className="flex flex-col mt-2 gap-1">
               <span className="text-sm font-mono text-zinc-300 flex justify-between">
@@ -198,7 +198,7 @@ function RaidCalculatorContent() {
         </div>
 
         {/* Visual Drive Grid */}
-        <div className="border border-[#1a1a1a] bg-[#050505] p-6">
+        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6">
           <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 mb-6 flex items-center justify-between">
             <span>Visual Array Layout</span>
             <span className="text-xs text-zinc-600">Raw: {(count * size).toFixed(1)} {sizeUnit}</span>
@@ -231,7 +231,7 @@ function RaidCalculatorContent() {
               }
 
               return (
-                <div key={i} className={`flex flex-col items-center justify-center p-4 border ${borderColor} ${bgColor} transition-colors rounded-sm`}>
+                <div key={i} className={`flex flex-col items-center justify-center p-4 border ${borderColor} ${bgColor} transition-colors rounded-none`}>
                   <HardDrive className={`w-8 h-8 ${iconColor} mb-2`} />
                   <span className={`text-[10px] font-mono uppercase tracking-widest ${iconColor}`}>Drive {i + 1}</span>
                   <span className={`text-[9px] font-mono opacity-60 ${iconColor}`}>{label}</span>
@@ -253,7 +253,7 @@ function RaidCalculatorContent() {
         </div>
 
         {/* Description */}
-        <div className="border border-[#1a1a1a] bg-[#0a0a0a] p-4 flex gap-3 text-zinc-400">
+        <div className="border border-[#1a1a1a] bg-[#0a0a0a] rounded-none p-4 flex gap-3 text-zinc-400">
           <Info className="w-5 h-5 shrink-0 text-zinc-500" />
           <p className="text-sm font-mono leading-relaxed">
             {specs.description}

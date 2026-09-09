@@ -83,7 +83,7 @@ function ChmodCalculatorContent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Interactive Grid */}
-        <article className="border border-[#1a1a1a] bg-[#050505]">
+        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none">
           <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <span className="text-[#00ff9c] text-xs">[IN]</span>
             <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Permission Grid</span>
@@ -121,7 +121,7 @@ function ChmodCalculatorContent() {
                  <Input 
                    value={state.octal}
                    onChange={(e) => setState({ octal: e.target.value.replace(/[^0-7]/g, '').slice(0,3) })}
-                   className="font-mono text-xl text-center tracking-[0.5em] bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] text-zinc-200"
+                   className="font-mono text-xl text-center tracking-[0.5em] bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] text-zinc-200 rounded-none"
                    maxLength={3}
                  />
                </div>
@@ -130,7 +130,7 @@ function ChmodCalculatorContent() {
         </article>
 
         {/* Results */}
-        <article className="border border-[#1a1a1a] bg-[#050505]">
+        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none">
           <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <span className="text-[#00ff9c] text-xs">[OUT]</span>
             <span className="text-[#00ff9c] text-sm font-semibold glow uppercase tracking-widest">Calculated Results</span>
@@ -139,13 +139,13 @@ function ChmodCalculatorContent() {
             
             <div className="space-y-2">
               <label className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Symbolic Format</label>
-              <div className="flex bg-black border border-[#1a1a1a] p-1">
+              <div className="flex bg-black border border-[#1a1a1a] p-1 rounded-none">
                 <Input 
                   readOnly 
                   value={`-${symbolic}`}
-                  className="font-mono text-lg bg-transparent border-none text-[#00ff9c] text-center tracking-[0.2em]"
+                  className="font-mono text-lg bg-transparent border-none text-[#00ff9c] text-center tracking-[0.2em] rounded-none focus-visible:ring-[#00ff9c]"
                 />
-                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(`-${symbolic}`, "sym")} className="text-zinc-500 hover:text-zinc-300">
+                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(`-${symbolic}`, "sym")} className="text-zinc-500 hover:text-zinc-300 rounded-none">
                   {copiedKey === "sym" ? <Check className="w-4 h-4 text-[#00ff9c]" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
@@ -153,19 +153,19 @@ function ChmodCalculatorContent() {
 
             <div className="space-y-2">
               <label className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Command Example</label>
-              <div className="flex bg-black border border-[#1a1a1a] p-1">
+              <div className="flex bg-black border border-[#1a1a1a] p-1 rounded-none">
                 <Input 
                   readOnly 
                   value={`chmod ${state.octal} file.txt`}
-                  className="font-mono text-sm bg-transparent border-none text-zinc-300"
+                  className="font-mono text-sm bg-transparent border-none text-zinc-300 rounded-none focus-visible:ring-[#00ff9c]"
                 />
-                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(`chmod ${state.octal} file.txt`, "cmd")} className="text-zinc-500 hover:text-zinc-300">
+                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(`chmod ${state.octal} file.txt`, "cmd")} className="text-zinc-500 hover:text-zinc-300 rounded-none">
                   {copiedKey === "cmd" ? <Check className="w-4 h-4 text-[#00ff9c]" /> : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
             </div>
 
-            <div className="p-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-md text-xs font-mono text-zinc-500 space-y-2">
+            <div className="p-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-none text-xs font-mono text-zinc-500 space-y-2">
               <div className="text-[#ffb000] mb-2 uppercase tracking-widest font-semibold glow-amber">Quick Reference:</div>
               <div className="flex justify-between"><span>777</span> <span>rwxrwxrwx (All permissions)</span></div>
               <div className="flex justify-between"><span>755</span> <span>rwxr-xr-x (Web server files)</span></div>

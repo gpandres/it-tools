@@ -90,9 +90,9 @@ export default function QrGenerator() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         
         {/* Controls */}
-        <article className="xl:col-span-1 border border-[#1a1a1a] bg-[#050505] flex flex-col h-fit sticky top-24">
+        <article className="xl:col-span-1 border border-[#1a1a1a] bg-[#050505] flex flex-col h-fit sticky top-24 rounded-none">
           <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-zinc-600 text-xs">[CMD]</span>
+            <span className="text-[#00ff9c] text-xs">[IN]</span>
             <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest">Configuration</span>
           </header>
           <div className="p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar max-h-[calc(100vh-250px)]">
@@ -105,7 +105,7 @@ export default function QrGenerator() {
                   <button
                     key={f}
                     onClick={() => setFormat(f)}
-                    className={`text-center px-2 py-1.5 font-mono text-xs border transition-colors ${format === f ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
+                    className={`text-center px-2 py-1.5 font-mono text-xs border transition-colors rounded-none ${format === f ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
                   >
                     {f.toUpperCase()}
                   </button>
@@ -127,7 +127,7 @@ export default function QrGenerator() {
             )}
 
             {format === "wifi" && (
-              <div className="space-y-4 bg-black p-4 border border-[#1a1a1a]">
+              <div className="space-y-4 bg-black p-4 border border-[#1a1a1a] rounded-none">
                 <div className="space-y-2">
                   <Label className="text-xs font-mono text-zinc-500 uppercase tracking-wider">SSID (Network Name)</Label>
                   <Input value={wifiSsid} onChange={e => setWifiSsid(e.target.value)} className="font-mono text-sm bg-[#050505] border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] text-zinc-200" placeholder="MyWiFiNetwork" />
@@ -164,7 +164,7 @@ export default function QrGenerator() {
             )}
 
             {format === "email" && (
-              <div className="space-y-4 bg-black p-4 border border-[#1a1a1a]">
+              <div className="space-y-4 bg-black p-4 border border-[#1a1a1a] rounded-none">
                 <div className="space-y-2">
                   <Label className="text-xs font-mono text-zinc-500 uppercase tracking-wider">To (Email Address)</Label>
                   <Input value={emailTo} onChange={e => setEmailTo(e.target.value)} className="font-mono text-sm bg-[#050505] border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] text-zinc-200" placeholder="hello@example.com" />
@@ -181,7 +181,7 @@ export default function QrGenerator() {
             )}
 
             {format === "sms" && (
-              <div className="space-y-4 bg-black p-4 border border-[#1a1a1a]">
+              <div className="space-y-4 bg-black p-4 border border-[#1a1a1a] rounded-none">
                 <div className="space-y-2">
                   <Label className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Phone Number</Label>
                   <Input value={smsPhone} onChange={e => setSmsPhone(e.target.value)} className="font-mono text-sm bg-[#050505] border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] text-zinc-200" placeholder="+1234567890" />
@@ -237,7 +237,7 @@ export default function QrGenerator() {
                   <button
                     key={l}
                     onClick={() => setLevel(l)}
-                    className={`text-center px-2 py-1.5 font-mono text-xs border transition-colors ${level === l ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
+                    className={`text-center px-2 py-1.5 font-mono text-xs border transition-colors rounded-none ${level === l ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
                     title={l === "L" ? "Low (~7%)" : l === "M" ? "Medium (~15%)" : l === "Q" ? "Quartile (~25%)" : "High (~30%) - Recommended for logos"}
                   >
                     {l}
@@ -258,7 +258,7 @@ export default function QrGenerator() {
               </div>
               
               <div 
-                className={`border-2 border-dashed ${logoUrl ? 'border-[#00ff9c]/50 bg-[#00ff9c]/5' : 'border-[#1a1a1a] bg-black'} p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#00ff9c]/30 transition-colors`}
+                className={`border-2 border-dashed ${logoUrl ? 'border-[#00ff9c]/50 bg-[#00ff9c]/5' : 'border-[#1a1a1a] bg-black'} p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#00ff9c]/30 transition-colors rounded-none`}
                 onClick={() => fileInputRef.current?.click()}
               >
                 {logoUrl ? (
@@ -307,7 +307,7 @@ export default function QrGenerator() {
         </article>
 
         {/* Output */}
-        <article className="xl:col-span-2 border border-[#1a1a1a] bg-[#050505] flex flex-col min-h-[500px]">
+        <article className="xl:col-span-2 border border-[#1a1a1a] bg-[#050505] flex flex-col min-h-[500px] rounded-none">
           <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
               <span className="text-[#00ff9c] text-xs">[OUT]</span>

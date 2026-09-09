@@ -115,8 +115,9 @@ export default function ColorConverter() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
         
         {/* Controls */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
+          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
+            <span className="text-[#00ff9c] text-xs">[IN]</span>
             <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Formats</span>
           </header>
           <div className="p-6 flex flex-col gap-6">
@@ -188,10 +189,10 @@ export default function ColorConverter() {
         </article>
 
         {/* Preview */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-[400px] lg:h-auto">
+        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-[400px] lg:h-auto rounded-none">
           <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-blue-400 text-xs">[OUT]</span>
-            <span className="text-blue-400 text-sm font-semibold uppercase tracking-widest">Preview</span>
+            <span className="text-[#00ff9c] text-xs">[OUT]</span>
+            <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest glow">Preview</span>
           </header>
           <div className="p-8 flex-1 flex items-center justify-center dotted-bg relative">
             <div 

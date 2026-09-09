@@ -146,7 +146,7 @@ export default function WebPayloadLabPage() {
       <div className="w-full max-w-5xl mx-auto space-y-6">
         
         {/* DISCLAIMER */}
-        <div className="bg-amber-950/30 border border-amber-900/50 rounded-lg p-4 flex items-start gap-3">
+        <div className="bg-amber-950/30 border border-amber-900/50 rounded-none p-4 flex items-start gap-3">
           <ShieldAlert className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
           <div className="text-sm text-amber-200">
             <strong>Educational Purpose Only:</strong> These payloads are provided for authorized security testing (CTFs, local labs, and penetration tests) to help defenders understand and mitigate vulnerabilities. Do not use them against systems you do not have permission to test.
@@ -158,10 +158,10 @@ export default function WebPayloadLabPage() {
           <div className="flex-1 space-y-2">
             <label className="text-xs font-bold text-zinc-400 uppercase">Vulnerability Category</label>
             <Select value={selectedCategory} onValueChange={(v) => handleCategoryChange(v as PayloadCategory)}>
-              <SelectTrigger className="w-full bg-[#111] border-[#333] text-white">
+              <SelectTrigger className="w-full bg-[#111] border-[#333] text-white rounded-none">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-[#111] border-[#333] text-white">
+              <SelectContent className="bg-[#111] border-[#333] text-white rounded-none">
                 {Array.from(new Set(PAYLOADS.map(p => p.category))).map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
@@ -171,10 +171,10 @@ export default function WebPayloadLabPage() {
           <div className="flex-1 space-y-2">
             <label className="text-xs font-bold text-zinc-400 uppercase">Payload Example</label>
             <Select value={selectedPayloadId} onValueChange={(val) => setSelectedPayloadId(val || "")}>
-              <SelectTrigger className="w-full bg-[#111] border-[#333] text-white">
+              <SelectTrigger className="w-full bg-[#111] border-[#333] text-white rounded-none">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-[#111] border-[#333] text-white">
+              <SelectContent className="bg-[#111] border-[#333] text-white rounded-none">
                 {filteredPayloads.map(p => (
                   <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                 ))}
@@ -193,11 +193,11 @@ export default function WebPayloadLabPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Original Payload</h3>
-                  <Button variant="ghost" size="sm" onClick={() => copyToClipboard(activePayload.original, 'original')} className="h-6 text-xs text-[#00ff9c] hover:bg-transparent">
+                  <Button variant="ghost" size="sm" onClick={() => copyToClipboard(activePayload.original, 'original')} className="h-6 text-xs text-[#00ff9c] hover:bg-transparent rounded-none">
                     {copiedCode === 'original' ? 'Copied!' : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
                   </Button>
                 </div>
-                <div className="bg-[#0a0a0a] border border-[#333] rounded p-4 font-mono text-sm text-white break-all">
+                <div className="bg-[#0a0a0a] border border-[#333] rounded-none p-4 font-mono text-sm text-white break-all">
                   {activePayload.original}
                 </div>
               </div>
@@ -207,29 +207,29 @@ export default function WebPayloadLabPage() {
                   <h3 className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Encoded Payload</h3>
                   <div className="flex items-center gap-2">
                     <Select value={encoding} onValueChange={(v) => setEncoding(v as any)}>
-                      <SelectTrigger className="w-[120px] h-6 text-xs bg-[#111] border-[#333] text-white">
+                      <SelectTrigger className="w-[120px] h-6 text-xs bg-[#111] border-[#333] text-white rounded-none">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#111] border-[#333] text-white">
+                      <SelectContent className="bg-[#111] border-[#333] text-white rounded-none">
                         <SelectItem value="None">No Encoding</SelectItem>
                         <SelectItem value="URL">URL Encode</SelectItem>
                         <SelectItem value="HTML">HTML Entities</SelectItem>
                         <SelectItem value="Base64">Base64</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(encodedPayload, 'encoded')} className="h-6 text-xs text-[#00ff9c] hover:bg-transparent">
+                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(encodedPayload, 'encoded')} className="h-6 text-xs text-[#00ff9c] hover:bg-transparent rounded-none">
                       {copiedCode === 'encoded' ? 'Copied!' : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
                     </Button>
                   </div>
                 </div>
-                <div className="bg-[#111] border border-[#333] rounded p-4 font-mono text-sm text-zinc-400 break-all min-h-[60px]">
+                <div className="bg-[#111] border border-[#333] rounded-none p-4 font-mono text-sm text-zinc-400 break-all min-h-[60px]">
                   {encodedPayload}
                 </div>
               </div>
             </div>
 
             {/* RIGHT COLUMN: Explanation */}
-            <div className="space-y-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+            <div className="space-y-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Info className="w-5 h-5 text-[#00ff9c]" />
                 <h2 className="text-sm font-bold text-white">Understanding the Payload</h2>
@@ -250,12 +250,12 @@ export default function WebPayloadLabPage() {
                   <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Related Blue Team Tools</h4>
                   <div className="flex flex-wrap gap-2">
                     <Link href="/tools/security/scorecard">
-                      <Button variant="outline" size="sm" className="h-7 text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white">
+                      <Button variant="outline" size="sm" className="h-7 text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white rounded-none">
                         Headers & TLS Scorecard
                       </Button>
                     </Link>
                     <Link href="/tools/security/log-parser">
-                      <Button variant="outline" size="sm" className="h-7 text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white">
+                      <Button variant="outline" size="sm" className="h-7 text-xs bg-[#111] border-[#333] text-zinc-300 hover:text-white rounded-none">
                         Local Log Parser
                       </Button>
                     </Link>

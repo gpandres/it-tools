@@ -121,7 +121,7 @@ export default function ReverseShellReferencePage() {
       <div className="w-full max-w-5xl mx-auto space-y-6">
         
         {/* DISCLAIMER */}
-        <div className="bg-amber-950/30 border border-amber-900/50 rounded-lg p-4 flex items-start gap-3">
+        <div className="bg-amber-950/30 border border-amber-900/50 rounded-none p-4 flex items-start gap-3">
           <ShieldAlert className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
           <div className="text-sm text-amber-200">
             <strong>Authorized Use Only:</strong> This reference is for study, defense, and authorized penetration testing. Pay special attention to the <em>Detection Notes</em> to understand how Blue Teams hunt for these indicators.
@@ -129,14 +129,14 @@ export default function ReverseShellReferencePage() {
         </div>
 
         {/* CONFIGURATION */}
-        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <label className="text-xs font-bold text-zinc-400 uppercase">Platform / Category</label>
             <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as ShellCategory)}>
-              <SelectTrigger className="w-full bg-[#111] border-[#333] text-white">
+              <SelectTrigger className="w-full bg-[#111] border-[#333] text-white rounded-none">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-[#111] border-[#333] text-white">
+              <SelectContent className="bg-[#111] border-[#333] text-white rounded-none">
                 {Array.from(new Set(SHELLS.map(s => s.category))).map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
@@ -148,7 +148,7 @@ export default function ReverseShellReferencePage() {
             <Input 
               value={ip}
               onChange={e => setIp(e.target.value)}
-              className="bg-[#111] border-[#333] font-mono text-sm text-[#00ff9c]"
+              className="bg-[#111] border-[#333] font-mono text-sm text-[#00ff9c] rounded-none focus-visible:ring-[#00ff9c]"
             />
           </div>
           <div className="space-y-2">
@@ -156,7 +156,7 @@ export default function ReverseShellReferencePage() {
             <Input 
               value={port}
               onChange={e => setPort(e.target.value)}
-              className="bg-[#111] border-[#333] font-mono text-sm text-[#00ff9c]"
+              className="bg-[#111] border-[#333] font-mono text-sm text-[#00ff9c] rounded-none focus-visible:ring-[#00ff9c]"
             />
           </div>
         </div>
@@ -167,20 +167,20 @@ export default function ReverseShellReferencePage() {
             const finalCommand = getHydratedCommand(shell.command);
             
             return (
-              <div key={shell.id} className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden">
+              <div key={shell.id} className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-none overflow-hidden">
                 <div className="bg-[#111] border-b border-[#1a1a1a] p-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Terminal className="w-4 h-4 text-[#00ff9c]" />
                     <h2 className="text-sm font-bold text-white tracking-wide">{shell.name}</h2>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => copyToClipboard(finalCommand, shell.id)} className="h-6 text-xs text-[#00ff9c] hover:bg-transparent">
+                  <Button variant="ghost" size="sm" onClick={() => copyToClipboard(finalCommand, shell.id)} className="h-6 text-xs text-[#00ff9c] hover:bg-transparent rounded-none">
                     {copiedCode === shell.id ? 'Copied!' : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
                   </Button>
                 </div>
                 
                 <div className="p-4 space-y-4">
                   {/* The Command */}
-                  <div className="bg-[#111] border border-[#333] rounded p-4 font-mono text-sm text-zinc-300 break-all">
+                  <div className="bg-[#111] border border-[#333] rounded-none p-4 font-mono text-sm text-zinc-300 break-all">
                     {finalCommand}
                   </div>
 
@@ -200,7 +200,7 @@ export default function ReverseShellReferencePage() {
                     </div>
 
                     {/* Blue Team Notes */}
-                    <div className="bg-[#111] border border-blue-900/30 rounded p-4 space-y-3">
+                    <div className="bg-[#111] border border-blue-900/30 rounded-none p-4 space-y-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Crosshair className="w-4 h-4 text-blue-400" />
                         <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider">Blue Team / Detection</h4>
@@ -211,17 +211,17 @@ export default function ReverseShellReferencePage() {
                         <h4 className="text-[10px] font-bold text-blue-500/50 uppercase tracking-wider mb-2">Recommended Tools</h4>
                         <div className="flex flex-wrap gap-2">
                           <Link href="/tools/security/windows-events">
-                            <Button variant="outline" size="sm" className="h-6 text-[10px] bg-transparent border-blue-900/50 text-blue-300 hover:bg-blue-900/20">
+                            <Button variant="outline" size="sm" className="h-6 text-[10px] bg-transparent border-blue-900/50 text-blue-300 hover:bg-blue-900/20 rounded-none">
                               Windows Events
                             </Button>
                           </Link>
                           <Link href="/tools/security/log-parser">
-                            <Button variant="outline" size="sm" className="h-6 text-[10px] bg-transparent border-blue-900/50 text-blue-300 hover:bg-blue-900/20">
+                            <Button variant="outline" size="sm" className="h-6 text-[10px] bg-transparent border-blue-900/50 text-blue-300 hover:bg-blue-900/20 rounded-none">
                               Log Parser
                             </Button>
                           </Link>
                           <Link href="/tools/security/log-timeline">
-                            <Button variant="outline" size="sm" className="h-6 text-[10px] bg-transparent border-blue-900/50 text-blue-300 hover:bg-blue-900/20">
+                            <Button variant="outline" size="sm" className="h-6 text-[10px] bg-transparent border-blue-900/50 text-blue-300 hover:bg-blue-900/20 rounded-none">
                               Log Timeline
                             </Button>
                           </Link>

@@ -64,21 +64,21 @@ export default function SqlMinifier() {
                 checked={removeComments} 
                 onChange={(e) => setRemoveComments(e.target.checked)} 
               />
-              <div className={`w-4 h-4 flex items-center justify-center border-2 transition-colors ${removeComments ? 'bg-[#00ff9c] border-[#00ff9c]' : 'border-zinc-600 group-hover:border-[#00ff9c]'}`}>
+              <div className={`w-4 h-4 flex items-center justify-center border transition-colors rounded-none ${removeComments ? 'bg-[#00ff9c] border-[#00ff9c]' : 'border-zinc-600 group-hover:border-[#00ff9c]'}`}>
                 {removeComments && <div className="w-2 h-2 bg-black" />}
               </div>
               <span className="text-xs text-zinc-300 font-mono select-none">Remove Comments</span>
             </label>
           </div>
           <textarea
-            className="w-full h-[400px] bg-black border-2 border-[#1a1a1a] p-4 text-zinc-300 font-mono text-xs focus:border-[#00ff9c] focus:outline-none transition-colors resize-none custom-scrollbar"
+            className="w-full h-[400px] bg-black border border-[#1a1a1a] p-4 text-zinc-300 font-mono text-xs focus:border-[#00ff9c] focus:outline-none transition-colors resize-none custom-scrollbar rounded-none focus-visible:ring-[#00ff9c]"
             placeholder="SELECT&#10;  id,&#10;  name&#10;FROM&#10;  users&#10;WHERE&#10;  status = 'active';"
             value={inputSql}
             onChange={(e) => setInputSql(e.target.value)}
           />
           <Button 
             onClick={minifySql}
-            className="w-full bg-[#00ff9c] hover:bg-[#00cc7d] text-black font-bold"
+            className="w-full bg-[#00ff9c] hover:bg-[#00cc7d] text-black font-bold rounded-none"
           >
             <Minimize2 className="w-4 h-4 mr-2" /> Minify SQL
           </Button>
@@ -94,7 +94,7 @@ export default function SqlMinifier() {
               onClick={copyToClipboard}
               variant="outline"
               size="sm"
-              className="h-7 text-xs border-[#1a1a1a] hover:bg-[#1a1a1a] text-zinc-400 hover:text-zinc-200"
+              className="h-7 text-xs border-[#1a1a1a] hover:bg-[#1a1a1a] text-zinc-400 hover:text-zinc-200 rounded-none"
               disabled={!outputSql}
             >
               {copied ? <Check className="w-3 h-3 mr-2 text-[#00ff9c]" /> : <Copy className="w-3 h-3 mr-2" />}
@@ -104,7 +104,7 @@ export default function SqlMinifier() {
           
           <div className="relative">
             <textarea
-              className="w-full h-[400px] bg-[#050505] border-2 border-[#1a1a1a] p-4 text-[#00ff9c] font-mono text-xs focus:outline-none transition-colors resize-none custom-scrollbar"
+              className="w-full h-[400px] bg-[#050505] border border-[#1a1a1a] p-4 text-[#00ff9c] font-mono text-xs focus:outline-none transition-colors resize-none custom-scrollbar rounded-none focus-visible:ring-[#00ff9c]"
               readOnly
               value={outputSql}
               placeholder="SELECT id, name FROM users WHERE status = 'active';"

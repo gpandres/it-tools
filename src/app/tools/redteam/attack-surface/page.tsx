@@ -128,7 +128,7 @@ export default function AttackSurfaceMapperPage() {
         {children.map(child => (
           <div key={child.id}>
             <div 
-              className={`flex items-center gap-2 py-1 px-2 rounded cursor-pointer ${selectedNodeId === child.id ? 'bg-[#333]' : 'hover:bg-[#1a1a1a]'}`}
+              className={`flex items-center gap-2 py-1 px-2 rounded-none cursor-pointer ${selectedNodeId === child.id ? 'bg-[#333]' : 'hover:bg-[#1a1a1a]'}`}
               style={{ paddingLeft: `${(depth * 16) + 8}px` }}
               onClick={() => setSelectedNodeId(child.id)}
             >
@@ -142,7 +142,7 @@ export default function AttackSurfaceMapperPage() {
                 {child.name}
               </span>
               {child.findings.length > 0 && (
-                <div className="ml-auto bg-red-900/50 text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center">
+                <div className="ml-auto bg-red-900/50 text-red-400 text-[10px] font-bold px-1.5 py-0.5 rounded-none flex items-center">
                   <Bug className="w-2 h-2 mr-1" /> {child.findings.length}
                 </div>
               )}
@@ -200,22 +200,22 @@ export default function AttackSurfaceMapperPage() {
       <div className="w-full max-w-7xl mx-auto space-y-6">
 
         {/* TOP BAR / EXPORT */}
-        <div className="flex justify-between items-center bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-3">
+        <div className="flex justify-between items-center bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-3">
           <div className="flex items-center gap-2">
             <Globe className="w-4 h-4 text-[#00ff9c]" />
             <span className="text-sm font-bold text-white uppercase tracking-wider">Asset Map</span>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={exportMarkdown} className="h-7 text-xs bg-transparent border-[#333] text-zinc-300 hover:text-white">
+            <Button variant="outline" size="sm" onClick={exportMarkdown} className="h-7 text-xs bg-transparent border-[#333] text-zinc-300 hover:text-white rounded-none">
               <Download className="w-3 h-3 mr-1" /> Export MD
             </Button>
             <Link href="/tools/security/incident-report">
-              <Button variant="outline" size="sm" className="h-7 text-xs bg-transparent border-[#333] text-zinc-300 hover:text-white">
+              <Button variant="outline" size="sm" className="h-7 text-xs bg-transparent border-[#333] text-zinc-300 hover:text-white rounded-none">
                 Incident Report
               </Button>
             </Link>
             <Link href="/tools/security/investigation">
-              <Button variant="outline" size="sm" className="h-7 text-xs bg-transparent border-[#333] text-zinc-300 hover:text-white">
+              <Button variant="outline" size="sm" className="h-7 text-xs bg-transparent border-[#333] text-zinc-300 hover:text-white rounded-none">
                 Investigation Workspace
               </Button>
             </Link>
@@ -225,7 +225,7 @@ export default function AttackSurfaceMapperPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* TREE VIEW */}
-          <div className="lg:col-span-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 min-h-[500px]">
+          <div className="lg:col-span-1 bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-4 min-h-[500px]">
             <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-4 border-b border-[#1a1a1a] pb-2">Architecture Tree</h3>
             <div className="font-mono">
               {renderTree(null)}
@@ -238,7 +238,7 @@ export default function AttackSurfaceMapperPage() {
           </div>
 
           {/* NODE DETAILS */}
-          <div className="lg:col-span-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6 space-y-8">
+          <div className="lg:col-span-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-none p-6 space-y-8">
             
             {selectedNode ? (
               <>
@@ -251,7 +251,7 @@ export default function AttackSurfaceMapperPage() {
                     </h2>
                     <span className="text-xs text-zinc-500 uppercase tracking-wider">{selectedNode.type}</span>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => removeNode(selectedNode.id)} className="h-8 text-xs text-zinc-500 hover:text-red-400">
+                  <Button variant="ghost" size="sm" onClick={() => removeNode(selectedNode.id)} className="h-8 text-xs text-zinc-500 hover:text-red-400 rounded-none">
                     <Trash2 className="w-4 h-4 mr-1" /> Delete Node
                   </Button>
                 </div>
@@ -262,10 +262,10 @@ export default function AttackSurfaceMapperPage() {
                     <h3 className="text-[10px] font-bold text-[#00ff9c] uppercase tracking-wider">Add Child Node</h3>
                     <div className="flex gap-2">
                       <Select value={newNodeType} onValueChange={(v) => setNewNodeType(v as NodeType)}>
-                        <SelectTrigger className="w-[110px] h-8 text-xs bg-[#111] border-[#333] text-white">
+                        <SelectTrigger className="w-[110px] h-8 text-xs bg-[#111] border-[#333] text-white rounded-none">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-[#111] border-[#333] text-white">
+                        <SelectContent className="bg-[#111] border-[#333] text-white rounded-none">
                           <SelectItem value="Domain">Domain</SelectItem>
                           <SelectItem value="Subdomain">Subdomain</SelectItem>
                           <SelectItem value="Directory">Directory</SelectItem>
@@ -276,10 +276,10 @@ export default function AttackSurfaceMapperPage() {
                         value={newNodeName}
                         onChange={e => setNewNodeName(e.target.value)}
                         placeholder="Name (e.g. /api or dev.ex.com)"
-                        className="flex-1 h-8 bg-[#111] border-[#333] text-xs font-mono"
+                        className="flex-1 h-8 bg-[#111] border-[#333] text-xs font-mono rounded-none focus-visible:ring-[#00ff9c]"
                         onKeyDown={e => e.key === 'Enter' && addNode(selectedNode.id)}
                       />
-                      <Button onClick={() => addNode(selectedNode.id)} size="sm" className="h-8 bg-[#333] hover:bg-[#444] text-white">
+                      <Button onClick={() => addNode(selectedNode.id)} size="sm" className="h-8 bg-[#333] hover:bg-[#444] text-white rounded-none">
                         <Plus className="w-4 h-4" />
                       </Button>
                     </div>
@@ -293,16 +293,16 @@ export default function AttackSurfaceMapperPage() {
                         value={newTech}
                         onChange={e => setNewTech(e.target.value)}
                         placeholder="Nginx, PHP, React..."
-                        className="flex-1 h-8 bg-[#111] border-[#333] text-xs"
+                        className="flex-1 h-8 bg-[#111] border-[#333] text-xs rounded-none focus-visible:ring-[#00ff9c]"
                         onKeyDown={e => e.key === 'Enter' && addTech(selectedNode.id)}
                       />
-                      <Button onClick={() => addTech(selectedNode.id)} size="sm" className="h-8 bg-[#333] hover:bg-[#444] text-white">
+                      <Button onClick={() => addTech(selectedNode.id)} size="sm" className="h-8 bg-[#333] hover:bg-[#444] text-white rounded-none">
                         <Plus className="w-4 h-4" />
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {selectedNode.tech.map(t => (
-                        <div key={t} className="flex items-center gap-1 bg-[#1a1a1a] border border-[#333] rounded px-2 py-1 text-xs text-zinc-300">
+                        <div key={t} className="flex items-center gap-1 bg-[#1a1a1a] border border-[#333] rounded-none px-2 py-1 text-xs text-zinc-300">
                           <Cpu className="w-3 h-3 text-zinc-500" />
                           {t}
                           <Trash2 className="w-3 h-3 text-zinc-600 hover:text-red-400 cursor-pointer ml-1" onClick={() => removeTech(selectedNode.id, t)} />
@@ -321,10 +321,10 @@ export default function AttackSurfaceMapperPage() {
                   
                   <div className="flex gap-2">
                     <Select value={findingSev} onValueChange={(v) => setFindingSev(v as Severity)}>
-                      <SelectTrigger className="w-[110px] h-8 text-xs bg-[#111] border-[#333] text-white">
+                      <SelectTrigger className="w-[110px] h-8 text-xs bg-[#111] border-[#333] text-white rounded-none">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-[#111] border-[#333] text-white">
+                      <SelectContent className="bg-[#111] border-[#333] text-white rounded-none">
                         <SelectItem value="Critical">Critical</SelectItem>
                         <SelectItem value="High">High</SelectItem>
                         <SelectItem value="Medium">Medium</SelectItem>
@@ -336,22 +336,22 @@ export default function AttackSurfaceMapperPage() {
                       value={findingTitle}
                       onChange={e => setFindingTitle(e.target.value)}
                       placeholder="e.g. Open Directory Listing"
-                      className="flex-1 h-8 bg-[#111] border-[#333] text-xs"
+                      className="flex-1 h-8 bg-[#111] border-[#333] text-xs rounded-none focus-visible:ring-[#00ff9c]"
                       onKeyDown={e => e.key === 'Enter' && addFinding(selectedNode.id)}
                     />
-                    <Button onClick={() => addFinding(selectedNode.id)} size="sm" className="h-8 bg-[#333] hover:bg-[#444] text-white">
+                    <Button onClick={() => addFinding(selectedNode.id)} size="sm" className="h-8 bg-[#333] hover:bg-[#444] text-white rounded-none">
                       Add Finding
                     </Button>
                   </div>
 
                   <div className="space-y-2 mt-4">
                     {selectedNode.findings.map(finding => (
-                      <div key={finding.id} className={`flex items-center justify-between p-2 rounded border ${getSeverityColor(finding.severity)}`}>
+                      <div key={finding.id} className={`flex items-center justify-between p-2 rounded-none border ${getSeverityColor(finding.severity)}`}>
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] font-bold uppercase tracking-wider">{finding.severity}</span>
                           <span className="text-sm font-medium">{finding.title}</span>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => removeFinding(selectedNode.id, finding.id)} className="h-6 w-6 hover:bg-black/20">
+                        <Button variant="ghost" size="icon" onClick={() => removeFinding(selectedNode.id, finding.id)} className="h-6 w-6 hover:bg-black/20 rounded-none">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
