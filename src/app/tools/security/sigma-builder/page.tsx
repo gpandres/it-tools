@@ -1,11 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Copy, RefreshCw } from "lucide-react";
+import { Check, Copy, RefreshCw, AlertTriangle, ShieldCheck } from "lucide-react";
 import { dump } from "js-yaml";
 import { v4 as uuidv4 } from "uuid";
 import { ToolLayout } from "@/components/tool-layout";
 import { validateSigmaRule } from "@/lib/sigma";
+import { ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody, ToolField, ToolActionButton, ToolCodeField, ToolStatus } from "@/components/tool-design";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function SigmaBuilderPage() {
   const [title, setTitle] = useState("Suspicious process execution");
@@ -17,7 +21,7 @@ export default function SigmaBuilderPage() {
   const [ruleId, setRuleId] = useState("");
   const [status, setStatus] = useState("experimental");
   const [level, setLevel] = useState("medium");
-  const [copied, setCopied] = useState(false);
+  
   const output = useMemo(() => {
     const selectionValues = values.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
     const document = {
@@ -31,23 +35,151 @@ export default function SigmaBuilderPage() {
     };
     return dump(document, { noRefs: true, lineWidth: -1 });
   }, [condition, field, level, product, ruleId, service, status, title, values]);
+  
   const validation = useMemo(() => validateSigmaRule(output), [output]);
-  const copy = async () => { try { await navigator.clipboard.writeText(output); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { /* clipboard may be unavailable in restricted contexts */ } };
 
-  return <ToolLayout title="Sigma Rule Builder" description="Create a portable Sigma detection rule locally and adapt it to your SIEM or EDR pipeline.">
-    <div className="grid gap-6 xl:grid-cols-2">
-      <section className="border border-[#1a1a1a] bg-[#050505]"><header className="border-b border-[#1a1a1a] px-4 py-3"><h2 className="text-xs font-bold uppercase tracking-widest text-[#ffb000]">Rule inputs</h2></header><div className="grid gap-4 p-4 sm:grid-cols-2">
-        <label className="text-xs text-zinc-400 sm:col-span-2">Title<input value={title} onChange={e => setTitle(e.target.value)} className="mt-2 w-full border border-[#242424] bg-black p-3 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /></label>
-        <label className="text-xs text-zinc-400">Product<input value={product} onChange={e => setProduct(e.target.value)} placeholder="windows" className="mt-2 w-full border border-[#242424] bg-black p-3 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /></label>
-        <label className="text-xs text-zinc-400">Service<input value={service} onChange={e => setService(e.target.value)} placeholder="sysmon" className="mt-2 w-full border border-[#242424] bg-black p-3 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /></label>
-        <label className="text-xs text-zinc-400">Detection field<input value={field} onChange={e => setField(e.target.value)} placeholder="CommandLine" className="mt-2 w-full border border-[#242424] bg-black p-3 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /></label>
-        <label className="text-xs text-zinc-400">Rule ID (optional)<div className="mt-2 flex gap-2"><input value={ruleId} onChange={e => setRuleId(e.target.value)} placeholder="UUIDv4" className="min-w-0 flex-1 border border-[#242424] bg-black p-3 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /><button type="button" onClick={() => setRuleId(uuidv4())} className="border border-[#242424] px-3 text-zinc-400 hover:border-[#00ff9c] hover:text-[#00ff9c]" title="Generate UUIDv4" aria-label="Generate UUIDv4"><RefreshCw className="h-3.5 w-3.5" /></button></div></label>
-        <label className="text-xs text-zinc-400">Condition<input value={condition} onChange={e => setCondition(e.target.value)} placeholder="selection" className="mt-2 w-full border border-[#242424] bg-black p-3 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /></label>
-        <label className="text-xs text-zinc-400">Status<select value={status} onChange={e => setStatus(e.target.value)} className="mt-2 w-full border border-[#242424] bg-black p-3 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]"><option>experimental</option><option>test</option><option>stable</option><option>deprecated</option><option>unsupported</option></select></label>
-        <label className="text-xs text-zinc-400">Level<select value={level} onChange={e => setLevel(e.target.value)} className="mt-2 w-full border border-[#242424] bg-black p-3 text-xs text-zinc-200 outline-none focus:border-[#00ff9c]"><option>informational</option><option>low</option><option>medium</option><option>high</option><option>critical</option></select></label>
-        <label className="text-xs text-zinc-400 sm:col-span-2">Values, one per line<textarea value={values} onChange={e => setValues(e.target.value)} spellCheck={false} className="mt-2 min-h-40 w-full resize-y border border-[#242424] bg-black p-3 font-mono text-xs text-zinc-200 outline-none focus:border-[#00ff9c]" /></label>
-      </div></section>
-      <section className="border border-[#1a1a1a] bg-[#050505]"><header className="flex items-center justify-between border-b border-[#1a1a1a] px-4 py-3"><div><h2 className="text-xs font-bold uppercase tracking-widest text-[#ffb000]">Sigma YAML</h2><p className="mt-1 text-[11px] text-zinc-500">Generated with YAML serialization; review against your backend and Sigma version.</p></div><button type="button" onClick={copy} className="flex items-center gap-2 border border-[#242424] px-3 py-2 text-xs text-zinc-400 hover:border-[#00ff9c] hover:text-[#00ff9c]">{copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} {copied ? "Copied" : "Copy"}</button></header><pre className="min-h-[420px] overflow-auto p-4 font-mono text-xs leading-relaxed text-[#00ff9c]">{output}</pre><div className="border-t border-[#1a1a1a] p-4"><h3 className="text-xs font-bold uppercase tracking-widest text-[#ffb000]">Validation</h3>{validation.length === 0 ? <p className="mt-2 text-xs text-[#00ff9c]">No local schema issues detected.</p> : <div className="mt-2 space-y-2">{validation.map((item, index) => <p key={`${item.severity}-${index}`} className={`text-xs ${item.severity === "error" ? "text-red-300" : "text-amber-300"}`}>{item.severity.toUpperCase()} · {item.message}</p>)}</div>}</div></section>
-    </div>
-  </ToolLayout>;
+  return (
+    <ToolLayout title="SIGMA RULE BUILDER" description="Create a portable Sigma detection rule locally and adapt it to your SIEM or EDR pipeline.">
+      <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6">
+        <div className="grid gap-6 xl:grid-cols-2">
+          
+          <ToolPanel>
+            <ToolPanelHeader>
+              <ToolPanelTitle marker="IN">Rule inputs</ToolPanelTitle>
+            </ToolPanelHeader>
+            <ToolPanelBody className="grid gap-4 sm:grid-cols-2">
+              <ToolField htmlFor="sigma-title" label="TITLE" className="sm:col-span-2">
+                <Input 
+                  id="sigma-title"
+                  value={title} 
+                  onChange={e => setTitle(e.target.value)} 
+                  className="rounded-none border-[#1a1a1a] bg-black font-mono text-zinc-300 focus-visible:ring-[#00ff9c]" 
+                />
+              </ToolField>
+              <ToolField htmlFor="sigma-product" label="PRODUCT">
+                <Input 
+                  id="sigma-product"
+                  value={product} 
+                  onChange={e => setProduct(e.target.value)} 
+                  placeholder="windows" 
+                  className="rounded-none border-[#1a1a1a] bg-black font-mono text-zinc-300 focus-visible:ring-[#00ff9c]" 
+                />
+              </ToolField>
+              <ToolField htmlFor="sigma-service" label="SERVICE">
+                <Input 
+                  id="sigma-service"
+                  value={service} 
+                  onChange={e => setService(e.target.value)} 
+                  placeholder="sysmon" 
+                  className="rounded-none border-[#1a1a1a] bg-black font-mono text-zinc-300 focus-visible:ring-[#00ff9c]" 
+                />
+              </ToolField>
+              <ToolField htmlFor="sigma-field" label="DETECTION FIELD">
+                <Input 
+                  id="sigma-field"
+                  value={field} 
+                  onChange={e => setField(e.target.value)} 
+                  placeholder="CommandLine" 
+                  className="rounded-none border-[#1a1a1a] bg-black font-mono text-zinc-300 focus-visible:ring-[#00ff9c]" 
+                />
+              </ToolField>
+              <ToolField htmlFor="sigma-ruleid" label="RULE ID" helper="Optional UUIDv4">
+                <div className="flex gap-2">
+                  <Input 
+                    id="sigma-ruleid"
+                    value={ruleId} 
+                    onChange={e => setRuleId(e.target.value)} 
+                    placeholder="UUIDv4" 
+                    className="min-w-0 flex-1 rounded-none border-[#1a1a1a] bg-black font-mono text-zinc-300 focus-visible:ring-[#00ff9c]" 
+                  />
+                  <ToolActionButton onClick={() => setRuleId(uuidv4())} title="Generate UUIDv4" aria-label="Generate UUIDv4" tone="neutral">
+                    <RefreshCw className="h-4 w-4" />
+                  </ToolActionButton>
+                </div>
+              </ToolField>
+              <ToolField htmlFor="sigma-condition" label="CONDITION">
+                <Input 
+                  id="sigma-condition"
+                  value={condition} 
+                  onChange={e => setCondition(e.target.value)} 
+                  placeholder="selection" 
+                  className="rounded-none border-[#1a1a1a] bg-black font-mono text-zinc-300 focus-visible:ring-[#00ff9c]" 
+                />
+              </ToolField>
+              <ToolField htmlFor="sigma-status" label="STATUS">
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger id="sigma-status" className="rounded-none border-[#1a1a1a] bg-black font-mono focus:ring-[#00ff9c]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none border-[#1a1a1a] bg-black">
+                    <SelectItem value="experimental" className="font-mono text-sm focus:bg-[#1a1a1a]">experimental</SelectItem>
+                    <SelectItem value="test" className="font-mono text-sm focus:bg-[#1a1a1a]">test</SelectItem>
+                    <SelectItem value="stable" className="font-mono text-sm focus:bg-[#1a1a1a]">stable</SelectItem>
+                    <SelectItem value="deprecated" className="font-mono text-sm focus:bg-[#1a1a1a]">deprecated</SelectItem>
+                    <SelectItem value="unsupported" className="font-mono text-sm focus:bg-[#1a1a1a]">unsupported</SelectItem>
+                  </SelectContent>
+                </Select>
+              </ToolField>
+              <ToolField htmlFor="sigma-level" label="LEVEL">
+                <Select value={level} onValueChange={setLevel}>
+                  <SelectTrigger id="sigma-level" className="rounded-none border-[#1a1a1a] bg-black font-mono focus:ring-[#00ff9c]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-none border-[#1a1a1a] bg-black">
+                    <SelectItem value="informational" className="font-mono text-sm focus:bg-[#1a1a1a]">informational</SelectItem>
+                    <SelectItem value="low" className="font-mono text-sm focus:bg-[#1a1a1a]">low</SelectItem>
+                    <SelectItem value="medium" className="font-mono text-sm focus:bg-[#1a1a1a]">medium</SelectItem>
+                    <SelectItem value="high" className="font-mono text-sm focus:bg-[#1a1a1a]">high</SelectItem>
+                    <SelectItem value="critical" className="font-mono text-sm focus:bg-[#1a1a1a]">critical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </ToolField>
+              <ToolField htmlFor="sigma-values" label="VALUES" helper="One per line" className="sm:col-span-2">
+                <Textarea 
+                  id="sigma-values"
+                  value={values} 
+                  onChange={e => setValues(e.target.value)} 
+                  spellCheck={false} 
+                  className="min-h-40 w-full resize-y rounded-none border-[#1a1a1a] bg-black p-3 font-mono text-sm text-zinc-300 focus-visible:ring-1 focus-visible:ring-[#00ff9c]" 
+                />
+              </ToolField>
+            </ToolPanelBody>
+          </ToolPanel>
+
+          <ToolPanel className="flex flex-col">
+            <ToolPanelHeader>
+              <ToolPanelTitle marker="OUT">Sigma YAML</ToolPanelTitle>
+            </ToolPanelHeader>
+            <div className="flex-1 min-h-[400px]">
+              <ToolCodeField
+                language="YAML"
+                code={output}
+                filename="rule.yml"
+                mimeType="application/x-yaml"
+              />
+            </div>
+            <ToolPanelBody className="border-t border-[#1a1a1a]">
+              <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-[#ffb000]">Validation</h3>
+              {validation.length === 0 ? (
+                <ToolStatus tone="success" title="Valid">No local schema issues detected.</ToolStatus>
+              ) : (
+                <div className="space-y-2">
+                  {validation.map((item, index) => (
+                    <ToolStatus 
+                      key={`${item.severity}-${index}`} 
+                      tone={item.severity === "error" ? "error" : "attention"} 
+                      title={item.severity.toUpperCase()}
+                    >
+                      {item.message}
+                    </ToolStatus>
+                  ))}
+                </div>
+              )}
+            </ToolPanelBody>
+          </ToolPanel>
+
+        </div>
+      </div>
+    </ToolLayout>
+  );
 }
