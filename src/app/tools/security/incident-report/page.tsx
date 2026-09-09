@@ -13,6 +13,7 @@ import { downloadPdfWithPdfMake } from "@/lib/pdfmake-export";
 import { useNotification } from "@/components/notification-provider";
 import { createEvidenceBundle } from "@/lib/evidence-bundle";
 import { downloadTextFile, safeDownloadName } from "@/lib/browser-download";
+import { ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody, ToolField, ToolActionPanel, ToolActionButton } from "@/components/tool-design";
 
 type IncidentSeverity = "Informational" | "Low" | "Medium" | "High" | "Critical";
 type IncidentStatus = "Open" | "Investigating" | "Contained" | "Resolved" | "Closed";
@@ -506,7 +507,7 @@ export default function IncidentReportTool() {
         title="Incident Report Generator"
       description="Create structured IT and cybersecurity incident reports from raw notes, logs, and timelines."
     >
-      <div className="flex items-center gap-2 mb-8 p-3 bg-[#00ff9c]/10 border border-[#00ff9c]/30 rounded text-[#00ff9c] text-xs font-mono max-w-4xl mx-auto">
+      <div className="flex items-center gap-2 mb-8 p-3 bg-[#00ff9c]/10 border-l-2 border-l-[#00ff9c] border-y border-y-[#00ff9c]/30 border-r border-r-[#00ff9c]/30 rounded-none text-[#00ff9c] text-xs font-mono max-w-4xl mx-auto">
         <ShieldAlert className="w-4 h-4 shrink-0" />
         <p><strong>Processed locally in your browser.</strong> No data is ever sent to a server. Safe for confidential logs.</p>
       </div>
@@ -515,199 +516,172 @@ export default function IncidentReportTool() {
 
         {/* Editor Form */}
         <div className="space-y-6">
-          <div className="p-4 bg-black border border-[#1a1a1a] rounded">
-            <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2"><ClipboardList className="w-4 h-4" /> Load Template Data</h3>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => loadTemplate("")} className="border-[#1a1a1a] hover:text-white text-xs">Clear</Button>
+          <ToolPanel>
+            <ToolPanelHeader>
+              <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">LOAD TEMPLATE DATA</ToolPanelTitle>
+            </ToolPanelHeader>
+            <ToolPanelBody className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => loadTemplate("")} className="rounded-none border-[#1a1a1a] bg-black hover:text-white text-[10px] font-bold uppercase tracking-widest">Clear</Button>
               {Object.keys(TEMPLATES).map(tmpl => (
-                <Button key={tmpl} variant="outline" size="sm" onClick={() => loadTemplate(tmpl)} className="border-[#1a1a1a] hover:border-[#00ff9c] hover:text-[#00ff9c] text-xs transition-colors">
+                <Button key={tmpl} variant="outline" size="sm" onClick={() => loadTemplate(tmpl)} className="rounded-none border-[#1a1a1a] bg-black hover:border-[#00ff9c] hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 text-[10px] font-bold uppercase tracking-widest transition-colors">
                   {tmpl}
                 </Button>
               ))}
-            </div>
-          </div>
+            </ToolPanelBody>
+          </ToolPanel>
 
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-widest border-b border-[#1a1a1a] pb-2">Meta Information</h3>
+          <ToolPanel>
+            <ToolPanelHeader>
+              <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">META INFORMATION</ToolPanelTitle>
+            </ToolPanelHeader>
+            <ToolPanelBody className="space-y-4">
+              <ToolField label="Company Logo (For PDF)">
+                <div className="flex items-center gap-4">
+                  {logo ? (
+                    <div className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={logo} alt="Logo Preview" className="h-12 w-auto object-contain bg-white rounded-none p-1" />
+                      <button onClick={() => setLogo(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-none p-0.5"><X className="w-3 h-3" /></button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()} className="rounded-none bg-black border-[#1a1a1a] font-bold uppercase tracking-widest hover:border-[#00ff9c] hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 text-[10px]">
+                      <FileUp className="w-4 h-4 mr-2" /> Upload Logo
+                    </Button>
+                  )}
+                  <input type="file" accept="image/png, image/jpeg" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" />
+                </div>
+              </ToolField>
 
-            <div className="space-y-2">
-              <Label>Company Logo (For PDF)</Label>
-              <div className="flex items-center gap-4">
-                {logo ? (
-                  <div className="relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={logo} alt="Logo Preview" className="h-12 w-auto object-contain bg-white rounded p-1" />
-                    <button onClick={() => setLogo(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"><X className="w-3 h-3" /></button>
-                  </div>
-                ) : (
-                  <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()} className="bg-black border-[#1a1a1a] hover:border-[#00ff9c] hover:text-[#00ff9c]">
-                    <FileUp className="w-4 h-4 mr-2" /> Upload Logo
-                  </Button>
-                )}
-                <input type="file" accept="image/png, image/jpeg" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ToolField label="Incident Title">
+                  <Input value={report.title} onChange={e => updateField("title", e.target.value)} placeholder="Network connectivity outage" className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm" />
+                </ToolField>
+                <ToolField label="Incident ID (Optional)">
+                  <Input value={report.id} onChange={e => updateField("id", e.target.value)} placeholder="INC-2026-001" className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm" />
+                </ToolField>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Incident Title</Label>
-                <Input value={report.title} onChange={e => updateField("title", e.target.value)} placeholder="Network connectivity outage" className="bg-black border-[#1a1a1a] focus:border-purple-500 font-mono text-sm" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ToolField label="Agent / Responder">
+                  <Input value={report.agentName} onChange={e => updateField("agentName", e.target.value)} placeholder="John Doe (SOC)" className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm" />
+                </ToolField>
+                <ToolField label="Affected User / Dept">
+                  <Input value={report.affectedUserDept} onChange={e => updateField("affectedUserDept", e.target.value)} placeholder="Finance Dept" className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm" />
+                </ToolField>
               </div>
-              <div className="space-y-2">
-                <Label>Incident ID <span className="text-zinc-600">(Optional)</span></Label>
-                <Input value={report.id} onChange={e => updateField("id", e.target.value)} placeholder="INC-2026-001" className="bg-black border-[#1a1a1a] focus:border-purple-500 font-mono text-sm" />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <ToolField label="Date">
+                  <Input type="date" value={report.date} onChange={e => updateField("date", e.target.value)} className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm [color-scheme:dark]" />
+                </ToolField>
+                <ToolField label="Start Time">
+                  <Input type="time" value={report.startTime} onChange={e => updateField("startTime", e.target.value)} className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm [color-scheme:dark]" />
+                </ToolField>
+                <ToolField label="End Time">
+                  <Input type="time" value={report.endTime} onChange={e => updateField("endTime", e.target.value)} className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm [color-scheme:dark]" />
+                </ToolField>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Agent / Responder</Label>
-                <Input value={report.agentName} onChange={e => updateField("agentName", e.target.value)} placeholder="John Doe (SOC)" className="bg-black border-[#1a1a1a] focus:border-purple-500 font-mono text-sm" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ToolField label="Severity">
+                  <Select value={report.severity} onValueChange={(v) => updateField("severity", v || "")}>
+                    <SelectTrigger className="rounded-none bg-black border-[#1a1a1a] focus:ring-[#00ff9c] font-mono text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-none bg-black border-[#1a1a1a] text-zinc-300 font-mono">
+                      <SelectItem value="Informational" className="focus:bg-[#1a1a1a]">Informational</SelectItem>
+                      <SelectItem value="Low" className="focus:bg-[#1a1a1a]">Low</SelectItem>
+                      <SelectItem value="Medium" className="focus:bg-[#1a1a1a]">Medium</SelectItem>
+                      <SelectItem value="High" className="focus:bg-[#1a1a1a]">High</SelectItem>
+                      <SelectItem value="Critical" className="focus:bg-[#1a1a1a]">Critical</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </ToolField>
+                <ToolField label="Status">
+                  <Select value={report.status} onValueChange={(v) => updateField("status", v || "")}>
+                    <SelectTrigger className="rounded-none bg-black border-[#1a1a1a] focus:ring-[#00ff9c] font-mono text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-none bg-black border-[#1a1a1a] text-zinc-300 font-mono">
+                      <SelectItem value="Open" className="focus:bg-[#1a1a1a]">Open</SelectItem>
+                      <SelectItem value="Investigating" className="focus:bg-[#1a1a1a]">Investigating</SelectItem>
+                      <SelectItem value="Contained" className="focus:bg-[#1a1a1a]">Contained</SelectItem>
+                      <SelectItem value="Resolved" className="focus:bg-[#1a1a1a]">Resolved</SelectItem>
+                      <SelectItem value="Closed" className="focus:bg-[#1a1a1a]">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </ToolField>
               </div>
-              <div className="space-y-2">
-                <Label>Affected User / Dept</Label>
-                <Input value={report.affectedUserDept} onChange={e => updateField("affectedUserDept", e.target.value)} placeholder="Finance Dept" className="bg-black border-[#1a1a1a] focus:border-purple-500 font-mono text-sm" />
-              </div>
-            </div>
+            </ToolPanelBody>
+          </ToolPanel>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Date</Label>
-                <Input type="date" value={report.date} onChange={e => updateField("date", e.target.value)} className="bg-black border-[#1a1a1a] focus:border-purple-500 font-mono text-sm" />
-              </div>
-              <div className="space-y-2">
-                <Label>Start Time</Label>
-                <Input type="time" value={report.startTime} onChange={e => updateField("startTime", e.target.value)} className="bg-black border-[#1a1a1a] focus:border-purple-500 font-mono text-sm" />
-              </div>
-              <div className="space-y-2">
-                <Label>End Time</Label>
-                <Input type="time" value={report.endTime} onChange={e => updateField("endTime", e.target.value)} className="bg-black border-[#1a1a1a] focus:border-purple-500 font-mono text-sm" />
-              </div>
-            </div>
+          <ToolPanel>
+            <ToolPanelHeader>
+              <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">INCIDENT DETAILS</ToolPanelTitle>
+            </ToolPanelHeader>
+            <ToolPanelBody className="space-y-4">
+              <ToolField label="Affected Systems (One per line)">
+                <Textarea value={report.affectedSystems} onChange={e => updateField("affectedSystems", e.target.value)} placeholder="SW-CORE\nVLAN 20\nWEB-01" className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[80px]" />
+              </ToolField>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Severity</Label>
-                <Select value={report.severity} onValueChange={(v) => updateField("severity", v || "")}>
-                  <SelectTrigger className="bg-black border-[#1a1a1a] focus:border-purple-500 font-mono text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black border-[#1a1a1a] text-zinc-300 font-mono">
-                    <SelectItem value="Informational">Informational</SelectItem>
-                    <SelectItem value="Low">Low</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                    <SelectItem value="Critical">Critical</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={report.status} onValueChange={(v) => updateField("status", v || "")}>
-                  <SelectTrigger className="bg-black border-[#1a1a1a] focus:border-purple-500 font-mono text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black border-[#1a1a1a] text-zinc-300 font-mono">
-                    <SelectItem value="Open">Open</SelectItem>
-                    <SelectItem value="Investigating">Investigating</SelectItem>
-                    <SelectItem value="Contained">Contained</SelectItem>
-                    <SelectItem value="Resolved">Resolved</SelectItem>
-                    <SelectItem value="Closed">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+              <ToolField label="Summary">
+                <Textarea value={report.summary} onChange={e => updateField("summary", e.target.value)} placeholder="Brief description of the incident and impact..." className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[100px]" />
+              </ToolField>
 
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 mt-8">Incident Details</h3>
+              <ToolField label={<span className="flex justify-between items-center w-full">Raw Notes / Timeline <span className="text-[10px] text-zinc-500 font-normal normal-case tracking-normal">Auto-parses Syslog, ISO 8601, HH:MM</span></span>}>
+                <Textarea value={report.rawNotes} onChange={e => updateField("rawNotes", e.target.value)} placeholder={"10:31 User reports no connectivity\n10:32 SW-CORE Gi0/1 shows down"} className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[200px]" />
+              </ToolField>
+            </ToolPanelBody>
+          </ToolPanel>
 
-            <div className="space-y-2">
-              <Label>Affected Systems (One per line)</Label>
-              <Textarea value={report.affectedSystems} onChange={e => updateField("affectedSystems", e.target.value)} placeholder="SW-CORE\nVLAN 20\nWEB-01" className="bg-black border-[#1a1a1a] focus:border-purple-500 font-mono text-sm min-h-[80px]" />
-            </div>
+          <ToolPanel>
+            <ToolPanelHeader>
+              <ToolPanelTitle marker="IN" className="text-sm text-[#ffb000] glow-amber">POST-INCIDENT</ToolPanelTitle>
+            </ToolPanelHeader>
+            <ToolPanelBody className="space-y-4">
+              <ToolField label="Root Cause">
+                <Textarea value={report.rootCause} onChange={e => updateField("rootCause", e.target.value)} placeholder="Leave empty if unknown. Do not guess." className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[80px]" />
+              </ToolField>
 
-            <div className="space-y-2">
-              <Label>Summary</Label>
-              <Textarea value={report.summary} onChange={e => updateField("summary", e.target.value)} placeholder="Brief description of the incident and impact..." className="bg-black border-[#1a1a1a] focus:border-purple-500 text-sm min-h-[100px]" />
-            </div>
+              <ToolField label="Resolution">
+                <Textarea value={report.resolution} onChange={e => updateField("resolution", e.target.value)} placeholder="How was the incident resolved?" className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[80px]" />
+              </ToolField>
 
-            <div className="space-y-2">
-              <Label className="flex justify-between items-center">
-                <span>Raw Notes / Timeline</span>
-                <span className="text-[10px] text-zinc-500 font-normal">Auto-parses Syslog, ISO 8601, HH:MM</span>
-              </Label>
-              <Textarea value={report.rawNotes} onChange={e => updateField("rawNotes", e.target.value)} placeholder={"10:31 User reports no connectivity\n10:32 SW-CORE Gi0/1 shows down"} className="bg-black border-[#1a1a1a] focus:border-purple-500 font-mono text-sm min-h-[200px]" />
-            </div>
-          </div>
+              <ToolField label="Actions Taken">
+                <Textarea value={report.actionsTaken} onChange={e => updateField("actionsTaken", e.target.value)} placeholder="List of specific actions performed..." className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[100px]" />
+              </ToolField>
 
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 mt-8">Post-Incident</h3>
-
-            <div className="space-y-2">
-              <Label>Root Cause</Label>
-              <Textarea value={report.rootCause} onChange={e => updateField("rootCause", e.target.value)} placeholder="Leave empty if unknown. Do not guess." className="bg-black border-[#1a1a1a] focus:border-purple-500 text-sm min-h-[80px]" />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Resolution</Label>
-              <Textarea value={report.resolution} onChange={e => updateField("resolution", e.target.value)} placeholder="How was the incident resolved?" className="bg-black border-[#1a1a1a] focus:border-purple-500 text-sm min-h-[80px]" />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Actions Taken</Label>
-              <Textarea value={report.actionsTaken} onChange={e => updateField("actionsTaken", e.target.value)} placeholder="List of specific actions performed..." className="bg-black border-[#1a1a1a] focus:border-purple-500 text-sm min-h-[100px]" />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Recommendations <span className="text-zinc-600">(Optional)</span></Label>
-              <Textarea value={report.recommendations} onChange={e => updateField("recommendations", e.target.value)} placeholder="Steps to prevent recurrence..." className="bg-black border-[#1a1a1a] focus:border-purple-500 text-sm min-h-[100px]" />
-            </div>
-          </div>
+              <ToolField label={<>Recommendations <span className="text-zinc-600 normal-case tracking-normal">(Optional)</span></>}>
+                <Textarea value={report.recommendations} onChange={e => updateField("recommendations", e.target.value)} placeholder="Steps to prevent recurrence..." className="rounded-none bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] font-mono text-sm min-h-[100px]" />
+              </ToolField>
+            </ToolPanelBody>
+          </ToolPanel>
         </div>
 
         {/* Export Section */}
-        <div className="mt-16 pt-8 border-t border-[#1a1a1a]">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <FileSearch className="w-6 h-6 text-purple-500" />
-              <h2 className="text-xl font-bold">Export Document</h2>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 bg-[#050505] p-2 rounded border border-[#1a1a1a]">
-              <div className="flex items-center gap-2 pr-4 border-r border-[#1a1a1a]">
+        <div className="mt-8 mb-16">
+          <ToolActionPanel label="EXPORT DOCUMENT" className="bg-[#050505]">
+            <div className="flex flex-wrap items-center gap-4 md:ml-auto">
+              <div className="flex items-center gap-2">
                 <Palette className="w-4 h-4 text-zinc-500" />
                 <Select value={theme} onValueChange={(v) => setTheme(v as PdfTheme)}>
-                  <SelectTrigger className="h-8 w-[130px] text-xs bg-black border-[#1a1a1a] focus:border-purple-500">
+                  <SelectTrigger className="h-8 w-[130px] rounded-none text-xs bg-black border-[#1a1a1a] focus:ring-[#00ff9c]">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-black border-[#1a1a1a] text-zinc-300 text-xs">
-                    {PDF_THEMES.map(t => <SelectItem key={t} value={t}>{t} Theme</SelectItem>)}
+                  <SelectContent className="rounded-none bg-black border-[#1a1a1a] text-zinc-300 text-xs">
+                    {PDF_THEMES.map(t => <SelectItem key={t} value={t} className="focus:bg-[#1a1a1a]">{t} Theme</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-
-              <Button onClick={handleExportPDF} size="sm" className="bg-[#ff0055] hover:bg-[#ff0055]/90 text-white font-bold h-8">
-                <Download className="w-4 h-4 mr-2" />
-                PDF
-              </Button>
-
-              <div className="flex items-center gap-1 pl-4 border-l border-[#1a1a1a]">
-                <Button onClick={handleCopyMarkdown} variant="ghost" size="icon" className="h-8 w-8 hover:bg-[#1a1a1a] hover:text-white" title="Copy Markdown">
-                  {copied ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-zinc-500" />}
-                </Button>
-                <Button onClick={handleExportTXT} variant="ghost" size="icon" className="h-8 w-8 hover:bg-[#1a1a1a] hover:text-white" title="Download TXT">
-                  <FileText className="w-4 h-4 text-zinc-500" />
-                </Button>
-                <Button onClick={handleExportJSON} variant="ghost" size="icon" className="h-8 w-8 hover:bg-[#1a1a1a] hover:text-white" title="Download JSON">
-                  <FileJson className="w-4 h-4 text-zinc-500" />
-                </Button>
-                <Button onClick={handleExportBundle} variant="ghost" size="icon" className="h-8 w-8 hover:bg-[#1a1a1a] hover:text-white" title="Export evidence bundle">
-                  <FileSearch className="w-4 h-4 text-zinc-500" />
-                </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <ToolActionButton onClick={handleCopyMarkdown} tone="neutral"><Copy className="w-4 h-4 mr-2" /> Markdown</ToolActionButton>
+                <ToolActionButton onClick={handleExportTXT} tone="neutral"><FileText className="w-4 h-4 mr-2" /> TXT</ToolActionButton>
+                <ToolActionButton onClick={handleExportJSON} tone="neutral"><FileJson className="w-4 h-4 mr-2" /> JSON</ToolActionButton>
+                <ToolActionButton onClick={handleExportBundle} tone="neutral"><FileSearch className="w-4 h-4 mr-2" /> Bundle</ToolActionButton>
+                <ToolActionButton onClick={handleExportPDF} tone="primary"><Download className="w-4 h-4 mr-2" /> PDF</ToolActionButton>
               </div>
             </div>
-          </div>
+          </ToolActionPanel>
         </div>
 
       </div>
