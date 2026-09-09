@@ -81,7 +81,6 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
   const [query, setQuery] = useState('');
   const [openCategories, setOpenCategories] = useState<string[]>(['Network', 'Security', 'Compute', 'Services']);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(false);
   const [pathSourceId, setPathSourceId] = useState('');
   const [pathTargetId, setPathTargetId] = useState('');
   const [pathResult, setPathResult] = useState<NetworkPath | null>(null);
@@ -133,10 +132,7 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
             <button type="button" role="menuitem" onClick={toggleFocusMode} className="flex w-full items-center gap-2 rounded px-2 py-2 text-left font-mono text-[10px] text-zinc-300 hover:bg-[#00ff9c]/10 hover:text-[#00ff9c]">{focusMode ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}{focusMode ? 'Exit focus mode' : 'Focus mode'}</button>
           </div>}
         </div>
-        <ToolActionButton type="button" onClick={() => setGuideOpen(current => !current)} aria-expanded={guideOpen} aria-controls="diagram-guide-panel" aria-label="Toggle quick guide" title="Quick guide"><HelpCircle /></ToolActionButton>
       </div>
-
-      {guideOpen && <div id="diagram-guide-panel" className="shrink-0 border-b border-[#1a1a1a] p-2"><DiagramGuide headingId="diagram-guide-heading-toolbox" /></div>}
 
       {(selectedNodeCount > 0 || selectedEdgeCount > 0) && <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[#1a1a1a] bg-[#00ff9c]/5 px-3 py-2 font-mono text-[10px] text-zinc-400">
         <span className="text-[#00ff9c]">{selectedNodeCount} nodes</span>{selectedEdgeCount > 0 && <><span>·</span><span className="text-[#38bdf8]">{selectedEdgeCount} links</span></>}
@@ -237,6 +233,11 @@ export default function Sidebar({ selectedNode, selectedEdge, selectedNodeCount,
             </div>
             <p className="text-[9px] leading-relaxed text-zinc-600">Export actions are grouped below the canvas.</p>
           </div>
+        </details>
+
+        <details className="border-b border-[#1a1a1a] py-4">
+          <summary className="flex cursor-pointer items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500"><HelpCircle className="h-3.5 w-3.5" />Quick guide<span className="ml-auto text-[9px] font-normal normal-case tracking-normal text-zinc-700">shortcuts &amp; workflow</span></summary>
+          <div className="mt-3"><DiagramGuide headingId="diagram-guide-heading-toolbox" /></div>
         </details>
 
       </div>

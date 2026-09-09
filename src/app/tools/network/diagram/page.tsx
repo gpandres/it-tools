@@ -12,7 +12,7 @@ import NetworkEdgeComponent from './edges/NetworkEdge';
 import Sidebar from './components/Sidebar';
 import { DiagramExportPanel, DiagramWorkspacePanel } from './components/DiagramSupportPanels';
 import { TEMPLATES } from './components/Templates';
-import { readLocalStorage, writeLocalStorage } from '@/lib/storage';
+import { hasStorageConsent, readLocalStorage, writeLocalStorage } from '@/lib/storage';
 import { parseDiagram, validateDiagram } from '@/lib/diagram-validation';
 import { autoLayout } from '@/lib/diagram-layout';
 import { useNotification } from '@/components/notification-provider';
@@ -42,6 +42,7 @@ function DiagramFlow() {
   const [savedDiagrams, setSavedDiagrams] = useState<SavedNetworkDiagram[]>([]);
   const exportInFlight = useRef(false);
   const workspaceLoaded = useRef(false);
+  const workspacePersistErrorShown = useRef(false);
   const { notify } = useNotification();
   
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -107,9 +108,15 @@ function DiagramFlow() {
   }, [nodes, edges, diagramMetadata]);
 
   useEffect(() => {
-    if (workspaceLoaded.current && !writeNetworkDiagramLibrary(savedDiagrams)) {
-      notify('Could not persist the diagram workspace. Browser storage may be full.', 'error');
+    if (!workspaceLoaded.current || !hasStorageConsent()) return;
+    if (!writeNetworkDiagramLibrary(savedDiagrams)) {
+      if (!workspacePersistErrorShown.current) {
+        notify('Could not persist the diagram workspace. Browser storage may be full.', 'error');
+        workspacePersistErrorShown.current = true;
+      }
+      return;
     }
+    workspacePersistErrorShown.current = false;
   }, [notify, savedDiagrams]);
 
   const onNodesChange = useCallback(
