@@ -8,14 +8,15 @@ const palette = [["Router", Router], ["Server", Server], ["Firewall", Shield], [
 function DeviceBox({ family, theme, title, meta, icon: Icon }: { family: BoxFamily; theme: Theme; title: string; meta: string; icon: typeof Router }) {
   const light = theme === "light";
   const familyClass = family === "workbench"
-    ? light ? "border-slate-400 border-l-4 bg-white text-slate-900" : "border-[#34353a] border-l-4 border-l-[#00ff9c] bg-[#101115] text-zinc-100"
+    ? light ? "border-slate-400 bg-white text-slate-900" : "border-[#1a1a1a] bg-[#050505] text-zinc-100"
     : family === "modern"
       ? light ? "rounded-xl border-slate-300 bg-white text-slate-900 shadow-lg" : "rounded-xl border-sky-400/50 bg-[#111827] text-zinc-100 shadow-[0_12px_30px_rgba(0,0,0,0.35)]"
       : light ? "border-slate-700 bg-[#f8f4e8] text-slate-900 shadow-[3px_3px_0_#64748b]" : "border-[#00ff9c]/70 bg-[#06120d] text-[#b7ffd9] shadow-[3px_3px_0_#176b52]";
   const accent = family === "retro" ? (light ? "text-slate-700" : "text-[#00ff9c]") : family === "modern" ? (light ? "text-blue-700" : "text-sky-300") : (light ? "text-slate-600" : "text-[#00ff9c]");
   return <div className={`relative flex min-h-[82px] min-w-[146px] flex-col justify-center border p-3 font-mono ${familyClass}`}>
     {family === "retro" && <div className="pointer-events-none absolute inset-1 border border-dashed border-current opacity-20" />}
-    <div className="flex items-center gap-2"><Icon className={`h-5 w-5 shrink-0 ${accent}`} strokeWidth={1.5} /><div className="min-w-0"><div className="truncate text-[11px] font-bold">{title}</div><div className={`truncate text-[9px] ${light ? "text-slate-500" : "text-zinc-500"}`}>{meta}</div></div></div>
+    {family === "workbench" && <div className={`absolute inset-x-0 top-0 border-b px-2 py-1 text-[8px] font-bold uppercase tracking-widest ${light ? "border-slate-200 text-slate-500" : "border-[#1a1a1a] text-[#00ff9c]"}`}>[NODE]</div>}
+    <div className={family === "workbench" ? "mt-3 flex items-center gap-2" : "flex items-center gap-2"}><Icon className={`h-5 w-5 shrink-0 ${accent}`} strokeWidth={1.5} /><div className="min-w-0"><div className={`truncate text-[11px] font-bold ${family === "workbench" && !light ? "text-[#ffb000]" : ""}`}>{title}</div><div className={`truncate text-[9px] ${light ? "text-slate-500" : "text-zinc-500"}`}>{meta}</div></div></div>
     <div className={`mt-2 text-[8px] uppercase tracking-widest ${light ? "text-emerald-700" : "text-[#72e6b4]"}`}>● active</div>
     <span className={`absolute -left-1.5 top-1/2 h-3 w-3 -translate-y-1/2 border-2 ${light ? "border-white bg-slate-500" : "border-black bg-zinc-400"}`} aria-hidden="true" /><span className={`absolute -right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 border-2 ${light ? "border-white bg-slate-500" : "border-black bg-zinc-400"}`} aria-hidden="true" />
   </div>;

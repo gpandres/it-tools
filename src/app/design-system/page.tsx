@@ -12,6 +12,7 @@ import { SliderDemo } from "./components/SliderDemo";
 import { DiagramDesignDemo } from "./components/DiagramDesignDemo";
 import { CliDesignDemo } from "./components/CliDesignDemo";
 import { PatternShowcase } from "./components/PatternShowcase";
+import { HorizontalTimelineDemo } from "./components/HorizontalTimelineDemo";
 
 export const metadata: Metadata = {
   title: "Design System Reference | IT_TOOLS",
@@ -203,6 +204,10 @@ export default function DesignSystemPage() {
 
         <Section title="Complete UI patterns" code={'/* Use these patterns before inventing a new one. */'}>
           <PatternShowcase />
+        </Section>
+
+        <Section title="Horizontal RPO / RTO timeline" code={'<div className="relative">\n  <div className="h-1 bg-gradient-to-r ..." />\n  <RecoveryMilestone />\n</div>'}>
+          <HorizontalTimelineDemo />
         </Section>
       </div>
     </ToolLayout>

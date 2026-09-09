@@ -280,6 +280,8 @@ Use a dedicated no-wrap code field for YAML, JSON, JavaScript/TypeScript, Python
 
 Use the RPO/RTO-style timeline for ordered operational events: timestamp first, severity second, event title third and optional detail below. A thin vertical rule with square markers is easier to scan than a card per event. Use green for normal, amber for attention and red for failure; include a legend or text label so colour is not the only signal.
 
+For recovery planning, use the horizontal variant shown on `/design-system`: a single progress line, milestone markers, labelled RPO/RTO windows above the line and event cards below it. The line should communicate sequence and target windows; the cards should contain the event detail. Keep it horizontally scrollable or stack the milestones intentionally on small screens rather than shrinking labels until they overlap.
+
 ### Stats and charts
 
 Stats panels follow the PCAP pattern: a compact grid of flat cells, small uppercase label, prominent value, delta/context line and consistent alignment. Charts sit below or beside the stats, use a restrained grid/axis treatment and one primary line colour. Use SVG/canvas only when it adds meaning; include a text summary and empty state. Do not use giant dashboard cards or gradients.
