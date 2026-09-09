@@ -120,7 +120,7 @@ Buttons must have visible text unless an icon-only button has an accessible `ari
 
 ## Forms
 
-Use the shared controls from `src/components/ui`. Labels are selectable and must have enough separation from their control. A field error belongs next to the field; it must not use a browser alert.
+Use the shared controls from `src/components/ui`. Labels are selectable and must have enough separation from their control. Checkboxes are square, matching the tool panels. A field error belongs next to the field; it must not use a browser alert.
 
 ```tsx
 <div className="space-y-2">
@@ -136,16 +136,20 @@ For multiline content use the shared `Textarea`. For binary options use the shar
 
 ## Feedback and status
 
-All user feedback is non-blocking. Use `useNotification()` for transient operation results and inline status for persistent validation. Never add `alert()` to a tool. The current notification provider supports `info` and `error`; keep messages short, actionable and safe to dismiss.
+All user feedback is non-blocking. Use `useNotification()` for transient operation results and inline status for persistent validation. Never add `alert()` to a tool. The notification provider supports `info`, `attention` and `error`; keep messages short, actionable and safe to dismiss.
 
 ```tsx
 const { notify } = useNotification();
 notify("Copied to clipboard");
+notify("Review the selected value", "attention");
 notify("The input is not valid", "error");
 ```
 
 Notification rules:
 
+- use `info` for successful local operations and neutral status;
+- use `attention` when the user should review a value or understand a non-blocking risk;
+- use `error` for failed operations or invalid input;
 - use a notification for copy/export completion, storage failures, import failures and other transient results;
 - keep validation beside the input when the user can correct it immediately;
 - do not use notifications for every keystroke or calculation update;
@@ -169,12 +173,12 @@ Sliders follow the calculator pattern: a compact uppercase label, a phosphor or 
 ```tsx
 <div className="flex items-center gap-4">
   <input type="range" min="0" max="32" value={prefix} onChange={onPrefixChange}
-    className="h-1 flex-1 cursor-pointer accent-[#00ff9c]" />
+    className="tool-range flex-1" />
   <Input className="w-20 rounded-none text-center" value={prefix} onChange={onPrefixInput} />
 </div>
 ```
 
-Use green for the primary value. Use amber only when the value represents attention, overhead or a caution. Do not hide the current value in a tooltip or rely on the thumb colour alone.
+The canonical `.tool-range` has a thin dark track and a square phosphor thumb; use `data-tone="amber"` when the value represents attention or overhead. Use green for the primary value. Do not hide the current value in a tooltip or rely on the thumb colour alone.
 
 ## Disclosure, tabs and dense data
 

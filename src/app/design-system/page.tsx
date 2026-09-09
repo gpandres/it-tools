@@ -86,7 +86,7 @@ export default function DesignSystemPage() {
             </div>
           </Section>
 
-          <Section title="Status and notifications" code={'const { notify } = useNotification();\nnotify("Copied to clipboard");\nnotify("Input validation failed", "error");'}>
+        <Section title="Status and notifications" code={'const { notify } = useNotification();\nnotify("Copied to clipboard");\nnotify("Review the selected value", "attention");\nnotify("Input validation failed", "error");'}>
             <div className="flex flex-wrap gap-2">
               <span className="border border-[#176b52] px-2 py-1 text-[10px] uppercase tracking-wider text-[#9fffd1]">ready</span>
               <span className="border border-[#795c19] px-2 py-1 text-[10px] uppercase tracking-wider text-[#fbbf24]">attention</span>
@@ -132,21 +132,21 @@ export default function DesignSystemPage() {
           <label htmlFor="design-system-checkbox" className="flex min-h-10 cursor-pointer items-center gap-3 text-xs text-zinc-300"><Checkbox id="design-system-checkbox" defaultChecked />Keep local processing enabled</label>
         </Section>
 
-        <Section title="Sliders and numeric controls" code={'<div className="flex items-center gap-4">\n  <input type="range" className="flex-1 accent-[#00ff9c]" />\n  <Input className="w-20 rounded-none text-center" />\n</div>'}>
+        <Section title="Sliders and numeric controls" code={'<div className="flex items-center gap-4">\n  <input type="range" className="tool-range flex-1" />\n  <Input className="w-20 rounded-none text-center" />\n</div>'}>
           <div className="max-w-2xl space-y-3">
             <div className="flex items-end justify-between gap-4">
               <Label htmlFor="design-system-slider" className="text-xs uppercase tracking-wider text-zinc-500">CIDR Prefix</Label>
               <span className="font-mono text-sm font-bold text-[#00ff9c]">[/24]</span>
             </div>
             <div className="flex items-center gap-4">
-              <input id="design-system-slider" type="range" min="0" max="32" defaultValue="24" className="h-1 flex-1 cursor-pointer accent-[#00ff9c]" />
+              <input id="design-system-slider" type="range" min="0" max="32" defaultValue="24" className="tool-range flex-1" />
               <Input aria-label="CIDR value" className="w-20 rounded-none text-center" defaultValue="24" inputMode="numeric" />
             </div>
             <p className="text-[10px] text-zinc-600">Use the green phosphor track for the primary value. Keep a numeric field beside it when precision matters, and keep both controls synchronized.</p>
           </div>
           <div className="max-w-2xl space-y-3 border-t border-[#1a1a1a] pt-4">
             <div className="flex items-end justify-between gap-4"><Label htmlFor="design-system-warning-slider" className="text-xs uppercase tracking-wider text-zinc-500">Storage overhead</Label><span className="font-mono text-sm font-bold text-[#ffb000]">[15%]</span></div>
-            <input id="design-system-warning-slider" type="range" min="0" max="50" step="5" defaultValue="15" className="h-1 w-full cursor-pointer accent-[#ffb000]" />
+            <input id="design-system-warning-slider" type="range" min="0" max="50" step="5" defaultValue="15" data-tone="amber" className="tool-range w-full" />
             <p className="text-[10px] text-zinc-600">Amber is reserved for an attention value, not a second primary brand.</p>
           </div>
         </Section>
