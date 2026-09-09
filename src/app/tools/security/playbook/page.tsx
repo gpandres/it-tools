@@ -122,8 +122,8 @@ export default function PlaybookPage() {
       <section className="border border-[#1a1a1a] bg-[#0a0a0a] p-4" aria-label="Playbook controls">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => setMode("build")} variant={mode === "build" ? "default" : "outline"} className={mode === "build" ? "bg-white text-black" : "border-[#1a1a1a] bg-black text-zinc-400 hover:text-white"}><PenTool className="mr-2 h-4 w-4" />Build</Button>
-            <Button onClick={() => setMode("run")} variant={mode === "run" ? "default" : "outline"} className={mode === "run" ? "bg-[#00ff9c] text-black hover:bg-[#00cc7a]" : "border-[#1a1a1a] bg-black text-[#00ff9c] hover:bg-[#00ff9c]/10"}><Play className="mr-2 h-4 w-4" />Run response</Button>
+            <Button onClick={() => setMode("build")} variant={mode === "build" ? "default" : "outline"} className={mode === "build" ? "bg-white text-black" : "border-[#1a1a1a] bg-black text-zinc-400 hover:text-white"}><PenTool className="mr-2 h-4 w-4" />Builder Mode</Button>
+            <Button onClick={() => setMode("run")} variant={mode === "run" ? "default" : "outline"} className={mode === "run" ? "bg-[#00ff9c] text-black hover:bg-[#00cc7a]" : "border-[#1a1a1a] bg-black text-[#00ff9c] hover:bg-[#00ff9c]/10"}><Play className="mr-2 h-4 w-4" />Execute</Button>
             {mode === "build" && <div className="ml-1 flex overflow-hidden border border-[#1a1a1a] bg-black"><button type="button" onClick={() => setBuildView("list")} className={`px-3 py-2 text-[10px] font-bold ${buildView === "list" ? "bg-[#1a1a1a] text-white" : "text-zinc-500 hover:text-white"}`}>LIST</button><button type="button" onClick={() => setBuildView("diagram")} className={`px-3 py-2 text-[10px] font-bold ${buildView === "diagram" ? "bg-[#1a1a1a] text-white" : "text-zinc-500 hover:text-white"}`}>DIAGRAM</button></div>}
           </div>
           {mode === "build" && <div className="ml-auto flex min-w-0 flex-wrap items-center gap-2">
