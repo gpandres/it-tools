@@ -6,17 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Globe, Plus, Trash2, Download, ShieldAlert, Loader2 } from "lucide-react";
-
-type DnsRecordType = 'A' | 'AAAA' | 'CNAME' | 'MX' | 'NS' | 'TXT' | 'CAA' | 'SOA';
-
-interface DnsRecord {
-  id: string;
-  domain: string;
-  type: DnsRecordType;
-  value: string;
-  source: 'Manual' | 'Cloudflare DoH';
-  notes: string;
-}
+import { DNS_RECORD_TYPES, mergeDnsRecords, normalizeDnsName, parseDnsAnswers, serializeDnsReconMarkdown, type DnsRecord, type DnsRecordType } from "@/lib/dns-recon";
+import { downloadTextFile } from "@/lib/browser-download";
 
 export default function DnsReconPage() {
   const [records, setRecords] = useState<DnsRecord[]>([]);
@@ -31,79 +22,60 @@ export default function DnsReconPage() {
   const [manualValue, setManualValue] = useState('');
 
   const fetchDns = async () => {
-    if (!queryDomain.trim()) return;
+    const domain = normalizeDnsName(queryDomain);
+    if (!domain) {
+      setError("Enter a valid fully-qualified domain name, such as example.com.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
-      // Using Cloudflare's DNS over HTTPS (DoH) API
-      const res = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(queryDomain)}&type=${queryType}`, {
+      const res = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=${queryType}`, {
         headers: { 'Accept': 'application/dns-json' }
       });
       if (!res.ok) throw new Error("Failed to fetch DNS records.");
-      const data = await res.json();
-      
-      if (data.Answer) {
-        const newRecords = data.Answer.map((ans: any) => ({
-          id: Math.random().toString(36).substring(7),
-          domain: ans.name,
-          type: queryType, // DoH returns numeric types, we keep our string
-          value: ans.data,
-          source: 'Cloudflare DoH',
-          notes: `TTL: ${ans.TTL}`
-        }));
-        setRecords([...records, ...newRecords]);
+      const answers = parseDnsAnswers(await res.json(), queryType);
+      if (answers.length > 0) {
+        setRecords(current => mergeDnsRecords(current, answers.map(record => ({ ...record, id: crypto.randomUUID() }))));
       } else {
-        setError(`No ${queryType} records found for ${queryDomain}.`);
+        setError(`No ${queryType} records found for ${domain}.`);
       }
-    } catch (e: any) {
-      setError(e.message || "Network error. The DoH endpoint might be blocked.");
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Network error. The DoH endpoint might be blocked.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleManualAdd = () => {
-    if (!manualDomain.trim() || !manualValue.trim()) return;
-    setRecords([
-      ...records,
-      {
-        id: Math.random().toString(36).substring(7),
-        domain: manualDomain,
+    const domain = normalizeDnsName(manualDomain);
+    const value = manualValue.trim().slice(0, 4096);
+    if (!domain || !value) {
+      setError("Manual records require a valid fully-qualified domain name and a value.");
+      return;
+    }
+    setRecords(current => mergeDnsRecords(current, [{
+        id: crypto.randomUUID(),
+        domain,
         type: manualType,
-        value: manualValue,
+        value,
         source: 'Manual',
         notes: ''
-      }
-    ]);
+      }]));
     setManualValue('');
   };
 
   const removeRecord = (id: string) => {
-    setRecords(records.filter(r => r.id !== id));
+    setRecords(current => current.filter(record => record.id !== id));
   };
 
   const updateNote = (id: string, note: string) => {
-    setRecords(records.map(r => r.id === id ? { ...r, notes: note } : r));
+    setRecords(current => current.map(record => record.id === id ? { ...record, notes: note.slice(0, 1024) } : record));
   };
 
   const exportData = (format: 'json' | 'markdown') => {
-    let content = "";
-    if (format === 'json') {
-      content = JSON.stringify(records, null, 2);
-    } else {
-      content = "# DNS Recon Results\n\n| Domain | Type | Value | Source | Notes |\n|---|---|---|---|---|\n";
-      records.forEach(r => {
-        content += `| ${r.domain} | ${r.type} | ${r.value} | ${r.source} | ${r.notes} |\n`;
-      });
-    }
-    
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `dns-recon-export.${format === 'json' ? 'json' : 'md'}`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const content = format === 'json' ? JSON.stringify(records, null, 2) : serializeDnsReconMarkdown(records);
+    downloadTextFile(content, `dns-recon-export.${format === 'json' ? 'json' : 'md'}`, format === "json" ? "application/json;charset=utf-8" : "text/markdown;charset=utf-8");
   };
 
   return (
@@ -132,7 +104,7 @@ export default function DnsReconPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-[#111] border-[#333] text-white">
-                  {['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'CAA', 'SOA'].map(t => (
+                  {DNS_RECORD_TYPES.map(t => (
                     <SelectItem key={t} value={t}>{t}</SelectItem>
                   ))}
                 </SelectContent>
@@ -162,7 +134,7 @@ export default function DnsReconPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-[#111] border-[#333] text-white">
-                  {['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'CAA', 'SOA'].map(t => (
+                  {DNS_RECORD_TYPES.map(t => (
                     <SelectItem key={t} value={t}>{t}</SelectItem>
                   ))}
                 </SelectContent>
