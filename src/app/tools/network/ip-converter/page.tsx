@@ -1,11 +1,19 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNotification } from "@/components/notification-provider";
+import {
+  ToolPanel,
+  ToolPanelHeader,
+  ToolPanelTitle,
+  ToolPanelBody,
+  ToolField,
+  ToolStatus,
+} from "@/components/tool-design";
 
 export default function IpConverter() {
   const [ipv4, setIpv4] = useState("");
@@ -15,12 +23,18 @@ export default function IpConverter() {
   
   const [error, setError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const { notify } = useNotification();
 
-  const copy = (text: string, key: string) => {
+  const copy = async (text: string, key: string) => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      notify("Copied to clipboard");
+      setTimeout(() => setCopiedKey(null), 2000);
+    } catch {
+      notify("Could not copy to clipboard", "error");
+    }
   };
 
   const updateFromIpv4 = (value: string) => {
@@ -92,103 +106,111 @@ export default function IpConverter() {
 
   return (
     <ToolLayout 
-      title="IP Address Converter" 
+      title="IP ADDRESS CONVERTER" 
       description="Convert IPv4 addresses between dotted-decimal, integer, hex, and binary formats."
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-        <BaseInputBox 
-          title="IPv4 Address" 
-          value={ipv4}
-          onChange={updateFromIpv4}
-          onCopy={() => copy(ipv4, "ip")}
-          copied={copiedKey === "ip"}
-          error={error}
-          placeholder="e.g. 192.168.1.1"
-        />
-        <BaseInputBox 
-          title="Integer (Decimal)" 
-          value={decimal}
-          onChange={updateFromDecimal}
-          onCopy={() => copy(decimal, "dec")}
-          copied={copiedKey === "dec"}
-          error={error}
-          placeholder="e.g. 3232235777"
-        />
-        <BaseInputBox 
-          title="Hexadecimal" 
-          value={hex}
-          onChange={updateFromHex}
-          onCopy={() => copy(hex, "hex")}
-          copied={copiedKey === "hex"}
-          error={error}
-          placeholder="e.g. 0xC0A80101"
-        />
-        <BaseInputBox 
-          title="Binary" 
-          value={binary}
-          onChange={() => {}} // Binary input is read-only for now to simplify dot notation parsing
-          onCopy={() => copy(binary, "bin")}
-          copied={copiedKey === "bin"}
-          error={error}
-          placeholder="e.g. 11000000.10101000.00000001.00000001"
-          readOnly
-        />
-      </div>
-      
-      {error && (
-        <div className="mt-6 p-4 bg-red-950/30 border border-red-900/50 max-w-4xl mx-auto flex items-center gap-3">
-          <span className="bg-red-500 text-white px-2 py-0.5 text-xs font-mono">ERROR</span>
-          <span className="text-red-400 font-mono text-sm">{error}</span>
-        </div>
-      )}
-    </ToolLayout>
-  );
-}
+      <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6">
+        <ToolPanel>
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="IN/OUT" className="text-sm text-[#ffb000] glow-amber">CONVERSION</ToolPanelTitle>
+          </ToolPanelHeader>
+          <ToolPanelBody className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <ToolField htmlFor="ipv4" label="IPv4 Address">
+              <div className="flex gap-2">
+                <Input
+                  id="ipv4"
+                  value={ipv4}
+                  onChange={(e) => updateFromIpv4(e.target.value)}
+                  placeholder="e.g. 192.168.1.1"
+                  className={`rounded-none font-mono ${error && ipv4 ? "border-red-500 text-red-400 focus-visible:ring-red-500" : "text-[#00ff9c]"}`}
+                />
+                <Button 
+                  type="button"
+                  variant="outline" size="icon" 
+                  aria-label="Copy IPv4"
+                  title="Copy IPv4"
+                  onClick={() => copy(ipv4, "ipv4")}
+                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]"
+                >
+                  {copiedKey === "ipv4" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </ToolField>
 
-function BaseInputBox({ 
-  title, 
-  value, 
-  onChange, 
-  onCopy, 
-  copied, 
-  error,
-  placeholder,
-  readOnly = false
-}: { 
-  title: string, 
-  value: string, 
-  onChange: (val: string) => void,
-  onCopy: () => void,
-  copied: boolean,
-  error: string | null,
-  placeholder: string,
-  readOnly?: boolean
-}) {
-  return (
-    <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col">
-      <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-        <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">{title}</span>
-        <Button 
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 transition-colors"
-          onClick={onCopy}
-        >
-          {copied ? <><Check className="w-3 h-3 mr-1" /> Copied</> : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
-        </Button>
-      </header>
-      <div className="p-4 flex flex-col justify-center min-h-[100px]">
-        <Label className="sr-only">{title}</Label>
-        <Input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          readOnly={readOnly}
-          className={`w-full font-mono text-base bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] h-12 text-zinc-200 ${error && value && !readOnly ? 'border-red-500/50 text-red-400 focus-visible:ring-red-500' : ''} ${readOnly ? 'opacity-70 focus-visible:ring-0 cursor-default' : ''}`}
-          spellCheck={false}
-        />
+            <ToolField htmlFor="decimal" label="Integer (Decimal)">
+              <div className="flex gap-2">
+                <Input
+                  id="decimal"
+                  value={decimal}
+                  onChange={(e) => updateFromDecimal(e.target.value)}
+                  placeholder="e.g. 3232235777"
+                  className={`rounded-none font-mono ${error && decimal ? "border-red-500 text-red-400 focus-visible:ring-red-500" : "text-[#00ff9c]"}`}
+                />
+                <Button 
+                  type="button"
+                  variant="outline" size="icon" 
+                  aria-label="Copy Decimal"
+                  title="Copy Decimal"
+                  onClick={() => copy(decimal, "decimal")}
+                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]"
+                >
+                  {copiedKey === "decimal" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </ToolField>
+
+            <ToolField htmlFor="hex" label="Hexadecimal">
+              <div className="flex gap-2">
+                <Input
+                  id="hex"
+                  value={hex}
+                  onChange={(e) => updateFromHex(e.target.value)}
+                  placeholder="e.g. 0xC0A80101"
+                  className={`rounded-none font-mono ${error && hex ? "border-red-500 text-red-400 focus-visible:ring-red-500" : "text-[#00ff9c]"}`}
+                />
+                <Button 
+                  type="button"
+                  variant="outline" size="icon" 
+                  aria-label="Copy Hex"
+                  title="Copy Hex"
+                  onClick={() => copy(hex, "hex")}
+                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]"
+                >
+                  {copiedKey === "hex" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </ToolField>
+
+            <ToolField htmlFor="binary" label="Binary">
+              <div className="flex gap-2">
+                <Input
+                  id="binary"
+                  value={binary}
+                  readOnly
+                  placeholder="e.g. 11000000.10101000.00000001.00000001"
+                  className="rounded-none border-[#1a1a1a] bg-[#050505] font-mono text-zinc-300 opacity-80 focus-visible:ring-0"
+                />
+                <Button 
+                  type="button"
+                  variant="outline" size="icon" 
+                  aria-label="Copy Binary"
+                  title="Copy Binary"
+                  onClick={() => copy(binary, "binary")}
+                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]"
+                >
+                  {copiedKey === "binary" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </ToolField>
+          </ToolPanelBody>
+        </ToolPanel>
+
+        {error && (
+          <ToolStatus tone="error">
+            {error}
+          </ToolStatus>
+        )}
       </div>
-    </article>
+    </ToolLayout>
   );
 }
