@@ -67,7 +67,7 @@ export function ToolField({ htmlFor, label, helper, error, required, className, 
   className?: string;
   children: React.ReactNode;
 }) {
-  return <div data-slot="tool-field" className={cn("space-y-2", className)}>
+  return <div data-slot="tool-field" className={cn("min-w-0 space-y-2", className)}>
     <Label htmlFor={htmlFor} className="text-xs font-bold text-zinc-200">
       {label}{required && <span className="ml-1 text-red-400" aria-hidden="true">*</span>}
     </Label>

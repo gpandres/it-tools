@@ -6,18 +6,20 @@ import { searchTools } from "@/lib/tool-discovery";
 
 import { CATEGORIES, ToolDefinition } from "@/lib/tools";
 import {
-  CommandDialog,
+  Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { ToolDialog } from "@/components/tool-design";
 
 export function CommandMenu() {
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const router = useRouter();
+  const searchInput = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -55,9 +57,18 @@ export function CommandMenu() {
   }, [filteredTools]);
 
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
+    <ToolDialog
+      title="Search tools"
+      description="Find a tool. Use arrow keys to select and Enter to open."
+      cancelLabel={false}
+      initialFocus={searchInput}
+      open={open}
+      onOpenChange={(val) => {
+        setOpen(val);
+        if (!val) setSearchQuery("");
+      }}
+      trigger={<button
+        aria-label="Search tools"
         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-400 bg-[#050505] border border-[#1a1a1a] hover:border-[#00ff9c] hover:text-[#00ff9c] transition-colors w-full justify-between group"
       >
         <span className="flex items-center gap-2 font-mono">
@@ -68,18 +79,13 @@ export function CommandMenu() {
         <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 border border-[#1a1a1a] bg-[#0a0a0a] px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex text-[#ffb000]">
           <span className="text-xs">⌘</span>K
         </kbd>
-      </button>
-      <CommandDialog
-        open={open}
-        onOpenChange={(val) => {
-          setOpen(val);
-          if (!val) setSearchQuery("");
-        }}
-        commandProps={{ shouldFilter: false }}
-      >
+      </button>}
+    >
+      <Command shouldFilter={false}>
         <CommandInput
+          ref={searchInput}
           aria-label="Search tools"
-          placeholder="Type a command or search (e.g. 'wildcard', 'firewall', 'chmod')..."
+          placeholder="Search by name or keyword..."
           value={searchQuery}
           onValueChange={setSearchQuery}
         />
@@ -97,7 +103,7 @@ export function CommandMenu() {
                 >
                   <div className="flex flex-col gap-1">
                     <span className="text-[#00ff9c] font-medium">{tool.name}</span>
-                    <span className="text-xs text-zinc-500">{tool.description}</span>
+                    <span className="text-xs text-zinc-400">{tool.description}</span>
                   </div>
                 </CommandItem>
               ))}
@@ -124,7 +130,7 @@ export function CommandMenu() {
             })
           )}
         </CommandList>
-      </CommandDialog>
-    </>
+      </Command>
+    </ToolDialog>
   );
 }

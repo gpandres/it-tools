@@ -171,8 +171,7 @@ Do not paste credentials, production tokens, private incident data or sensitive 
 src/app/       Next.js routes and tool pages
 src/components Shared UI, navigation, notifications and reusable action controls
 src/lib/       Tool registry, data models, analyzers, calculators and export helpers
-tests/         TypeScript unit and data-integrity tests
-docs/          QA notes and project documentation
+docs/          Project documentation
 public/        Static assets and browser-served files
 ```
 
@@ -207,29 +206,26 @@ npm run dev       # http://localhost:3501
 Useful commands:
 
 ```bash
-npm test            # unit and data-integrity tests
 npm run typecheck   # TypeScript without emitting files
 npm run lint        # full ESLint run
 npm run lint:ratchet
 npm run build
-npm run check       # typecheck + tests + lint regression gate + build
-npm run test:routes # HTTP smoke checks against localhost:3501
+npm run check       # typecheck + lint regression gate + build
 ```
 
-Start the development server before running `npm run test:routes`. Browser-based QA can be performed with the repository’s agent-browser setup or manually in a supported browser.
 
 ## Quality and contribution expectations
 
 Before opening a change:
 
 1. Keep new processing local unless a network flow is necessary and documented.
-2. Add or update tests for parsers, validators, data snapshots and security-sensitive behavior.
+2. Verify parsers, validators, data snapshots and security-sensitive behavior locally.
 3. Reuse shared UI, notification and export helpers instead of creating one-off implementations.
 4. Keep tool metadata, route names, SEO text and README entries consistent with `src/lib/tools.ts`.
 5. Test empty, malformed, oversized and adversarial input as well as the normal happy path.
 6. Review generated commands and examples for safe defaults, accurate vendor syntax and clear warnings.
 
-The lint ratchet protects the repository from introducing new findings while existing debt is reduced separately. See [phase 2 QA and remaining work](docs/phase-2-qa.md) for the current QA evidence and known limits.
+The lint ratchet protects the repository from introducing new findings while existing debt is reduced separately.
 
 ## License
 

@@ -56,17 +56,17 @@ export function ToolLayout({ title, description, children, fullWidth = false }: 
         <meta name="twitter:description" content={seoDescription} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(toolStructuredData(seoTool, seoDescription)) }} />
       </>}
-      <header className="relative sticky top-0 z-30 flex h-[104px] shrink-0 flex-nowrap items-start justify-between gap-4 overflow-visible border-b border-[#1a1a1a] bg-[#050505] px-4 py-4 sm:px-6">
+      <header className="top-0 z-30 flex shrink-0 flex-col items-stretch justify-between gap-4 border-b border-[#1a1a1a] bg-[#050505] p-4 sm:px-6 lg:sticky xl:flex-row xl:items-start">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="min-w-0 truncate text-sm font-bold text-[#ffb000] glow-amber flex items-center gap-2 uppercase tracking-widest">
-              <span className="text-[#00ff9c] text-xs">/</span>
+          <div className="flex items-start gap-3">
+            <h1 className="min-w-0 break-words text-sm font-bold text-[#ffb000] glow-amber uppercase tracking-widest">
+              <span className="mr-2 text-[#00ff9c] text-xs" aria-hidden="true">/</span>
               {title}
             </h1>
             {isLoaded && currentTool && (
               <button 
                 onClick={toggleFavorite} 
-                className="text-zinc-500 hover:text-[#ffb000] transition-colors"
+                className="shrink-0 text-zinc-400 hover:text-[#ffb000] transition-colors"
                 title="Toggle Favorite"
                 aria-label={isFavorite(currentTool.id) ? "Remove from favorites" : "Add to favorites"}
                 aria-pressed={isFavorite(currentTool.id)}
@@ -75,13 +75,13 @@ export function ToolLayout({ title, description, children, fullWidth = false }: 
               </button>
             )}
           </div>
-          <p className="truncate text-xs text-zinc-500 mt-1 font-mono">{description}</p>
-          {currentTool && <details className="absolute left-4 top-[72px] z-40 mt-0 max-w-[min(36rem,calc(100vw-2rem))] text-[11px] text-zinc-400 open:border open:border-[#242424] open:bg-[#050505] open:px-3 open:py-2 open:shadow-[0_8px_24px_rgba(0,0,0,0.45)] sm:left-6">
-            <summary className="cursor-pointer">{toolDataFlow(currentTool).label}</summary>
+          <p className="break-words text-xs leading-relaxed text-zinc-400 mt-1">{description}</p>
+          {currentTool && <details className="mt-2 max-w-xl text-[10px] leading-relaxed text-zinc-400">
+            <summary className="cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00ff9c]">{toolDataFlow(currentTool).label}</summary>
             <p className="mt-2">{toolDataFlow(currentTool).description}</p>
           </details>}
         </div>
-        <div className="w-48 shrink-0 sm:w-64">
+        <div className="w-full shrink-0 xl:w-64">
           <CommandMenu />
         </div>
       </header>

@@ -1,9 +1,10 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Copy, Check, ArrowDownUp } from "lucide-react";
+import { ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody, ToolField, ToolActionButton, ToolStatus } from "@/components/tool-design";
+import { useNotification } from "@/components/notification-provider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Copy } from "lucide-react";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -11,8 +12,7 @@ export default function UrlConverter() {
   const [raw, setRaw] = useState("");
   const [encoded, setEncoded] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [copiedRaw, setCopiedRaw] = useState(false);
-  const [copiedEncoded, setCopiedEncoded] = useState(false);
+  const { notify } = useNotification();
   const [useComponent, setUseComponent] = useState(true);
 
   const handleRawChange = (value: string, mode: boolean = useComponent) => {
@@ -42,110 +42,67 @@ export default function UrlConverter() {
     }
   };
 
-  const toggleMode = () => {
-    const newMode = !useComponent;
-    setUseComponent(newMode);
-    // Re-calculate based on raw
-    handleRawChange(raw, newMode);
-  };
-
-  const copy = (text: string, isRaw: boolean) => {
+  const copy = async (text: string) => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    if (isRaw) {
-      setCopiedRaw(true);
-      setTimeout(() => setCopiedRaw(false), 2000);
-    } else {
-      setCopiedEncoded(true);
-      setTimeout(() => setCopiedEncoded(false), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      notify("Copied to clipboard");
+    } catch {
+      notify("Could not copy. Select the text and copy it manually.", "error");
     }
   };
 
   return (
-    <ToolLayout 
-      title="URL Encoder/Decoder" 
-      description="Safely encode and decode URL parameters or entire URIs."
-    >
-      <div className="flex flex-col gap-6 max-w-4xl mx-auto">
-        <div className="flex justify-end">
-          <button 
-            onClick={toggleMode}
-            className={`font-mono text-xs px-3 py-1.5 border transition-colors rounded-none ${
-              useComponent 
-                ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" 
-                : "border-[#1a1a1a] text-zinc-500 bg-black hover:border-zinc-700"
-            }`}
-          >
-            Mode: {useComponent ? "encodeURIComponent" : "encodeURI"}
-          </button>
-        </div>
-
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <div className="flex items-center gap-2">
-              <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>
-              <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Raw Text</span>
-            </div>
-            <Button 
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 transition-colors"
-              onClick={() => copy(raw, true)}
-            >
-              {copiedRaw ? <><Check className="w-3 h-3 mr-1" /> Copied</> : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
-            </Button>
-          </header>
-          <div className="p-4">
-            <Label htmlFor="raw-text" className="sr-only">Raw text</Label>
-            <Textarea
-              id="raw-text"
-              placeholder="Type or paste raw text here..."
-              value={raw}
-              onChange={(e) => handleRawChange(e.target.value)}
-              className="min-h-[200px] font-mono bg-black border-[#1a1a1a] text-zinc-300 rounded-none focus-visible:ring-[#00ff9c] resize-y"
-            />
-          </div>
-        </article>
-
-        <div className="flex justify-center -my-3 z-10 relative pointer-events-none">
-          <div className="bg-[#050505] border border-[#1a1a1a] p-2 text-zinc-600">
-            <ArrowDownUp className="w-5 h-5" />
-          </div>
-        </div>
-
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <div className="flex items-center gap-2">
-              <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>
-              <span className="text-[#00ff9c] text-sm font-semibold glow uppercase tracking-widest">URL Encoded</span>
-            </div>
-            <Button 
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 transition-colors"
-              onClick={() => copy(encoded, false)}
-            >
-              {copiedEncoded ? <><Check className="w-3 h-3 mr-1" /> Copied</> : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
-            </Button>
-          </header>
-          <div className="p-4 relative">
-            <Label htmlFor="encoded-text" className="sr-only">URL Encoded text</Label>
-            <Textarea
-              id="encoded-text"
-              placeholder="Type or paste URL encoded text here..."
-              value={encoded}
-              onChange={(e) => handleEncodedChange(e.target.value)}
-              className={`min-h-[200px] font-mono bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] resize-y ${
-                error ? "text-red-400 border-red-500 focus-visible:ring-red-500" : "text-zinc-300"
-              }`}
-            />
-            {error && (
-              <div className="absolute bottom-6 right-6 px-3 py-1 bg-red-950/80 border border-red-500/50 text-red-400 text-xs font-mono backdrop-blur-sm pointer-events-none">
-                [ERR] {error}
-              </div>
-            )}
-          </div>
-        </article>
+    <ToolLayout title="URL Encoder/Decoder" description="Safely encode and decode URL parameters or entire URIs.">
+      <div className="mx-auto w-full max-w-4xl min-w-0 space-y-6">
+        <ToolPanel>
+          <ToolPanelBody>
+            <ToolField htmlFor="url-mode" label="Encoding mode" helper="URL component encodes reserved characters. Full URI preserves URL separators. Changing mode converts the current raw text.">
+              <Select value={useComponent ? "component" : "uri"} onValueChange={value => {
+                if (value === null) return;
+                const mode = value === "component";
+                setUseComponent(mode);
+                handleRawChange(raw, mode);
+              }}>
+                <SelectTrigger id="url-mode" className="w-full rounded-none border-[#1a1a1a] bg-black! text-zinc-300">
+                  <SelectValue>{useComponent ? "URL component" : "Full URI"}</SelectValue>
+                </SelectTrigger>
+                <SelectContent className="rounded-none border border-[#2a2a2a] bg-[#080808] text-zinc-300">
+                  <SelectItem value="component" className="rounded-none">URL component</SelectItem>
+                  <SelectItem value="uri" className="rounded-none">Full URI</SelectItem>
+                </SelectContent>
+              </Select>
+            </ToolField>
+          </ToolPanelBody>
+        </ToolPanel>
+        <ToolPanel>
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="IN/OUT">Raw text</ToolPanelTitle>
+            <ToolActionButton disabled={!raw} onClick={() => copy(raw)}><Copy aria-hidden="true" /> Copy raw text</ToolActionButton>
+          </ToolPanelHeader>
+          <ToolPanelBody>
+            <ToolField htmlFor="raw-text" label="Text to encode" helper="Conversion updates as you type. Copy becomes available when text is present.">
+              <Textarea id="raw-text" placeholder="Type or paste raw text here..." value={raw}
+                onChange={event => handleRawChange(event.target.value)}
+                className="h-48 field-sizing-fixed resize-y rounded-none border-[#1a1a1a] bg-black! text-zinc-300" />
+            </ToolField>
+          </ToolPanelBody>
+        </ToolPanel>
+        <ToolPanel>
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="IN/OUT">URL encoded</ToolPanelTitle>
+            <ToolActionButton disabled={!encoded} onClick={() => copy(encoded)}><Copy aria-hidden="true" /> Copy encoded</ToolActionButton>
+          </ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            <ToolField htmlFor="encoded-text" label="Text to decode">
+              <Textarea id="encoded-text" placeholder="Type or paste URL encoded text here..." value={encoded}
+                onChange={event => handleEncodedChange(event.target.value)}
+                aria-invalid={!!error} aria-describedby={error ? "url-error" : undefined}
+                className="h-48 field-sizing-fixed resize-y rounded-none border-[#1a1a1a] bg-black! text-zinc-300" />
+            </ToolField>
+            {error && <ToolStatus id="url-error" tone="error">{error}. Review the input; the last valid conversion is retained.</ToolStatus>}
+          </ToolPanelBody>
+        </ToolPanel>
       </div>
     </ToolLayout>
   );

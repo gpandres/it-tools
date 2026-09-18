@@ -1,12 +1,13 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { Label } from "@/components/ui/label";
+import { ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody, ToolField, ToolActionButton, ToolStatus } from "@/components/tool-design";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { useNotification } from "@/components/notification-provider";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect, useCallback } from "react";
-import { Copy, Check, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Copy, RefreshCw } from "lucide-react";
 
 const LOREM_WORDS = [
   "lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit",
@@ -46,15 +47,17 @@ export default function LoremIpsumGenerator() {
   const [count, setCount] = useState<number>(3);
   const [output, setOutput] = useState("");
   
-  const [copiedKey, setCopiedKey] = useState<boolean>(false);
+  const { notify } = useNotification();
 
-  const copy = () => {
+  const copy = async () => {
     if (!output) return;
-    navigator.clipboard.writeText(output);
-    setCopiedKey(true);
-    setTimeout(() => setCopiedKey(false), 2000);
+    try {
+      await navigator.clipboard.writeText(output);
+      notify("Copied to clipboard");
+    } catch {
+      notify("Could not copy. Select the text and copy it manually.", "error");
+    }
   };
-
   const generate = useCallback(() => {
     let result = "";
     const safeCount = Math.min(Math.max(1, count || 1), 1000); // Max limits to prevent freezing
@@ -89,82 +92,47 @@ export default function LoremIpsumGenerator() {
   }, [generate]);
 
   return (
-    <ToolLayout 
-      title="Lorem Ipsum Generator" 
-      description="Generate placeholder dummy text for your designs and mockups."
-    >
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        
-        {/* Controls */}
-        <article className="xl:col-span-1 border border-[#1a1a1a] bg-[#050505] flex flex-col h-fit sticky top-24 rounded-none">
-          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-[#00ff9c] text-xs">[IN]</span>
-            <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest">Configuration</span>
-          </header>
-          <div className="p-6 flex flex-col gap-6">
-            
-            <div className="space-y-3">
-              <Label className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Format</Label>
-              <div className="flex flex-col gap-2">
-                {(["paragraphs", "sentences", "words"] as const).map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setType(t)}
-                    className={`text-left px-4 py-2 font-mono text-sm border transition-colors rounded-none ${type === t ? "border-[#00ff9c] text-[#00ff9c] bg-[#00ff9c]/10" : "border-[#1a1a1a] text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"}`}
-                  >
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Label className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Quantity</Label>
-              <Input
-                type="number"
-                min={1}
-                max={1000}
-                value={count}
-                onChange={(e) => setCount(parseInt(e.target.value) || 0)}
-                className="font-mono text-base bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] h-10 text-zinc-200"
-              />
-            </div>
-
-            <Button 
-              onClick={generate}
-              className="mt-4 w-full rounded-none font-mono tracking-widest uppercase border border-[#ffb000] text-[#ffb000] bg-transparent hover:bg-[#ffb000]/10"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" /> Generate
-            </Button>
-          </div>
-        </article>
-
-        {/* Output */}
-        <article className="xl:col-span-3 border border-[#1a1a1a] bg-[#050505] flex flex-col min-h-[500px] rounded-none">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <div className="flex items-center gap-2">
-              <span className="text-[#00ff9c] text-xs">[OUT]</span>
-              <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Generated Text</span>
-            </div>
-            <Button 
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 transition-colors border border-transparent hover:border-[#00ff9c]/30"
-              onClick={copy}
-            >
-              {copiedKey ? <><Check className="w-3 h-3 mr-1" /> Copied</> : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
-            </Button>
-          </header>
-          <div className="p-0 flex-1 flex flex-col">
-            <Textarea
-              readOnly
-              value={output}
-              className="flex-1 w-full p-6 font-mono text-sm leading-relaxed bg-black border-none text-zinc-300 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none custom-scrollbar"
-              spellCheck={false}
-            />
-          </div>
-        </article>
-
+    <ToolLayout title="Lorem Ipsum Generator" description="Generate placeholder dummy text for your designs and mockups.">
+      <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-4">
+        <ToolPanel className="h-fit xl:col-span-1">
+          <ToolPanelHeader><ToolPanelTitle marker="IN">Configuration</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-6">
+            <ToolField htmlFor="lorem-format" label="Format">
+              <Select value={type} onValueChange={value => {
+                if (value === "paragraphs" || value === "sentences" || value === "words") setType(value);
+              }}>
+                <SelectTrigger id="lorem-format" className="w-full rounded-none border-[#1a1a1a] bg-black!">
+                  <SelectValue>{type.charAt(0).toUpperCase() + type.slice(1)}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="paragraphs">Paragraphs</SelectItem>
+                  <SelectItem value="sentences">Sentences</SelectItem>
+                  <SelectItem value="words">Words</SelectItem>
+                </SelectContent>
+              </Select>
+            </ToolField>
+            <ToolField htmlFor="lorem-count" label="Quantity" helper="Choose 1 to 1,000. Text updates automatically when you change the format or quantity.">
+              <Input id="lorem-count" type="number" min={1} max={1000} value={count}
+                onChange={event => setCount(parseInt(event.target.value) || 0)}
+                aria-describedby={count < 1 || count > 1000 ? "lorem-count-status" : undefined}
+                className="h-10 rounded-none border-[#1a1a1a] bg-black! text-base text-zinc-300" />
+            </ToolField>
+            {(count < 1 || count > 1000) && <ToolStatus id="lorem-count-status" tone="attention">Generating {Math.min(Math.max(1, count || 1), 1000).toLocaleString("en-US")} {count < 1 ? type.slice(0, -1) : type}. Choose a quantity between 1 and 1,000.</ToolStatus>}
+            <ToolActionButton tone="accent" onClick={generate} className="w-full"><RefreshCw aria-hidden="true" /> Generate</ToolActionButton>
+          </ToolPanelBody>
+        </ToolPanel>
+        <ToolPanel className="xl:col-span-3">
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="OUT">Generated text</ToolPanelTitle>
+            <ToolActionButton onClick={copy} disabled={!output} aria-label="Copy generated text"><Copy aria-hidden="true" /> Copy</ToolActionButton>
+          </ToolPanelHeader>
+          <ToolPanelBody>
+            <ToolField htmlFor="lorem-output" label="Generated text" helper="Read-only output. Generate creates a new variation with the same settings.">
+              <Textarea id="lorem-output" readOnly value={output} spellCheck={false}
+                className="h-64 field-sizing-fixed resize-y rounded-none border-[#1a1a1a] bg-black! text-sm leading-relaxed text-zinc-300 xl:h-96" />
+            </ToolField>
+          </ToolPanelBody>
+        </ToolPanel>
       </div>
     </ToolLayout>
   );

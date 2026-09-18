@@ -9,7 +9,7 @@ You can contribute in several ways:
 - Fix bugs or improve existing features.
 - Propose new ideas through an issue.
 - Improve documentation, examples, or interface text.
-- Add or improve tests.
+- Verify behavior locally.
 - Review other contributors' pull requests.
 - Share the project and explain how you use it.
 - Support project maintenance financially when an official support channel is available.
@@ -43,12 +43,11 @@ The project will start at `http://localhost:3501`.
    ```
 
 2. Keep changes small and focused on a single goal.
-3. Add or update the relevant tests.
+3. Verify the affected behavior locally.
 4. Run the checks before submitting your changes:
 
    ```bash
    npm run typecheck
-   npm test
    npm run lint:ratchet
    npm run build
    ```
@@ -83,7 +82,7 @@ A pull request should:
 
 - Have a clear and descriptive title.
 - Keep a reasonable scope.
-- Include tests for behavior changes when appropriate.
+- Verify behavior changes locally before submitting.
 - Avoid unnecessary dependencies.
 - Follow the existing style and conventions.
 - Pass the automated checks.

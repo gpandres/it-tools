@@ -1,9 +1,9 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Copy, Check, ArrowDownUp } from "lucide-react";
+import { ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody, ToolField, ToolActionButton, ToolStatus } from "@/components/tool-design";
+import { useNotification } from "@/components/notification-provider";
+import { Copy } from "lucide-react";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -32,8 +32,7 @@ export default function Base64Converter() {
   const [raw, setRaw] = useState("");
   const [base64, setBase64] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [copiedRaw, setCopiedRaw] = useState(false);
-  const [copiedB64, setCopiedB64] = useState(false);
+  const { notify } = useNotification();
 
   const handleRawChange = (value: string) => {
     setRaw(value);
@@ -58,15 +57,13 @@ export default function Base64Converter() {
     }
   };
 
-  const copy = (text: string, isRaw: boolean) => {
+  const copy = async (text: string) => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    if (isRaw) {
-      setCopiedRaw(true);
-      setTimeout(() => setCopiedRaw(false), 2000);
-    } else {
-      setCopiedB64(true);
-      setTimeout(() => setCopiedB64(false), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      notify("Copied to clipboard");
+    } catch {
+      notify("Could not copy. Select the text and copy it manually.", "error");
     }
   };
 
@@ -75,73 +72,49 @@ export default function Base64Converter() {
       title="Base64 Encoder/Decoder" 
       description="Convert text or data to and from Base64 encoding. Supports UTF-8 characters."
     >
-      <div className="flex flex-col gap-6 max-w-4xl mx-auto">
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <div className="flex items-center gap-2">
-              <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>
-              <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Raw Text</span>
-            </div>
-            <Button 
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 transition-colors"
-              onClick={() => copy(raw, true)}
-            >
-              {copiedRaw ? <><Check className="w-3 h-3 mr-1" /> Copied</> : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
-            </Button>
-          </header>
-          <div className="p-4">
-            <Label htmlFor="raw-text" className="sr-only">Raw text</Label>
+      <div className="mx-auto w-full max-w-4xl min-w-0 space-y-6">
+        <ToolPanel>
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="IN/OUT">Raw text</ToolPanelTitle>
+            <ToolActionButton disabled={!raw} onClick={() => copy(raw)}>
+              <Copy aria-hidden="true" /> Copy raw text
+            </ToolActionButton>
+          </ToolPanelHeader>
+          <ToolPanelBody>
+            <ToolField htmlFor="raw-text" label="Text to encode" helper="UTF-8 text is converted as you type. Copy becomes available when text is present.">
             <Textarea
               id="raw-text"
               placeholder="Type or paste raw text here..."
               value={raw}
               onChange={(e) => handleRawChange(e.target.value)}
-              className="min-h-[200px] font-mono bg-black border-[#1a1a1a] text-zinc-300 rounded-none focus-visible:ring-[#00ff9c] resize-y"
+              className="h-48 field-sizing-fixed rounded-none border-[#1a1a1a] bg-black! text-zinc-300 resize-y"
             />
-          </div>
-        </article>
+            </ToolField>
+          </ToolPanelBody>
+        </ToolPanel>
 
-        <div className="flex justify-center -my-3 z-10 relative pointer-events-none">
-          <div className="bg-[#050505] border border-[#1a1a1a] p-2 text-zinc-600">
-            <ArrowDownUp className="w-5 h-5" />
-          </div>
-        </div>
-
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <div className="flex items-center gap-2">
-              <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>
-              <span className="text-[#00ff9c] text-sm font-semibold glow uppercase tracking-widest">Base64 Encoded</span>
-            </div>
-            <Button 
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 transition-colors"
-              onClick={() => copy(base64, false)}
-            >
-              {copiedB64 ? <><Check className="w-3 h-3 mr-1" /> Copied</> : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
-            </Button>
-          </header>
-          <div className="p-4 relative">
-            <Label htmlFor="b64-text" className="sr-only">Base64 text</Label>
+        <ToolPanel>
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="IN/OUT">Base64 encoded</ToolPanelTitle>
+            <ToolActionButton disabled={!base64} onClick={() => copy(base64)}>
+              <Copy aria-hidden="true" /> Copy Base64
+            </ToolActionButton>
+          </ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            <ToolField htmlFor="b64-text" label="Text to decode">
             <Textarea
               id="b64-text"
               placeholder="Type or paste Base64 here..."
               value={base64}
               onChange={(e) => handleBase64Change(e.target.value)}
-              className={`min-h-[200px] font-mono bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] resize-y ${
-                error ? "text-red-400 border-red-500 focus-visible:ring-red-500" : "text-zinc-300"
-              }`}
+              aria-invalid={!!error}
+              aria-describedby={error ? "base64-error" : undefined}
+              className="h-48 field-sizing-fixed rounded-none border-[#1a1a1a] bg-black! text-zinc-300 resize-y"
             />
-            {error && (
-              <div className="absolute bottom-6 right-6 px-3 py-1 bg-red-950/80 border border-red-500/50 text-red-400 text-xs font-mono backdrop-blur-sm pointer-events-none">
-                [ERR] {error}
-              </div>
-            )}
-          </div>
-        </article>
+            </ToolField>
+            {error && <ToolStatus id="base64-error" tone="error">{error}. Enter valid Base64; the last valid raw text is retained.</ToolStatus>}
+          </ToolPanelBody>
+        </ToolPanel>
       </div>
     </ToolLayout>
   );

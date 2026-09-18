@@ -35,6 +35,8 @@ export function ToolDialog({
   defaultOpen,
   onOpenChange,
   contentClassName,
+  initialFocus,
+  finalFocus,
 }: {
   trigger?: React.ReactElement;
   title: React.ReactNode;
@@ -49,10 +51,14 @@ export function ToolDialog({
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   contentClassName?: string;
+  initialFocus?: React.ComponentProps<typeof DialogContent>["initialFocus"];
+  finalFocus?: React.ComponentProps<typeof DialogContent>["finalFocus"];
 }) {
   return <Dialog open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
     {trigger && <DialogTrigger render={trigger} />}
     <DialogContent
+      initialFocus={initialFocus}
+      finalFocus={finalFocus}
       showCloseButton={false}
       className={cn(
         "max-h-[min(42rem,calc(100dvh-2rem))] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-none border border-[#2a2a2a] bg-[#080808] p-0 text-zinc-100 shadow-2xl",
@@ -97,7 +103,7 @@ export function ToolDialog({
   </Dialog>;
 }
 
-export function ToolConfirmDialog({ trigger, title, description, confirmLabel = "Confirm", cancelLabel = "Cancel", tone = "danger", onConfirm }: {
+export function ToolConfirmDialog({ trigger, title, description, confirmLabel = "Confirm", cancelLabel = "Cancel", tone = "danger", onConfirm, finalFocus }: {
   trigger: React.ReactElement;
   title: React.ReactNode;
   description: React.ReactNode;
@@ -105,9 +111,11 @@ export function ToolConfirmDialog({ trigger, title, description, confirmLabel = 
   cancelLabel?: React.ReactNode;
   tone?: "accent" | "danger";
   onConfirm: () => void;
+  finalFocus?: React.ComponentProps<typeof DialogContent>["finalFocus"];
 }) {
   return <ToolDialog
     trigger={trigger}
+    finalFocus={finalFocus}
     title={title}
     description={description}
     cancelLabel={cancelLabel}

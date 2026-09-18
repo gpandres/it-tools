@@ -13,6 +13,7 @@ import { DiagramDesignDemo } from "./components/DiagramDesignDemo";
 import { CliDesignDemo } from "./components/CliDesignDemo";
 import { PatternShowcase } from "./components/PatternShowcase";
 import { HorizontalTimelineDemo } from "./components/HorizontalTimelineDemo";
+import { SelectDemo } from "./components/SelectDemo";
 
 export const metadata: Metadata = {
   title: "Design System Reference | IT_TOOLS",
@@ -87,6 +88,10 @@ export default function DesignSystemPage() {
               ["Data", "Code fields, terminal output, stats and timelines"],
             ].map(([group, components]) => <div key={group} className="bg-[#050505] p-3"><p className="font-bold uppercase tracking-widest text-[#00ff9c]">{group}</p><p className="mt-2 leading-relaxed text-zinc-400">{components}</p></div>)}
           </div>
+        </Section>
+
+        <Section title="Select controls">
+          <SelectDemo />
         </Section>
 
         <div className="grid gap-6 xl:grid-cols-2">

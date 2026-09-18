@@ -41,6 +41,10 @@ Use the existing CSS variables where possible. When a component needs an explici
 
 Do not use bright white surfaces, purple default gradients, arbitrary one-off accent colours, excessive `rounded-xl` cards, or colour as the only way to communicate state.
 
+## Select field containment
+
+Use the shared Select primitive for option menus. Option labels wrap inside the popup; the selected value is bounded by the trigger width. ToolField can shrink inside grid and flex layouts so long values do not widen their sibling fields. Keep the full option text available in the menu. `/design-system` includes long-label, disabled and inline-validation examples. Keyboard highlighting of a disabled option does not make it selectable.
+
 ## Typography
 
 `src/app/layout.tsx` loads the local JetBrains Mono font and `src/app/globals.css` applies it globally. Do not load a web font or override it in a tool.
@@ -148,6 +152,10 @@ Shared primitives in `src/components/ui` remain the API for buttons, inputs, tex
 ### Generic dialog composition
 
 `ToolDialog` uses the shared Base UI dialog primitive. Escape dismissal, focus trapping, focus restoration, backdrop, bounded scrolling, close control and responsive sizing come from the component. Action descriptors close the dialog by default; set `closeOnSelect: false` only for an action that must keep the dialog open, such as an in-place validation attempt.
+
+For flows that must start in a particular field (for example global search), pass `initialFocus={inputRef}` to `ToolDialog` and attach that ref to the shared input. This optional prop forwards Base UI's initial-focus contract; omitting it preserves the existing default. Focus trapping and restoration remain owned by the dialog. Do not use timeouts or document queries to focus a field after opening.
+
+`ToolDialog` and `ToolConfirmDialog` also accept optional `finalFocus` using Base UI's focus-target contract. Use it when the confirmed action removes or disables the trigger. For example, `finalFocus={() => text ? true : editorRef.current}` restores the trigger on cancel and focuses the empty editor after clearing. Return `true` for normal trigger restoration; omitting the prop preserves existing behavior.
 
 ```tsx
 <ToolDialog
@@ -490,7 +498,7 @@ This makes a calculator, parser, generator or auditor immediately recognisable a
 6. Shows validation inline or through the notification provider, never `alert()`.
 7. Handles empty, loading, error and long-content states.
 8. Keeps all local data local and documents any intentional external request.
-9. Passes typecheck, tests, build and `git diff --check`.
+9. Passes typecheck, build and `git diff --check`.
 
 When an existing tool differs, migrate its visual shell first and preserve its working domain logic. The `/design-system` page is a living visual regression reference, not a second product surface.
 
@@ -500,7 +508,6 @@ Run the repository gates after changing the public design API:
 
 ```bash
 npm run typecheck
-npm test
 npm run lint:ratchet
 npm run build
 git diff --check

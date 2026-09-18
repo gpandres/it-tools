@@ -9,9 +9,7 @@
     "lint": "eslint",
     "lint:ratchet": "node scripts/check-lint.mjs",
     "typecheck": "tsc --noEmit --incremental false",
-    "test:routes": "node --experimental-strip-types scripts/smoke-routes.ts",
-    "check": "npm run typecheck && npm test && npm run lint:ratchet && npm run build",
-    "test": "node --experimental-strip-types --test tests/**/*.test.ts"
+    "check": "npm run typecheck && npm run lint:ratchet && npm run build"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

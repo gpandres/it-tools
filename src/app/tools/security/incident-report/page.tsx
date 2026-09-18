@@ -3,11 +3,10 @@
 import { ToolLayout } from "@/components/tool-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useMemo, useRef, useEffect } from "react";
-import { Copy, Download, FileJson, CheckCircle2, FileText, ClipboardList, ShieldAlert, X, FileUp, Palette, FileSearch } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { Copy, Download, FileJson, FileText, ShieldAlert, X, FileUp, Palette, FileSearch } from "lucide-react";
 import { PdfMakeScripts } from "@/components/pdfmake-scripts";
 import { downloadPdfWithPdfMake } from "@/lib/pdfmake-export";
 import { useNotification } from "@/components/notification-provider";

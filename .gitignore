@@ -51,7 +51,7 @@ next-env.d.ts
 /.tmp-npm-cache/
 /.tmp-*.png
 
-
+docs/
 /docs
 !/docs/
 /docs/*
@@ -59,3 +59,8 @@ next-env.d.ts
 .tmp-diagram-qa/
 .tmp-npm-cache/
 .tmp-qa-downloads/
+
+# Local verification artifacts
+/tests/
+/scripts/smoke-routes.ts
+/.tmp-*

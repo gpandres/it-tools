@@ -21,10 +21,10 @@ export function ToolActionButton({ tone = 'neutral', className, ...props }: Tool
       {...props}
       size={props.size || 'sm'}
       className={cn(
-        'h-8 rounded-none font-bold',
+        'h-8 rounded-none font-bold focus-visible:border-[#00ff9c] focus-visible:ring-[#00ff9c]/50',
         tone === 'accent' && 'border-[#00ff9c]/40 bg-[#00ff9c]/10 text-[#00ff9c] hover:border-[#00ff9c] hover:bg-[#00ff9c]/20',
         tone === 'danger' && 'border-red-500/40 bg-black! text-red-300 hover:border-red-400 hover:bg-red-500/10!',
-        tone === 'neutral' && 'border-[#1a1a1a] bg-black text-zinc-300 hover:border-[#00ff9c] hover:text-[#00ff9c]',
+        tone === 'neutral' && 'border-[#1a1a1a] bg-black text-zinc-300 hover:border-[#00ff9c] hover:bg-[#111111] hover:text-[#00ff9c]',
         className
       )}
     />

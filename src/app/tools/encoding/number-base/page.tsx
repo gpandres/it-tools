@@ -1,11 +1,11 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { Label } from "@/components/ui/label";
+import { ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody, ToolField, ToolActionButton, ToolStatus } from "@/components/tool-design";
+import { useNotification } from "@/components/notification-provider";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
-import { Copy, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Copy } from "lucide-react";
 
 export default function NumberBaseConverter() {
   const [decimal, setDecimal] = useState("");
@@ -13,13 +13,16 @@ export default function NumberBaseConverter() {
   const [binary, setBinary] = useState("");
   const [octal, setOctal] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const { notify } = useNotification();
 
-  const copy = (text: string, key: string) => {
+  const copy = async (text: string) => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      notify("Copied to clipboard");
+    } catch {
+      notify("Could not copy. Select the number and copy it manually.", "error");
+    }
   };
 
   const updateAll = (value: string, base: number) => {
@@ -101,8 +104,7 @@ export default function NumberBaseConverter() {
           title="Decimal (Base 10)" 
           value={decimal}
           onChange={(val) => updateAll(val, 10)}
-          onCopy={() => copy(decimal, "dec")}
-          copied={copiedKey === "dec"}
+          onCopy={() => copy(decimal)}
           error={error}
           prefix=""
         />
@@ -110,8 +112,7 @@ export default function NumberBaseConverter() {
           title="Hexadecimal (Base 16)" 
           value={hex}
           onChange={(val) => updateAll(val, 16)}
-          onCopy={() => copy(hex, "hex")}
-          copied={copiedKey === "hex"}
+          onCopy={() => copy(hex)}
           error={error}
           prefix="0x"
         />
@@ -119,8 +120,7 @@ export default function NumberBaseConverter() {
           title="Binary (Base 2)" 
           value={binary}
           onChange={(val) => updateAll(val, 2)}
-          onCopy={() => copy(binary, "bin")}
-          copied={copiedKey === "bin"}
+          onCopy={() => copy(binary)}
           error={error}
           prefix="0b"
         />
@@ -128,18 +128,14 @@ export default function NumberBaseConverter() {
           title="Octal (Base 8)" 
           value={octal}
           onChange={(val) => updateAll(val, 8)}
-          onCopy={() => copy(octal, "oct")}
-          copied={copiedKey === "oct"}
+          onCopy={() => copy(octal)}
           error={error}
           prefix="0o"
         />
       </div>
       
       {error && (
-        <div className="mt-6 p-4 bg-red-950/30 border border-red-900/50 max-w-5xl mx-auto flex items-center gap-3 rounded-none">
-          <span className="bg-red-500 text-white px-2 py-0.5 text-xs font-mono rounded-none">ERROR</span>
-          <span className="text-red-400 font-mono text-sm">{error}</span>
-        </div>
+        <ToolStatus id="number-base-error" tone="error" className="mx-auto mt-6 max-w-5xl">{error}</ToolStatus>
       )}
     </ToolLayout>
   );
@@ -150,7 +146,6 @@ function BaseInputBox({
   value, 
   onChange, 
   onCopy, 
-  copied, 
   error,
   prefix
 }: { 
@@ -158,43 +153,41 @@ function BaseInputBox({
   value: string, 
   onChange: (val: string) => void,
   onCopy: () => void,
-  copied: boolean,
   error: string | null,
   prefix: string
 }) {
+  const name = title.split(" ")[0];
+  const id = `number-${name.toLowerCase()}`;
   return (
-    <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
-      <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-        <div className="flex items-center gap-2">
-          <span className="text-[#00ff9c] text-xs">[IN/OUT]</span>
-          <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">{title}</span>
-        </div>
-        <Button 
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 transition-colors"
-          onClick={onCopy}
-        >
-          {copied ? <><Check className="w-3 h-3 mr-1" /> Copied</> : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
-        </Button>
-      </header>
-      <div className="p-4 flex flex-col justify-center min-h-[120px]">
+    <ToolPanel>
+      <ToolPanelHeader>
+        <ToolPanelTitle marker="IN/OUT">{title}</ToolPanelTitle>
+        <ToolActionButton aria-label={`Copy ${name.toLowerCase()}`} disabled={!value || value.trim() === "-"} onClick={onCopy}>
+          <Copy aria-hidden="true" /> Copy
+        </ToolActionButton>
+      </ToolPanelHeader>
+      <ToolPanelBody>
+        <ToolField htmlFor={id} label={`${name} value`} helper="Whole numbers only. Spaces are ignored; a leading minus sign is allowed.">
         <div className="relative">
           {prefix && value && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 font-mono text-sm pointer-events-none select-none">
+            <div aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none select-none">
               {prefix}
             </div>
           )}
           <Input
+            id={id}
             type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={`Enter ${title.split(' ')[0].toLowerCase()}...`}
-            className={`w-full font-mono text-base bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] h-12 text-zinc-200 ${prefix && value ? 'pl-9' : ''} ${error && value ? 'border-red-500/50 text-red-400' : ''}`}
+            aria-invalid={!!error && !!value}
+            aria-describedby={error ? "number-base-error" : undefined}
+            className={`w-full min-w-0 text-base bg-black! border-[#1a1a1a] rounded-none h-12 text-zinc-300 ${prefix && value ? 'pl-9' : ''}`}
             spellCheck={false}
           />
         </div>
-      </div>
-    </article>
+        </ToolField>
+      </ToolPanelBody>
+    </ToolPanel>
   );
 }
