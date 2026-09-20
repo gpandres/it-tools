@@ -1,187 +1,100 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
+import { ToolActionButton, ToolEmptyState, ToolField, ToolPanel, ToolPanelBody, ToolPanelHeader, ToolPanelTitle, ToolStatus } from "@/components/tool-design";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Copy, Check } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useNotification } from "@/components/notification-provider";
+import { Copy } from "lucide-react";
+import { useState } from "react";
 
-type Perms = {
-  read: boolean;
-  write: boolean;
-  execute: boolean;
-};
+const entities = ["Owner", "Group", "Public"] as const;
+const permissions = [{ name: "Read", bit: 4 }, { name: "Write", bit: 2 }, { name: "Execute", bit: 1 }] as const;
+const symbols = ["---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"];
 
-type ChmodState = {
-  owner: Perms;
-  group: Perms;
-  public: Perms;
-};
+export default function ChmodCalculator() {
+  const [input, setInput] = useState("755");
+  const { notify } = useNotification();
+  const valid = /^[0-7]{1,3}$/.test(input);
+  const invalid = !!input && !valid;
+  const octal = valid ? input.padStart(3, "0") : "000";
+  const digits = [...octal].map(Number);
+  const symbolic = `-${digits.map(digit => symbols[digit]).join("")}`;
+  const command = `chmod ${octal} file.txt`;
 
-function ChmodCalculatorContent() {
-  const [state, setState] = useState({ octal: "755" });
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  const oct = state.octal.padStart(3, "0").slice(-3);
-  const isValid = /^[0-7]{3}$/.test(oct);
-
-  const o = isValid ? parseInt(oct[0], 10) : 0;
-  const g = isValid ? parseInt(oct[1], 10) : 0;
-  const p = isValid ? parseInt(oct[2], 10) : 0;
-
-  const perms: ChmodState = {
-    owner: { read: (o & 4) > 0, write: (o & 2) > 0, execute: (o & 1) > 0 },
-    group: { read: (g & 4) > 0, write: (g & 2) > 0, execute: (g & 1) > 0 },
-    public: { read: (p & 4) > 0, write: (p & 2) > 0, execute: (p & 1) > 0 },
+  const togglePermission = (entity: number, bit: number) => {
+    const next = [...digits];
+    next[entity] ^= bit;
+    setInput(next.join(""));
   };
 
-  const copyToClipboard = async (text: string, key: string) => {
+  const copy = async (value: string) => {
+    if (!valid) return;
     try {
-      await navigator.clipboard.writeText(text);
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy", err);
+      await navigator.clipboard.writeText(value);
+      notify("Copied to clipboard");
+    } catch {
+      notify("Could not copy. Select the result and copy it manually.", "error");
     }
   };
 
-  const handleCheckboxChange = (entity: keyof ChmodState, perm: keyof Perms, checked: boolean) => {
-    const newPerms = {
-      ...perms,
-      [entity]: {
-        ...perms[entity],
-        [perm]: checked
-      }
-    };
-    
-    // Calculate new octal
-    const calc = (p: Perms) => (p.read ? 4 : 0) + (p.write ? 2 : 0) + (p.execute ? 1 : 0);
-    const newOctal = `${calc(newPerms.owner)}${calc(newPerms.group)}${calc(newPerms.public)}`;
-    
-    setState({ octal: newOctal });
-  };
-
-  const octalToSymbolic = (octal: string) => {
-    const map = ["---", "--x", "-w-", "-wx", "r--", "r-x", "rw-", "rwx"];
-    if (!/^[0-7]{3}$/.test(octal)) return "---------";
-    return `${map[parseInt(octal[0])]}${map[parseInt(octal[1])]}${map[parseInt(octal[2])]}`;
-  };
-
-  const symbolic = octalToSymbolic(state.octal.padStart(3, "0").slice(-3));
-
-  const entities: { key: keyof ChmodState, label: string }[] = [
-    { key: "owner", label: "Owner" },
-    { key: "group", label: "Group" },
-    { key: "public", label: "Public" }
-  ];
-
   return (
-    <ToolLayout 
-      title="Chmod Calculator" 
-      description="Calculate Linux file permissions using an interactive visual grid. Converts between octal and symbolic formats."
-    >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Interactive Grid */}
-        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none">
-          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-[#00ff9c] text-xs">[IN]</span>
-            <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Permission Grid</span>
-          </header>
-          <div className="p-6">
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              <div className="col-span-1"></div>
-              <div className="text-center text-xs font-mono text-zinc-500 uppercase tracking-widest">Read (4)</div>
-              <div className="text-center text-xs font-mono text-zinc-500 uppercase tracking-widest">Write (2)</div>
-              <div className="text-center text-xs font-mono text-zinc-500 uppercase tracking-widest">Execute (1)</div>
-
-              {entities.map(({ key, label }) => (
-                <div key={key} className="contents">
-                  <div className="flex items-center text-sm font-mono text-zinc-300 uppercase">{label}</div>
-                  {(["read", "write", "execute"] as const).map(perm => (
-                    <label 
-                      key={`${key}-${perm}`}
-                      className="flex items-center justify-center cursor-pointer p-4 border border-[#1a1a1a] bg-black hover:border-[#00ff9c]/50 transition-colors"
-                    >
-                      <input 
-                        type="checkbox"
-                        checked={perms[key][perm]}
-                        onChange={(e) => handleCheckboxChange(key, perm, e.target.checked)}
-                        className="w-5 h-5 accent-[#00ff9c] cursor-pointer"
-                      />
-                    </label>
-                  ))}
-                </div>
+    <ToolLayout title="Chmod Calculator" description="Calculate file permissions using an interactive grid. Convert octal permissions to symbolic notation and a command example.">
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="IN">Permissions</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-5">
+            <ToolField htmlFor="chmod-input" label="Octal permissions" helper="Enter one to three digits from 0 to 7. Short values are padded with zeros. Special bits (setuid, setgid, sticky) are not supported.">
+              <Input id="chmod-input" value={input} onChange={event => setInput(event.target.value)} inputMode="numeric" spellCheck={false}
+                aria-invalid={invalid} aria-describedby={invalid ? "chmod-error" : undefined}
+                className="rounded-none border-[#1a1a1a] bg-black! text-center text-xl tracking-widest text-zinc-300" />
+            </ToolField>
+            {invalid && <ToolStatus id="chmod-error" tone="error" title="Invalid octal permissions">Use one to three digits between 0 and 7, for example 755.</ToolStatus>}
+            <div className="space-y-3">
+              {entities.map((entity, index) => (
+                <fieldset key={entity} disabled={invalid} className="min-w-0 border border-[#1a1a1a] bg-black p-3 disabled:opacity-50">
+                  <legend className="px-1 text-xs font-bold text-zinc-300">{entity}</legend>
+                  <div className="grid grid-cols-3 gap-2">
+                    {permissions.map(permission => (
+                      <label key={permission.bit} className="flex min-h-10 cursor-pointer flex-col items-center justify-center gap-2 text-xs text-zinc-300 sm:flex-row sm:flex-wrap">
+                        <input type="checkbox" aria-label={`${entity} ${permission.name.toLowerCase()}`} checked={!!(digits[index] & permission.bit)}
+                          onChange={() => togglePermission(index, permission.bit)}
+                          className="h-4 w-4 accent-[#00ff9c] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#00ff9c]" />
+                        <span>{permission.name} ({permission.bit})</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
               ))}
             </div>
-
-            <div className="pt-6 border-t border-[#1a1a1a]">
-               <div className="space-y-2">
-                 <label className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Octal Input</label>
-                 <Input 
-                   value={state.octal}
-                   onChange={(e) => setState({ octal: e.target.value.replace(/[^0-7]/g, '').slice(0,3) })}
-                   className="font-mono text-xl text-center tracking-[0.5em] bg-black border-[#1a1a1a] focus-visible:ring-[#00ff9c] text-zinc-200 rounded-none"
-                   maxLength={3}
-                 />
-               </div>
+          </ToolPanelBody>
+        </ToolPanel>
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="OUT">Calculated Results</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-5">
+            {valid ? (
+              <>
+                {[{ id: "chmod-symbolic", label: "Symbolic format", value: symbolic }, { id: "chmod-command", label: "Command example", value: command }].map(result => (
+                  <ToolField key={result.id} htmlFor={result.id} label={result.label}>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Input id={result.id} readOnly value={result.value} className="min-w-0 flex-1 rounded-none border-[#1a1a1a] bg-black! text-zinc-300" />
+                      <ToolActionButton aria-label={`Copy ${result.label.toLowerCase()}`} onClick={() => copy(result.value)}><Copy aria-hidden="true" /></ToolActionButton>
+                    </div>
+                  </ToolField>
+                ))}
+                <p className="text-xs leading-relaxed text-zinc-400">The leading dash represents a regular file. Replace file.txt with your target path before using the command.</p>
+              </>
+            ) : <ToolEmptyState title={invalid ? "Fix the permissions to continue" : "Awaiting permissions"}>Enter an octal value or select permissions in the grid.</ToolEmptyState>}
+            <div className="space-y-3 border-t border-[#1a1a1a] pt-4">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-[#ffb000]">Quick Reference</h3>
+              <dl className="space-y-2 text-xs text-zinc-400">
+                {[{ oct: "777", description: "Read, write and execute for everyone" }, { oct: "755", description: "Owner writes; everyone reads and executes" }, { oct: "644", description: "Owner writes; everyone reads" }, { oct: "600", description: "Owner reads and writes only" }].map(example => (
+                  <div key={example.oct} className="flex items-start gap-4"><dt className="font-bold text-zinc-300">{example.oct}</dt><dd>{example.description}</dd></div>
+                ))}
+              </dl>
             </div>
-          </div>
-        </article>
-
-        {/* Results */}
-        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none">
-          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-[#00ff9c] text-xs">[OUT]</span>
-            <span className="text-[#00ff9c] text-sm font-semibold glow uppercase tracking-widest">Calculated Results</span>
-          </header>
-          <div className="p-6 space-y-6">
-            
-            <div className="space-y-2">
-              <label className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Symbolic Format</label>
-              <div className="flex bg-black border border-[#1a1a1a] p-1 rounded-none">
-                <Input 
-                  readOnly 
-                  value={`-${symbolic}`}
-                  className="font-mono text-lg bg-transparent border-none text-[#00ff9c] text-center tracking-[0.2em] rounded-none focus-visible:ring-[#00ff9c]"
-                />
-                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(`-${symbolic}`, "sym")} className="text-zinc-500 hover:text-zinc-300 rounded-none">
-                  {copiedKey === "sym" ? <Check className="w-4 h-4 text-[#00ff9c]" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Command Example</label>
-              <div className="flex bg-black border border-[#1a1a1a] p-1 rounded-none">
-                <Input 
-                  readOnly 
-                  value={`chmod ${state.octal} file.txt`}
-                  className="font-mono text-sm bg-transparent border-none text-zinc-300 rounded-none focus-visible:ring-[#00ff9c]"
-                />
-                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(`chmod ${state.octal} file.txt`, "cmd")} className="text-zinc-500 hover:text-zinc-300 rounded-none">
-                  {copiedKey === "cmd" ? <Check className="w-4 h-4 text-[#00ff9c]" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-none text-xs font-mono text-zinc-500 space-y-2">
-              <div className="text-[#ffb000] mb-2 uppercase tracking-widest font-semibold glow-amber">Quick Reference:</div>
-              <div className="flex justify-between"><span>777</span> <span>rwxrwxrwx (All permissions)</span></div>
-              <div className="flex justify-between"><span>755</span> <span>rwxr-xr-x (Web server files)</span></div>
-              <div className="flex justify-between"><span>644</span> <span>rw-r--r-- (Standard files)</span></div>
-              <div className="flex justify-between"><span>600</span> <span>rw------- (Private SSH keys)</span></div>
-            </div>
-
-          </div>
-        </article>
+          </ToolPanelBody>
+        </ToolPanel>
       </div>
     </ToolLayout>
-  );
-}
-
-export default function ChmodCalculator() {
-  return (
-    <ChmodCalculatorContent />
   );
 }
