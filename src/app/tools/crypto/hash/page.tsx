@@ -1,144 +1,96 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { Label } from "@/components/ui/label";
+import { ToolActionButton, ToolActionPanel, ToolBadge, ToolConfirmDialog, ToolEmptyState, ToolField, ToolPanel, ToolPanelBody, ToolPanelHeader, ToolPanelTitle, ToolStatus } from "@/components/tool-design";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect, useMemo } from "react";
-import { Copy, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useNotification } from "@/components/notification-provider";
+import { useState, useMemo, useRef } from "react";
+import { Copy } from "lucide-react";
 import CryptoJS from "crypto-js";
 
 export default function HashGenerator() {
   const [input, setInput] = useState("");
   const [encoding, setEncoding] = useState<"hex" | "base64">("hex");
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const { notify } = useNotification();
 
-  const copy = (text: string, key: string) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
-
-  const hashes = useMemo(() => {
-    if (!input) {
-      return {
-        MD5: "",
-        "SHA-1": "",
-        "SHA-256": "",
-        "SHA-512": "",
-        "SHA-3": "",
-      };
+  const result = useMemo(() => {
+    if (!input) return { hashes: [], error: "" };
+    try {
+      const encoder = encoding === "base64" ? CryptoJS.enc.Base64 : CryptoJS.enc.Hex;
+      const hashes = [
+        { name: "MD5", value: CryptoJS.MD5(input), legacy: true },
+        { name: "SHA-1", value: CryptoJS.SHA1(input), legacy: true },
+        { name: "SHA-256", value: CryptoJS.SHA256(input), legacy: false },
+        { name: "SHA-512", value: CryptoJS.SHA512(input), legacy: false },
+        { name: "Keccak-512", value: CryptoJS.SHA3(input, { outputLength: 512 }), legacy: false },
+      ].map(hash => ({ ...hash, value: encoder.stringify(hash.value) }));
+      return { hashes, error: "" };
+    } catch {
+      return { hashes: [], error: "The text could not be encoded as UTF-8. Replace incomplete Unicode characters and try again." };
     }
-
-    const encode = (words: CryptoJS.lib.WordArray) => {
-      if (encoding === "base64") {
-        return CryptoJS.enc.Base64.stringify(words);
-      }
-      return CryptoJS.enc.Hex.stringify(words);
-    };
-
-    return {
-      MD5: encode(CryptoJS.MD5(input)),
-      "SHA-1": encode(CryptoJS.SHA1(input)),
-      "SHA-256": encode(CryptoJS.SHA256(input)),
-      "SHA-512": encode(CryptoJS.SHA512(input)),
-      "SHA-3": encode(CryptoJS.SHA3(input)),
-    };
   }, [input, encoding]);
 
+  const copy = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      notify("Copied to clipboard");
+    } catch {
+      notify("Could not copy. Select the hash and copy it manually.", "error");
+    }
+  };
+
   return (
-    <ToolLayout 
-      title="Hash Generators" 
-      description="Generate multiple cryptographic hashes (MD5, SHA-1, SHA-2, SHA-3) simultaneously."
-    >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl mx-auto">
-        
-        {/* Input */}
-        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col h-[250px] lg:h-auto lg:sticky lg:top-24">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <div className="flex items-center gap-2">
-              <span className="text-[#00ff9c] text-xs">[IN]</span>
-              <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Input Text</span>
-            </div>
-            {input && (
-              <Button 
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-red-400 hover:bg-red-950/20 transition-colors"
-                onClick={() => setInput("")}
-              >
-                Clear
-              </Button>
-            )}
-          </header>
-          <div className="p-0 flex-1 flex flex-col">
-            <Label htmlFor="hash-input" className="sr-only">Input text</Label>
-            <Textarea
-              id="hash-input"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type something..."
-              className="w-full flex-1 p-6 font-mono text-sm bg-black border-none rounded-none focus-visible:ring-1 focus-visible:ring-[#00ff9c]/50 resize-none custom-scrollbar text-zinc-300"
-              spellCheck={false}
-            />
-          </div>
-          
-          <div className="p-4 border-t border-[#1a1a1a] flex items-center justify-between bg-black">
-            <Label className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Output Encoding</Label>
-            <div className="flex items-center border border-[#1a1a1a] rounded-none">
-              <button 
-                onClick={() => setEncoding("hex")}
-                className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest transition-colors ${encoding === "hex" ? "bg-[#ffb000]/10 text-[#ffb000]" : "text-zinc-500 hover:text-zinc-300"}`}
-              >
-                HEX
-              </button>
-              <div className="w-px h-full bg-[#1a1a1a]"></div>
-              <button 
-                onClick={() => setEncoding("base64")}
-                className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest transition-colors ${encoding === "base64" ? "bg-[#ffb000]/10 text-[#ffb000]" : "text-zinc-500 hover:text-zinc-300"}`}
-              >
-                BASE64
-              </button>
-            </div>
-          </div>
-        </article>
-
-        {/* Outputs */}
-        <div className="flex flex-col gap-4">
-          {Object.entries(hashes).map(([algo, hash]) => (
-            <article key={algo} className="border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col">
-              <header className="flex items-center justify-between px-4 py-2 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#00ff9c] text-xs">[OUT]</span>
-                  <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest glow">{algo}</span>
-                  {algo === "MD5" && (
-                    <span className="bg-red-500/10 text-red-400 text-[10px] px-2 py-0.5 border border-red-500/20 ml-2 rounded-none">Legacy / Insecure</span>
-                  )}
-                </div>
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  disabled={!hash}
-                  className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 transition-colors disabled:opacity-30"
-                  onClick={() => copy(hash, algo)}
-                >
-                  {copiedKey === algo ? <><Check className="w-3 h-3 mr-1" /> Copied</> : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
-                </Button>
-              </header>
-              <div className="p-4 flex items-center min-h-[60px]">
-                {hash ? (
-                  <span className="font-mono text-sm text-zinc-300 break-all leading-relaxed">
-                    {hash}
-                  </span>
-                ) : (
-                  <span className="font-mono text-xs text-zinc-700 select-none">Awaiting input...</span>
-                )}
-              </div>
-            </article>
+    <ToolLayout title="Hash Generators" description="Generate MD5, SHA-1, SHA-256, SHA-512 and Keccak-512 hashes from text.">
+      <div className="space-y-6">
+        <ToolActionPanel label="OUTPUT ENCODING">
+          {(["hex", "base64"] as const).map(value => (
+            <ToolActionButton key={value} aria-pressed={encoding === value} tone={encoding === value ? "accent" : "neutral"} onClick={() => setEncoding(value)}>{value.toUpperCase()}</ToolActionButton>
           ))}
+        </ToolActionPanel>
+        <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-2">
+          <ToolPanel>
+            <ToolPanelHeader>
+              <ToolPanelTitle marker="IN">Input Text</ToolPanelTitle>
+              <ToolConfirmDialog trigger={<ToolActionButton tone="danger" disabled={!input}>Clear</ToolActionButton>}
+                title="Clear hash input?" description="The input and generated hashes will be removed." confirmLabel="Clear input"
+                onConfirm={() => setInput("")} finalFocus={() => input ? true : editorRef.current} />
+            </ToolPanelHeader>
+            <ToolPanelBody className="space-y-4">
+              <ToolField htmlFor="hash-input" label="Input text" helper="Hashes update as you type using UTF-8. Spaces and line breaks are included.">
+                <Textarea id="hash-input" ref={editorRef} value={input} onChange={event => setInput(event.target.value)} placeholder="Type something..."
+                  aria-invalid={!!result.error} aria-describedby={result.error ? "hash-error" : undefined}
+                  className="h-80 field-sizing-fixed resize-y rounded-none border-[#1a1a1a] bg-black! text-zinc-300" spellCheck={false} />
+              </ToolField>
+              {result.error && <ToolStatus id="hash-error" tone="error" title="Unable to hash text">{result.error}</ToolStatus>}
+              <p className="text-xs leading-relaxed text-zinc-400">Keccak-512 is the algorithm provided by CryptoJS under the SHA3 name. Its output differs from standardized SHA3-512.</p>
+            </ToolPanelBody>
+          </ToolPanel>
+          <div className="min-w-0 space-y-4">
+            {result.hashes.length === 0 ? (
+              <ToolPanel>
+                <ToolPanelHeader><ToolPanelTitle marker="OUT">Hashes</ToolPanelTitle></ToolPanelHeader>
+                <ToolPanelBody><ToolEmptyState title={result.error ? "Fix the input to continue" : "Awaiting text"}>Enter text to generate hashes in the selected output encoding.</ToolEmptyState></ToolPanelBody>
+              </ToolPanel>
+            ) : result.hashes.map(hash => (
+              <ToolPanel key={hash.name}>
+                <ToolPanelHeader>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ToolPanelTitle marker="OUT">{hash.name}</ToolPanelTitle>
+                    {hash.legacy && <ToolBadge tone="attention">Legacy</ToolBadge>}
+                  </div>
+                  <ToolActionButton aria-label={`Copy ${hash.name}`} onClick={() => copy(hash.value)}><Copy aria-hidden="true" /> Copy</ToolActionButton>
+                </ToolPanelHeader>
+                <ToolPanelBody>
+                  <ToolField htmlFor={`hash-${hash.name}`} label={`${hash.name} (${encoding.toUpperCase()})`}>
+                    <Textarea id={`hash-${hash.name}`} readOnly value={hash.value} spellCheck={false}
+                      className="h-24 field-sizing-fixed resize-y rounded-none border-[#1a1a1a] bg-black! text-zinc-300" />
+                  </ToolField>
+                </ToolPanelBody>
+              </ToolPanel>
+            ))}
+          </div>
         </div>
-
       </div>
     </ToolLayout>
   );
