@@ -1,280 +1,136 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { Label } from "@/components/ui/label";
+import { ToolActionButton, ToolActionPanel, ToolBadge, ToolEmptyState, ToolField, ToolPanel, ToolPanelBody, ToolPanelHeader, ToolPanelTitle, ToolStatus } from "@/components/tool-design";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useMemo } from "react";
-import { Copy, Check, Search, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
+const examples = [
+  { label: "Email", val: "(?<=\\s|^)([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})" },
+  { label: "IPv4", val: "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b" },
+  { label: "MAC Address", val: "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$" },
+  { label: "URL", val: "https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)" },
+];
+const flagOptions = [
+  ["g", "Global"], ["i", "Case Insensitive"], ["m", "Multiline"],
+  ["s", "DotAll"], ["u", "Unicode"], ["y", "Sticky"],
+] as const;
 
 export default function RegexTester() {
-  const [regexStr, setRegexStr] = useState("(?<=\\s|^)([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})");
+  const [regexStr, setRegexStr] = useState(examples[0].val);
   const [flags, setFlags] = useState("gm");
   const [testText, setTestText] = useState("Contact us at support@example.com or sales@company.net for more info.\nAlso test invalid-email@... \nHello admin@localhost.dev");
-  
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  const copy = (text: string, key: string) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
-
-  const toggleFlag = (flag: string) => {
-    if (flags.includes(flag)) {
-      setFlags(flags.replace(flag, ""));
-    } else {
-      setFlags(flags + flag);
-    }
-  };
 
   const regexData = useMemo(() => {
-    if (!regexStr) return { regex: null, error: null, matches: [] };
-    
+    if (!regexStr) return { error: null, matches: [] };
     try {
-      // Create the RegExp
-      // If the global flag is missing but they want multiple matches, we might just use matchAll if g is present.
-      // JS String.matchAll requires the global flag. If 'g' is missing, we add it just for extraction,
-      // or we just respect their flags. Let's strictly respect their flags, but if 'g' is missing, 
-      // matchAll throws. So if no 'g', we do a single exec().
-      const isGlobal = flags.includes("g");
-      const r = new RegExp(regexStr, flags);
-      
-      const matches: RegExpExecArray[] = [];
-      let match: RegExpExecArray | null;
-      
-      if (isGlobal) {
-        while ((match = r.exec(testText)) !== null) {
-          matches.push(match);
-          if (match[0].length === 0) {
-            r.lastIndex++; // Prevent infinite loops on zero-length matches
-          }
-        }
-      } else {
-        match = r.exec(testText);
-        if (match) matches.push(match);
-      }
-      
-      return { regex: r, error: null, matches };
-    } catch (e) {
-      return { regex: null, error: (e as Error).message, matches: [] };
+      const regex = new RegExp(regexStr, flags);
+      // matchAll advances empty matches by Unicode code point when required.
+      const match = flags.includes("g") ? null : regex.exec(testText);
+      const matches = flags.includes("g") ? Array.from(testText.matchAll(regex)) : match ? [match] : [];
+      return { error: null, matches };
+    } catch (error) {
+      return { error: (error as Error).message, matches: [] };
     }
   }, [regexStr, flags, testText]);
 
-  // Construct highlighted text for the output
   const renderHighlightedText = () => {
-    if (regexData.error || !regexStr || !testText) return <span className="text-zinc-500">{testText || "Awaiting input..."}</span>;
-    if (regexData.matches.length === 0) return <span className="text-zinc-400">{testText}</span>;
-
     const elements = [];
     let lastIndex = 0;
-    
-    let matchIdx = 0;
-    for (const match of regexData.matches) {
-      const startIndex = match.index;
-      const endIndex = startIndex + match[0].length;
-      
-      // Push text before match
-      if (startIndex > lastIndex) {
-        elements.push(
-          <span key={`text-${lastIndex}`} className="text-zinc-400">
-            {testText.substring(lastIndex, startIndex)}
-          </span>
-        );
-      }
-      
-      // Push the match itself
-      // Use alternating colors for matches that are consecutive to distinguish them, or just one bright color
+    for (const [index, match] of regexData.matches.entries()) {
+      const start = match.index;
+      if (start > lastIndex) elements.push(<span key={`text-${index}`}>{testText.substring(lastIndex, start)}</span>);
       elements.push(
-        <span 
-          key={`match-${startIndex}`} 
-          className="bg-[#00ff9c]/20 text-[#00ff9c] px-0.5 rounded-sm border-b border-[#00ff9c]/50 font-bold"
-          title={`Match ${matchIdx + 1}`}
-        >
-          {match[0]}
-        </span>
+        <mark key={`match-${index}`} className="border-b border-[#00ff9c] bg-[#00ff9c]/20 font-bold text-[#00ff9c]" title={`Match ${index + 1}, index ${start}`}>
+          {match[0] || <span aria-label="Zero-length match">│</span>}
+        </mark>
       );
-      
-      lastIndex = endIndex;
-      matchIdx++;
+      lastIndex = start + match[0].length;
     }
-    
-    // Push remaining text
-    if (lastIndex < testText.length) {
-      elements.push(
-        <span key={`text-${lastIndex}`} className="text-zinc-400">
-          {testText.substring(lastIndex)}
-        </span>
-      );
-    }
-    
+    if (lastIndex < testText.length) elements.push(<span key="remaining">{testText.substring(lastIndex)}</span>);
     return elements;
   };
 
+  const emptyTitle = regexData.error ? "Fix the expression to continue" : !regexStr ? "Awaiting expression" : "No matches found";
+
   return (
-    <ToolLayout 
-      title="Regex Tester" 
-      description="Test regular expressions in real-time with syntax highlighting and match extraction."
-    >
-      <div className="flex flex-col gap-6 max-w-5xl mx-auto">
-        
-        {/* Regex Input Header */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col relative rounded-none">
-          <div className="absolute left-0 top-0 bottom-0 w-2 bg-[#ffb000]"></div>
-          <div className="pl-6 pr-4 py-4 flex flex-col md:flex-row items-center gap-4">
-            <span className="text-zinc-500 font-mono text-2xl hidden md:block">/</span>
-            <div className="flex-1 w-full">
-              <Input
-                type="text"
-                value={regexStr}
-                onChange={(e) => setRegexStr(e.target.value)}
-                placeholder="Enter regular expression..."
-                className={`w-full font-mono text-lg bg-black border-none rounded-none focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-[#ffb000]/50 h-12 text-[#ffb000] ${regexData.error ? 'text-red-400' : ''}`}
-                spellCheck={false}
-              />
-            </div>
-            <span className="text-zinc-500 font-mono text-2xl hidden md:block">/</span>
-            
-            {/* Flags */}
-            <div className="flex items-center bg-black border border-[#1a1a1a] h-10 px-1 shrink-0">
-              {(["g", "i", "m", "s", "u", "y"] as const).map(flag => {
-                const isActive = flags.includes(flag);
-                const title = {
-                  "g": "Global",
-                  "i": "Case Insensitive",
-                  "m": "Multiline",
-                  "s": "DotAll",
-                  "u": "Unicode",
-                  "y": "Sticky"
-                }[flag];
-                
-                return (
-                  <button
-                    key={flag}
-                    onClick={() => toggleFlag(flag)}
-                    title={title}
-                    className={`w-8 h-8 flex items-center justify-center font-mono text-xs transition-colors ${isActive ? "text-[#ffb000] bg-[#ffb000]/10 font-bold" : "text-zinc-600 hover:text-zinc-400"}`}
-                  >
-                    {flag}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          {regexData.error && (
-            <div className="bg-red-950/50 border-t border-red-900/50 px-6 py-2 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-red-500" />
-              <span className="text-red-400 font-mono text-xs">{regexData.error}</span>
-            </div>
-          )}
-          <div className="bg-[#0a0a0a] border-t border-[#1a1a1a] px-6 py-2 flex items-center gap-3 overflow-x-auto custom-scrollbar whitespace-nowrap">
-            <span className="text-zinc-600 font-mono text-[10px] uppercase tracking-widest shrink-0">Examples:</span>
-            {[
-              { label: "Email", val: "(?<=\\s|^)([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})" },
-              { label: "IPv4", val: "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b" },
-              { label: "MAC Address", val: "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$" },
-              { label: "URL", val: "https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)" }
-            ].map(ex => (
-              <button
-                key={ex.label}
-                onClick={() => setRegexStr(ex.val)}
-                className="font-mono text-[10px] px-2 py-1 text-zinc-400 border border-[#1a1a1a] hover:text-[#ffb000] hover:border-[#ffb000]/50 transition-colors"
-              >
-                {ex.label}
-              </button>
-            ))}
-          </div>
-        </article>
-
-        {/* Workspace */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[500px]">
-          
-          {/* Test String Input */}
-          <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-full rounded-none">
-            <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-              <div className="flex items-center gap-2">
-                <span className="text-[#00ff9c] text-xs">[IN]</span>
-                <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Test String</span>
-              </div>
-            </header>
-            <div className="p-0 flex-1 flex flex-col relative">
-              <Textarea
-                value={testText}
-                onChange={(e) => setTestText(e.target.value)}
-                placeholder="Type text to test your regex against..."
-                className="w-full flex-1 p-4 font-mono text-sm bg-black border-none rounded-none focus-visible:ring-1 focus-visible:ring-zinc-700 resize-none custom-scrollbar text-zinc-300"
-                spellCheck={false}
-              />
-            </div>
-          </article>
-
-          {/* Matches Output */}
-          <div className="flex flex-col gap-6 h-full">
-            
-            {/* Highlighted Text */}
-            <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col flex-1 min-h-0 rounded-none">
-              <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#00ff9c] text-xs">[OUT]</span>
-                  <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest">Highlighted</span>
-                </div>
-                {regexData.matches.length > 0 && (
-                  <span className="bg-[#00ff9c]/10 text-[#00ff9c] px-2 py-0.5 text-[10px] font-mono border border-[#00ff9c]/30 rounded-none">
-                    {regexData.matches.length} Match{regexData.matches.length !== 1 ? 'es' : ''}
-                  </span>
-                )}
-              </header>
-              <div className="p-4 flex-1 overflow-y-auto custom-scrollbar bg-black font-mono text-sm leading-relaxed whitespace-pre-wrap break-all">
-                {renderHighlightedText()}
-              </div>
-            </article>
-
-            {/* Match Data / Groups */}
-            <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col flex-1 min-h-0 rounded-none">
-              <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#00ff9c] text-xs">[OUT]</span>
-                  <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest">Capture Groups</span>
-                </div>
-              </header>
-              <div className="p-0 flex-1 overflow-y-auto custom-scrollbar bg-black font-mono text-xs">
-                {regexData.matches.length === 0 ? (
-                  <div className="p-4 text-zinc-600">No matches found.</div>
-                ) : (
-                  <div className="flex flex-col divide-y divide-[#1a1a1a]">
-                    {regexData.matches.map((match, i) => (
-                      <div key={i} className="flex flex-col">
-                        <div className="px-4 py-1.5 bg-[#0a0a0a] text-zinc-500 font-bold flex items-center justify-between">
-                          <span>Match {i + 1}</span>
-                          <span>Index: {match.index}</span>
-                        </div>
-                        <div className="px-4 py-2 text-zinc-300">
-                          {match[0]}
-                        </div>
-                        {match.length > 1 && (
-                          <div className="px-4 py-2 bg-zinc-950 flex flex-col gap-1 border-t border-[#1a1a1a]/50">
-                            {match.slice(1).map((group, gIdx) => (
-                              group !== undefined && (
-                                <div key={gIdx} className="flex items-center gap-2">
-                                  <span className="text-purple-400 opacity-70 w-16">Group {gIdx + 1}:</span>
-                                  <span className="text-purple-300">{group}</span>
-                                </div>
-                              )
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+    <ToolLayout title="Regex Tester" description="Test regular expressions in real-time with syntax highlighting and match extraction.">
+      <div className="space-y-6">
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="RE">Regular Expression</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            <ToolField htmlFor="regex-pattern" label="Pattern" helper="JavaScript regular expression without enclosing slashes. Flags are selected below.">
+              <Input id="regex-pattern" value={regexStr} onChange={event => setRegexStr(event.target.value)} placeholder="Enter regular expression..."
+                aria-invalid={!!regexData.error} aria-describedby={regexData.error ? "regex-error" : undefined}
+                className="rounded-none border-[#1a1a1a] bg-black! font-mono text-zinc-300" spellCheck={false} />
+            </ToolField>
+            {regexData.error && <ToolStatus id="regex-error" tone="error" title="Invalid expression" className="break-all">{regexData.error}</ToolStatus>}
+            <ToolActionPanel label="FLAGS">
+              {flagOptions.map(([flag, label]) => (
+                <ToolActionButton key={flag} aria-label={`${label} (${flag})`} aria-pressed={flags.includes(flag)}
+                  tone={flags.includes(flag) ? "accent" : "neutral"}
+                  onClick={() => setFlags(current => current.includes(flag) ? current.replace(flag, "") : current + flag)}>
+                  {flag} · {label}
+                </ToolActionButton>
+              ))}
+            </ToolActionPanel>
+            <ToolActionPanel label="EXAMPLES">
+              {examples.map(example => <ToolActionButton key={example.label} onClick={() => setRegexStr(example.val)}>{example.label}</ToolActionButton>)}
+            </ToolActionPanel>
+          </ToolPanelBody>
+        </ToolPanel>
+        <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
+          <ToolPanel>
+            <ToolPanelHeader><ToolPanelTitle marker="IN">Test String</ToolPanelTitle></ToolPanelHeader>
+            <ToolPanelBody>
+              <ToolField htmlFor="regex-text" label="Test text" helper="Matches update as you type. Disable Global to return only the first match.">
+                <Textarea id="regex-text" value={testText} onChange={event => setTestText(event.target.value)} placeholder="Type text to test your regex against..."
+                  className="h-80 field-sizing-fixed resize-y rounded-none border-[#1a1a1a] bg-black! text-zinc-300" spellCheck={false} />
+              </ToolField>
+            </ToolPanelBody>
+          </ToolPanel>
+          <ToolPanel>
+            <ToolPanelHeader>
+              <ToolPanelTitle marker="OUT">Highlighted</ToolPanelTitle>
+              {!regexData.error && regexStr && <ToolBadge>{regexData.matches.length} {regexData.matches.length === 1 ? "Match" : "Matches"}</ToolBadge>}
+            </ToolPanelHeader>
+            <ToolPanelBody className="space-y-3">
+              {regexData.error || !regexStr ? <ToolEmptyState title={emptyTitle}>Enter a valid expression to highlight matches.</ToolEmptyState> : (
+                <>
+                  <p className="text-xs text-zinc-400">Underlined text marks matches. │ marks a zero-length match.</p>
+                  <div role="region" aria-label="Highlighted text" tabIndex={0}
+                    className="max-h-80 min-h-36 overflow-auto whitespace-pre-wrap break-all border border-[#1a1a1a] bg-black p-4 text-sm leading-relaxed text-zinc-300 focus-visible:outline-2 focus-visible:outline-[#00ff9c]">
+                    {testText || regexData.matches.length ? renderHighlightedText() : "Empty test text."}
                   </div>
-                )}
-              </div>
-            </article>
-            
-          </div>
+                </>
+              )}
+            </ToolPanelBody>
+          </ToolPanel>
         </div>
-
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="OUT">Capture Groups</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody>
+            {regexData.matches.length === 0 ? <ToolEmptyState title={emptyTitle}>Matched text, capture groups and character indexes appear here.</ToolEmptyState> : (
+              <div role="region" aria-label="Capture groups" tabIndex={0} className="max-h-96 overflow-auto border border-[#1a1a1a] bg-black text-xs focus-visible:outline-2 focus-visible:outline-[#00ff9c]">
+                {regexData.matches.map((match, index) => (
+                  <div key={index} className="border-b border-[#1a1a1a] last:border-b-0">
+                    <div className="flex flex-wrap justify-between gap-2 bg-[#0a0a0a] px-4 py-2 font-bold text-zinc-400"><span>Match {index + 1}</span><span>Index: {match.index}</span></div>
+                    <div className="whitespace-pre-wrap break-all px-4 py-3 text-zinc-300">{match[0] || "(zero-length match)"}</div>
+                    {match.length > 1 && <dl className="space-y-2 border-t border-[#1a1a1a] px-4 py-3">
+                      {match.slice(1).map((group, groupIndex) => (
+                        <div key={groupIndex} className="flex flex-wrap gap-2">
+                          <dt className="shrink-0 text-zinc-400">Group {groupIndex + 1}:</dt>
+                          <dd className="min-w-0 whitespace-pre-wrap break-all text-zinc-300">{group === undefined ? "(unmatched)" : group || "(empty)"}</dd>
+                        </div>
+                      ))}
+                    </dl>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </ToolPanelBody>
+        </ToolPanel>
       </div>
     </ToolLayout>
   );
