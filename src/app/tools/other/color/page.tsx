@@ -1,17 +1,16 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
-import { Label } from "@/components/ui/label";
+import { ToolActionButton, ToolEmptyState, ToolField, ToolPanel, ToolPanelBody, ToolPanelHeader, ToolPanelTitle, ToolStatus } from "@/components/tool-design";
 import { Input } from "@/components/ui/input";
+import { useNotification } from "@/components/notification-provider";
 import { useState } from "react";
-import { Copy, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
+import { Copy } from "lucide-react";
 // Basic color conversion helpers
 function hexToRgb(hex: string) {
   let c = hex.replace(/^#/, '');
   if (c.length === 3) c = c.split('').map(x => x + x).join('');
-  if (c.length !== 6) return null;
+  if (!/^[0-9a-fA-F]{6}$/.test(c)) return null;
   const num = parseInt(c, 16);
   return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
 }
@@ -63,152 +62,89 @@ function hslToRgb(h: number, s: number, l: number) {
 }
 
 export default function ColorConverter() {
-  const [hex, setHex] = useState("#00FF9C");
-  const [rgb, setRgb] = useState("0, 255, 156");
-  const [hsl, setHsl] = useState("157, 100%, 50%");
-  
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [values, setValues] = useState({ hex: "#00FF9C", rgb: "0, 255, 156", hsl: "157, 100%, 50%" });
+  const [error, setError] = useState<{ field: "hex" | "rgb" | "hsl"; message: string } | null>(null);
+  const { notify } = useNotification();
+  const previewRgb = error ? null : hexToRgb(values.hex.trim());
+  const previewHex = previewRgb ? rgbToHex(previewRgb.r, previewRgb.g, previewRgb.b) : "";
 
-  const copy = (text: string, key: string) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
-
-  const handleHex = (val: string) => {
-    setHex(val.toUpperCase());
-    const rgbObj = hexToRgb(val);
-    if (rgbObj) {
-      setRgb(`${rgbObj.r}, ${rgbObj.g}, ${rgbObj.b}`);
-      const hslObj = rgbToHsl(rgbObj.r, rgbObj.g, rgbObj.b);
-      setHsl(`${hslObj.h}, ${hslObj.s}%, ${hslObj.l}%`);
+  const update = (field: "hex" | "rgb" | "hsl", value: string) => {
+    let color: { r: number; g: number; b: number } | null = null;
+    let hslValue = "";
+    if (field === "hex") color = hexToRgb(value.trim());
+    if (field === "rgb") {
+      const match = value.trim().match(/^(?:rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)|(\d+)\s*,\s*(\d+)\s*,\s*(\d+))$/i);
+      if (match) {
+        const channels = (match[1] === undefined ? match.slice(4, 7) : match.slice(1, 4)).map(Number);
+        if (channels.every(channel => channel <= 255)) color = { r: channels[0], g: channels[1], b: channels[2] };
+      }
     }
-  };
-
-  const handleRgb = (val: string) => {
-    setRgb(val);
-    const nums = val.replace(/[^\d,]/g, "").split(",").map(Number);
-    if (nums.length === 3 && nums.every(n => n >= 0 && n <= 255)) {
-      const hx = rgbToHex(nums[0], nums[1], nums[2]);
-      setHex(hx);
-      const hslObj = rgbToHsl(nums[0], nums[1], nums[2]);
-      setHsl(`${hslObj.h}, ${hslObj.s}%, ${hslObj.l}%`);
+    if (field === "hsl") {
+      const text = value.trim().replace(/^hsl\((.*)\)$/i, "$1");
+      const match = text.match(/^(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)%?\s*,\s*(\d+(?:\.\d+)?)%?$/);
+      if (match) {
+        const [h, s, l] = match.slice(1).map(Number);
+        if (h <= 360 && s <= 100 && l <= 100) {
+          color = hslToRgb(h, s, l);
+          hslValue = `${h}, ${s}%, ${l}%`;
+        }
+      }
     }
+    if (!color) {
+      setValues({ hex: "", rgb: "", hsl: "", [field]: value });
+      setError(value.trim() ? { field, message: field === "hex" ? "Enter 3 or 6 hexadecimal digits, optionally prefixed with #." : field === "rgb" ? "Enter three whole numbers from 0 to 255, separated by commas." : "Enter hue from 0 to 360 and saturation/lightness from 0 to 100, separated by commas." } : null);
+      return;
+    }
+    const hsl = rgbToHsl(color.r, color.g, color.b);
+    setValues({ hex: rgbToHex(color.r, color.g, color.b), rgb: `${color.r}, ${color.g}, ${color.b}`, hsl: hslValue || `${hsl.h}, ${hsl.s}%, ${hsl.l}%`, [field]: value });
+    setError(null);
   };
 
-  const handleHsl = (val: string) => {
-    setHsl(val);
-    const nums = val.replace(/[^\d,]/g, "").split(",").map(Number);
-    if (nums.length === 3 && nums[0] >= 0 && nums[0] <= 360 && nums[1] >= 0 && nums[1] <= 100 && nums[2] >= 0 && nums[2] <= 100) {
-      const rgbObj = hslToRgb(nums[0], nums[1], nums[2]);
-      setRgb(`${rgbObj.r}, ${rgbObj.g}, ${rgbObj.b}`);
-      setHex(rgbToHex(rgbObj.r, rgbObj.g, rgbObj.b));
+  const copy = async (field: "hex" | "rgb" | "hsl") => {
+    if (!previewHex) return;
+    const color = previewRgb!;
+    const hsl = rgbToHsl(color.r, color.g, color.b);
+    const text = field === "hex" ? previewHex : field === "rgb" ? `rgb(${color.r}, ${color.g}, ${color.b})` : `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`;
+    try {
+      await navigator.clipboard.writeText(text);
+      notify("Copied to clipboard");
+    } catch {
+      notify("Could not copy. Select the color value and copy it manually.", "error");
     }
   };
 
   return (
-    <ToolLayout 
-      title="Color Converter" 
-      description="Synchronized color converter for HEX, RGB, and HSL formats."
-    >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
-        
-        {/* Controls */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
-          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-[#00ff9c] text-xs">[IN]</span>
-            <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Formats</span>
-          </header>
-          <div className="p-6 flex flex-col gap-6">
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-mono text-zinc-500 uppercase tracking-wider">HEX</Label>
-                <button onClick={() => copy(hex, "hex")} className="text-[#00ff9c] text-[10px] font-mono hover:underline">
-                  {copiedKey === "hex" ? "Copied" : "Copy"}
-                </button>
-              </div>
-              <div className="relative">
-                <input 
-                  type="color" 
-                  value={hex.length === 7 ? hex : "#000000"} 
-                  onChange={(e) => handleHex(e.target.value)}
-                  className="absolute left-1 top-1 w-10 h-10 cursor-pointer opacity-0"
-                />
-                <div 
-                  className="absolute left-2 top-2 w-8 h-8 pointer-events-none border border-zinc-800"
-                  style={{ backgroundColor: hex.length === 7 ? hex : "transparent" }}
-                />
-                <Input
-                  type="text"
-                  value={hex}
-                  onChange={(e) => handleHex(e.target.value)}
-                  placeholder="#000000"
-                  className="w-full font-mono text-base bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] h-12 text-zinc-200 pl-12 uppercase"
-                  spellCheck={false}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-mono text-zinc-500 uppercase tracking-wider">RGB</Label>
-                <button onClick={() => copy(`rgb(${rgb})`, "rgb")} className="text-[#00ff9c] text-[10px] font-mono hover:underline">
-                  {copiedKey === "rgb" ? "Copied" : "Copy"}
-                </button>
-              </div>
-              <Input
-                type="text"
-                value={rgb}
-                onChange={(e) => handleRgb(e.target.value)}
-                placeholder="255, 255, 255"
-                className="w-full font-mono text-base bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] h-12 text-zinc-200"
-                spellCheck={false}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-mono text-zinc-500 uppercase tracking-wider">HSL</Label>
-                <button onClick={() => copy(`hsl(${hsl})`, "hsl")} className="text-[#00ff9c] text-[10px] font-mono hover:underline">
-                  {copiedKey === "hsl" ? "Copied" : "Copy"}
-                </button>
-              </div>
-              <Input
-                type="text"
-                value={hsl}
-                onChange={(e) => handleHsl(e.target.value)}
-                placeholder="360, 100%, 100%"
-                className="w-full font-mono text-base bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] h-12 text-zinc-200"
-                spellCheck={false}
-              />
-            </div>
-
-          </div>
-        </article>
-
-        {/* Preview */}
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col h-[400px] lg:h-auto rounded-none">
-          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-[#00ff9c] text-xs">[OUT]</span>
-            <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest glow">Preview</span>
-          </header>
-          <div className="p-8 flex-1 flex items-center justify-center dotted-bg relative">
-            <div 
-              className="absolute inset-0 opacity-20"
-              style={{ backgroundColor: hex.length === 7 ? hex : "transparent" }}
-            />
-            <div 
-              className="w-48 h-48 sm:w-64 sm:h-64 rounded-full border-4 border-[#1a1a1a] shadow-[0_0_50px_rgba(0,0,0,0.5)] z-10 transition-colors duration-200 ease-in-out"
-              style={{ 
-                backgroundColor: hex.length === 7 ? hex : "transparent",
-                boxShadow: hex.length === 7 ? `0 0 80px ${hex}40` : 'none'
-              }}
-            />
-          </div>
-        </article>
-
+    <ToolLayout title="Color Converter" description="Convert colors between HEX, RGB and HSL. Edit any format or choose a color to update the others.">
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="IN">Color Formats</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-5">
+            {(["hex", "rgb", "hsl"] as const).map(field => (
+              <ToolField key={field} htmlFor={`color-${field}`} label={field.toUpperCase()} helper={field === "hex" ? "Example: #00FF9C or #0F9" : field === "rgb" ? "Example: 0, 255, 156" : "Example: 157, 100%, 50%. Conversions round to whole RGB channels and HSL values."}>
+                <div className="flex min-w-0 items-center gap-2">
+                  <Input id={`color-${field}`} value={values[field]} onChange={event => update(field, event.target.value)} spellCheck={false}
+                    aria-invalid={error?.field === field} aria-describedby={error?.field === field ? "color-error" : undefined}
+                    className="min-w-0 flex-1 rounded-none border-[#1a1a1a] bg-black! text-zinc-300" />
+                  <ToolActionButton aria-label={`Copy ${field.toUpperCase()}`} disabled={!previewHex} onClick={() => copy(field)}><Copy aria-hidden="true" /></ToolActionButton>
+                </div>
+              </ToolField>
+            ))}
+            {error && <ToolStatus id="color-error" tone="error" title={`Invalid ${error.field.toUpperCase()}`}>{error.message}</ToolStatus>}
+            <ToolField htmlFor="color-picker" label="Choose a color">
+              <input id="color-picker" type="color" value={previewHex || "#000000"} onInput={event => update("hex", event.currentTarget.value)}
+                className="h-10 w-full cursor-pointer border border-[#1a1a1a] bg-black p-1 focus-visible:outline-2 focus-visible:outline-[#00ff9c]" />
+            </ToolField>
+          </ToolPanelBody>
+        </ToolPanel>
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="OUT">Preview</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            {previewHex ? <>
+              <div role="img" aria-label={`Color preview ${previewHex}`} className="h-64 w-full border border-[#2a2a2a]" style={{ backgroundColor: previewHex }} />
+              <p className="text-center text-sm text-zinc-300">{previewHex}</p>
+            </> : <ToolEmptyState title={error ? "Fix the color to continue" : "Awaiting color"}>Enter a valid color in any format or use the color picker.</ToolEmptyState>}
+          </ToolPanelBody>
+        </ToolPanel>
       </div>
     </ToolLayout>
   );
