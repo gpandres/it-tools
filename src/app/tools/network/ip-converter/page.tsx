@@ -1,215 +1,90 @@
 "use client";
 
+import { useRef, useState } from "react";
+import { Copy } from "lucide-react";
 import { ToolLayout } from "@/components/tool-layout";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import { Copy, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useNotification } from "@/components/notification-provider";
 import {
-  ToolPanel,
-  ToolPanelHeader,
-  ToolPanelTitle,
-  ToolPanelBody,
-  ToolField,
-  ToolStatus,
+  ToolActionButton, ToolConfirmDialog, ToolPanel, ToolPanelHeader,
+  ToolPanelTitle, ToolPanelBody, ToolField, ToolStatus,
 } from "@/components/tool-design";
 
+type Source = "ipv4" | "decimal" | "hex";
+const fields = [
+  { id: "ipv4", label: "IPv4 address", helper: "Four decimal octets from 0 to 255. Leading zeros are decimal.", placeholder: "192.168.1.1" },
+  { id: "decimal", label: "Integer (Decimal)", helper: "An unsigned integer from 0 to 4294967295.", placeholder: "3232235777" },
+  { id: "hex", label: "Hexadecimal", helper: "One to eight hex digits, with an optional 0x prefix.", placeholder: "0xC0A80101" },
+  { id: "binary", label: "Binary", helper: "Read-only result, grouped into four 8-bit octets.", placeholder: "11000000.10101000.00000001.00000001" },
+] as const;
+
+function parseAddress(source: Source, text: string): number | null {
+  if (source === "ipv4") {
+    const parts = text.split(".");
+    return parts.length === 4 && parts.every(part => /^\d+$/.test(part) && Number(part) <= 255)
+      ? parts.reduce((value, part) => value * 256 + Number(part), 0) : null;
+  }
+  if (source === "decimal") {
+    const value = Number(text);
+    return /^\d+$/.test(text) && value <= 4294967295 ? value : null;
+  }
+  return /^(?:0x)?[0-9a-f]{1,8}$/i.test(text) ? parseInt(text.replace(/^0x/i, ""), 16) : null;
+}
+
 export default function IpConverter() {
-  const [ipv4, setIpv4] = useState("");
-  const [decimal, setDecimal] = useState("");
-  const [hex, setHex] = useState("");
-  const [binary, setBinary] = useState("");
-  
-  const [error, setError] = useState<string | null>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [input, setInput] = useState({ source: "ipv4" as Source, value: "" });
+  const inputRef = useRef<HTMLInputElement>(null);
   const { notify } = useNotification();
+  const text = input.value.trim();
+  const number = text ? parseAddress(input.source, text) : null;
+  const invalid = !!text && number === null;
+  const values = number === null ? { ipv4: "", decimal: "", hex: "", binary: "" } : {
+    ipv4: [24, 16, 8, 0].map(shift => (number >>> shift) & 255).join("."),
+    decimal: number.toString(10),
+    hex: "0x" + number.toString(16).toUpperCase().padStart(8, "0"),
+    binary: number.toString(2).padStart(32, "0").match(/.{8}/g)!.join("."),
+  };
 
-  const copy = async (text: string, key: string) => {
-    if (!text) return;
+  const copy = async (value: string) => {
+    if (number === null) return;
     try {
-      await navigator.clipboard.writeText(text);
-      setCopiedKey(key);
+      await navigator.clipboard.writeText(value);
       notify("Copied to clipboard");
-      setTimeout(() => setCopiedKey(null), 2000);
     } catch {
-      notify("Could not copy to clipboard", "error");
+      notify("Could not copy. Select the value and copy it manually.", "error");
     }
-  };
-
-  const updateFromIpv4 = (value: string) => {
-    setIpv4(value);
-    setError(null);
-    if (!value) return clear();
-
-    const parts = value.split(".");
-    if (parts.length === 4 && parts.every(p => /^\d+$/.test(p) && parseInt(p) >= 0 && parseInt(p) <= 255)) {
-      const intVal = parts.reduce((acc, part) => (acc << 8) + parseInt(part), 0) >>> 0;
-      setDecimal(intVal.toString(10));
-      setHex("0x" + intVal.toString(16).toUpperCase().padStart(8, '0'));
-      setBinary(intVal.toString(2).padStart(32, '0').match(/.{1,8}/g)?.join(".") || "");
-    } else {
-      setError("Invalid IPv4 address");
-    }
-  };
-
-  const updateFromDecimal = (value: string) => {
-    setDecimal(value);
-    setError(null);
-    if (!value) return clear();
-
-    if (/^\d+$/.test(value)) {
-      const num = parseInt(value, 10);
-      if (num >= 0 && num <= 4294967295) {
-        setIpv4([
-          (num >>> 24) & 255,
-          (num >>> 16) & 255,
-          (num >>> 8) & 255,
-          num & 255
-        ].join("."));
-        setHex("0x" + num.toString(16).toUpperCase().padStart(8, '0'));
-        setBinary(num.toString(2).padStart(32, '0').match(/.{1,8}/g)?.join(".") || "");
-        return;
-      }
-    }
-    setError("Invalid Decimal IP (must be 0 to 4294967295)");
-  };
-
-  const updateFromHex = (value: string) => {
-    setHex(value);
-    setError(null);
-    if (!value) return clear();
-
-    const cleanVal = value.replace(/^0x/i, "");
-    if (/^[0-9a-fA-F]{1,8}$/.test(cleanVal)) {
-      const num = parseInt(cleanVal, 16);
-      setIpv4([
-        (num >>> 24) & 255,
-        (num >>> 16) & 255,
-        (num >>> 8) & 255,
-        num & 255
-      ].join("."));
-      setDecimal(num.toString(10));
-      setBinary(num.toString(2).padStart(32, '0').match(/.{1,8}/g)?.join(".") || "");
-    } else {
-      setError("Invalid Hexadecimal IP");
-    }
-  };
-
-  const clear = () => {
-    setIpv4("");
-    setDecimal("");
-    setHex("");
-    setBinary("");
-    setError(null);
   };
 
   return (
-    <ToolLayout 
-      title="IP ADDRESS CONVERTER" 
-      description="Convert IPv4 addresses between dotted-decimal, integer, hex, and binary formats."
-    >
-      <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6">
+    <ToolLayout title="IP Address Converter" description="Convert IPv4 addresses between dotted-decimal, integer, hexadecimal and binary formats locally.">
+      <div className="space-y-6">
         <ToolPanel>
           <ToolPanelHeader>
-            <ToolPanelTitle marker="IN/OUT" className="text-sm text-[#ffb000] glow-amber">CONVERSION</ToolPanelTitle>
+            <ToolPanelTitle marker="IN/OUT">Conversion</ToolPanelTitle>
+            <ToolConfirmDialog trigger={<ToolActionButton tone="danger" disabled={!input.value}>Clear</ToolActionButton>}
+              title="Clear IP address?" description="The input and all converted formats will be removed." confirmLabel="Clear address"
+              onConfirm={() => setInput({ source: "ipv4", value: "" })} finalFocus={() => input.value ? true : inputRef.current} />
           </ToolPanelHeader>
-          <ToolPanelBody className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <ToolField htmlFor="ipv4" label="IPv4 Address">
-              <div className="flex gap-2">
-                <Input
-                  id="ipv4"
-                  value={ipv4}
-                  onChange={(e) => updateFromIpv4(e.target.value)}
-                  placeholder="e.g. 192.168.1.1"
-                  className={`rounded-none font-mono ${error && ipv4 ? "border-red-500 text-red-400 focus-visible:ring-red-500" : "text-[#00ff9c]"}`}
-                />
-                <Button 
-                  type="button"
-                  variant="outline" size="icon" 
-                  aria-label="Copy IPv4"
-                  title="Copy IPv4"
-                  onClick={() => copy(ipv4, "ipv4")}
-                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]"
-                >
-                  {copiedKey === "ipv4" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </ToolField>
-
-            <ToolField htmlFor="decimal" label="Integer (Decimal)">
-              <div className="flex gap-2">
-                <Input
-                  id="decimal"
-                  value={decimal}
-                  onChange={(e) => updateFromDecimal(e.target.value)}
-                  placeholder="e.g. 3232235777"
-                  className={`rounded-none font-mono ${error && decimal ? "border-red-500 text-red-400 focus-visible:ring-red-500" : "text-[#00ff9c]"}`}
-                />
-                <Button 
-                  type="button"
-                  variant="outline" size="icon" 
-                  aria-label="Copy Decimal"
-                  title="Copy Decimal"
-                  onClick={() => copy(decimal, "decimal")}
-                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]"
-                >
-                  {copiedKey === "decimal" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </ToolField>
-
-            <ToolField htmlFor="hex" label="Hexadecimal">
-              <div className="flex gap-2">
-                <Input
-                  id="hex"
-                  value={hex}
-                  onChange={(e) => updateFromHex(e.target.value)}
-                  placeholder="e.g. 0xC0A80101"
-                  className={`rounded-none font-mono ${error && hex ? "border-red-500 text-red-400 focus-visible:ring-red-500" : "text-[#00ff9c]"}`}
-                />
-                <Button 
-                  type="button"
-                  variant="outline" size="icon" 
-                  aria-label="Copy Hex"
-                  title="Copy Hex"
-                  onClick={() => copy(hex, "hex")}
-                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]"
-                >
-                  {copiedKey === "hex" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </ToolField>
-
-            <ToolField htmlFor="binary" label="Binary">
-              <div className="flex gap-2">
-                <Input
-                  id="binary"
-                  value={binary}
-                  readOnly
-                  placeholder="e.g. 11000000.10101000.00000001.00000001"
-                  className="rounded-none border-[#1a1a1a] bg-[#050505] font-mono text-zinc-300 opacity-80 focus-visible:ring-0"
-                />
-                <Button 
-                  type="button"
-                  variant="outline" size="icon" 
-                  aria-label="Copy Binary"
-                  title="Copy Binary"
-                  onClick={() => copy(binary, "binary")}
-                  className="shrink-0 rounded-none border-[#1a1a1a] bg-black text-zinc-400 transition-colors hover:border-[#00ff9c] hover:text-[#00ff9c]"
-                >
-                  {copiedKey === "binary" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </ToolField>
+          <ToolPanelBody className="space-y-5">
+            <p className="text-xs leading-relaxed text-zinc-400">Edit IPv4, decimal or hexadecimal to update all formats. Copy buttons use the normalized values.</p>
+            <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
+              {fields.map(field => <ToolField key={field.id} htmlFor={field.id} label={field.label} helper={field.helper}>
+                <div className="flex min-w-0 items-center gap-2">
+                  <Input id={field.id} ref={field.id === "ipv4" ? inputRef : undefined}
+                    value={field.id === input.source ? input.value : values[field.id]} readOnly={field.id === "binary"}
+                    onChange={event => { if (field.id !== "binary") setInput({ source: field.id, value: event.target.value }); }}
+                    placeholder={field.placeholder} spellCheck={false} autoComplete="off"
+                    aria-invalid={invalid && field.id === input.source}
+                    aria-describedby={invalid && field.id === input.source ? "ip-error" : undefined}
+                    className="min-w-0 flex-1 rounded-none border-[#1a1a1a] bg-black! text-zinc-300" />
+                  <ToolActionButton aria-label={`Copy ${field.label}`} disabled={number === null} onClick={() => copy(values[field.id])}><Copy aria-hidden="true" /></ToolActionButton>
+                </div>
+              </ToolField>)}
+            </div>
+            {invalid && <ToolStatus id="ip-error" tone="error" title="Invalid IP value">{fields.find(field => field.id === input.source)?.helper} Correct the input to restore converted values.</ToolStatus>}
+            {!text && <ToolStatus title="Awaiting IP address">Enter an IPv4 address, decimal integer or hexadecimal value to begin.</ToolStatus>}
           </ToolPanelBody>
         </ToolPanel>
-
-        {error && (
-          <ToolStatus tone="error">
-            {error}
-          </ToolStatus>
-        )}
       </div>
     </ToolLayout>
   );
