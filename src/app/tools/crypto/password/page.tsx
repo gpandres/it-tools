@@ -1,12 +1,26 @@
 "use client";
 
 import { ToolLayout } from "@/components/tool-layout";
+import {
+  ToolActionButton,
+  ToolActionPanel,
+  ToolBadge,
+  ToolEmptyState,
+  ToolField,
+  ToolPanel,
+  ToolPanelBody,
+  ToolPanelHeader,
+  ToolPanelTitle,
+  ToolStatus,
+} from "@/components/tool-design";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Copy, Check, RefreshCw, AlertTriangle, ShieldCheck, ShieldAlert, Info } from "lucide-react";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useNotification } from "@/components/notification-provider";
+import { AlertTriangle, Copy, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import zxcvbn from "zxcvbn";
+
+const MAX_ANALYSIS_LENGTH = 256;
+type PasswordAnalysis = ReturnType<typeof zxcvbn>;
 
 function generateSecurePassword(length: number, useUpper: boolean, useLower: boolean, useNums: boolean, useSyms: boolean): string {
   let charset = "";
@@ -14,276 +28,213 @@ function generateSecurePassword(length: number, useUpper: boolean, useLower: boo
   if (useLower) charset += "abcdefghijklmnopqrstuvwxyz";
   if (useNums) charset += "0123456789";
   if (useSyms) charset += "!@#$%^&*()_+~`|}{[]:;?><,./-=";
+  if (!charset) return "";
 
-  if (charset === "") return "";
+  // Rejection sampling avoids the small modulo bias from mapping every uint32
+  // value directly onto a charset whose size does not divide 2^32.
+  const range = 0x100000000;
+  const limit = Math.floor(range / charset.length) * charset.length;
+  const password: string[] = [];
+  const randomValues = new Uint32Array(Math.max(16, Math.min(length * 2, 256)));
 
-  const array = new Uint32Array(length);
-  window.crypto.getRandomValues(array);
-
-  let password = "";
-  for (let i = 0; i < length; i++) {
-    password += charset[array[i] % charset.length];
+  while (password.length < length) {
+    window.crypto.getRandomValues(randomValues);
+    for (const value of randomValues) {
+      if (value >= limit) continue;
+      password.push(charset[value % charset.length]);
+      if (password.length === length) break;
+    }
   }
-  return password;
+  return password.join("");
 }
 
 function PasswordGeneratorContent() {
-  const [state, _setState] = useState({ 
-    len: "16", 
-    u: "1", 
-    l: "1",
-    n: "1",
-    s: "1"
-  });
-  const setState = (u: Partial<typeof state>) => _setState(s => ({ ...s, ...u }));
-
+  const [state, setState] = useState({ len: "16", u: "1", l: "1", n: "1", s: "1" });
   const [password, setPassword] = useState("");
-  const [copied, setCopied] = useState(false);
   const [customInput, setCustomInput] = useState(false);
+  const [analysisState, setAnalysisState] = useState<{ password: string; result: PasswordAnalysis } | null>(null);
+  const { notify } = useNotification();
 
-  const length = parseInt(state.len, 10) || 16;
+  const length = Number.parseInt(state.len, 10) || 16;
   const useUpper = state.u === "1";
   const useLower = state.l === "1";
   const useNums = state.n === "1";
   const useSyms = state.s === "1";
+  const hasCharset = useUpper || useLower || useNums || useSyms;
 
-  const generate = useCallback(() => {
-    setPassword(generateSecurePassword(length, useUpper, useLower, useNums, useSyms));
-    setCopied(false);
-    setCustomInput(false);
-  }, [length, useUpper, useLower, useNums, useSyms]);
-
-  // Initial generation only (don't re-generate when sliding if user has custom input)
+  // Generate the initial value after mount, when the browser crypto API exists.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    if (!customInput && !password) {
-      generate();
-    }
-  }, [generate, customInput, password]);
+    setPassword(generateSecurePassword(16, true, true, true, true));
+  }, []);
 
-  // Regenerate if they slide while not in custom input mode
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    if (!customInput && password) {
-      setPassword(generateSecurePassword(length, useUpper, useLower, useNums, useSyms));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [length, useUpper, useLower, useNums, useSyms]);
+    if (!password || password.length > MAX_ANALYSIS_LENGTH) return;
 
-  const copyToClipboard = () => {
+    const timer = window.setTimeout(() => {
+      setAnalysisState({ password, result: zxcvbn(password) });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [password]);
+
+  const analysis = analysisState?.password === password ? analysisState.result : null;
+
+  const copyToClipboard = async () => {
     if (!password) return;
-    navigator.clipboard.writeText(password);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(password);
+      notify("Password copied to clipboard");
+    } catch {
+      notify("Could not copy. Select the password and copy it manually.", "error");
+    }
   };
 
-  const toggleToggle = (key: string, current: string) => {
-    setState({ [key]: current === "1" ? "0" : "1" });
-    setCustomInput(false); // Reset to auto-gen mode
+  const generate = () => {
+    if (!hasCharset) return;
+    setPassword(generateSecurePassword(length, useUpper, useLower, useNums, useSyms));
+    setCustomInput(false);
   };
 
-  const handlePasswordChange = (val: string) => {
-    setPassword(val);
+  const toggleOption = (key: "u" | "l" | "n" | "s") => {
+    const nextState = { ...state, [key]: state[key] === "1" ? "0" : "1" };
+    setState(nextState);
+    const nextUseUpper = nextState.u === "1";
+    const nextUseLower = nextState.l === "1";
+    const nextUseNums = nextState.n === "1";
+    const nextUseSyms = nextState.s === "1";
+    setPassword(generateSecurePassword(length, nextUseUpper, nextUseLower, nextUseNums, nextUseSyms));
+    setCustomInput(false);
+  };
+
+  const handleLengthChange = (value: string) => {
+    const nextLength = Number.parseInt(value, 10) || 16;
+    setState(previous => ({ ...previous, len: value }));
+    if (!customInput) setPassword(generateSecurePassword(nextLength, useUpper, useLower, useNums, useSyms));
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
     setCustomInput(true);
   };
 
-  const [analysis, setAnalysis] = useState<any>(null);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => {
-    if (!password) {
-      setAnalysis(null);
-      return;
-    }
-    
-    // Debounce zxcvbn calculation to prevent main thread blocking (lag)
-    const timer = setTimeout(() => {
-      setAnalysis(zxcvbn(password));
-    }, 300); // 300ms delay
-    
-    return () => clearTimeout(timer);
-  }, [password]);
-
-  const getScoreColor = (score: number) => {
-    switch (score) {
-      case 0:
-      case 1: return "text-red-500 border-red-500 bg-red-500/10";
-      case 2: return "text-orange-500 border-orange-500 bg-orange-500/10";
-      case 3: return "text-yellow-400 border-yellow-400 bg-yellow-400/10";
-      case 4: return "text-[#00ff9c] border-[#00ff9c] bg-[#00ff9c]/10";
-      default: return "text-zinc-500 border-zinc-500 bg-zinc-500/10";
-    }
-  };
-  
-  const getScoreLabel = (score: number) => {
-    switch (score) {
-      case 0: return "VERY WEAK";
-      case 1: return "WEAK";
-      case 2: return "FAIR";
-      case 3: return "GOOD";
-      case 4: return "STRONG";
-      default: return "UNKNOWN";
-    }
-  };
-
   return (
-    <ToolLayout 
-      title="Password Entropy Calculator" 
-      description="Generate or test passwords locally. Analyzes entropy, cracking time estimates, and weak patterns using Dropbox's zxcvbn."
+    <ToolLayout
+      title="Password Guessability Estimator"
+      description="Generate passwords locally or estimate their guessability with zxcvbn. Attack times are illustrative and depend on the service or hash configuration."
     >
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full max-w-7xl mx-auto">
-        
-        {/* SETTINGS PANEL */}
-        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col lg:col-span-4 h-fit">
-          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-[#00ff9c] text-xs">[IN]</span>
-            <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Generator</span>
-          </header>
-          <div className="p-6 space-y-8">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label className="text-zinc-500 font-mono text-xs uppercase tracking-wider">Length</Label>
-                <span className="text-[#00ff9c] font-mono text-sm">[{length}]</span>
-              </div>
+      <div className="mx-auto grid w-full max-w-7xl min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        <ToolPanel className="lg:col-span-4">
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="IN">Generator</ToolPanelTitle>
+          </ToolPanelHeader>
+          <ToolPanelBody className="space-y-6">
+            <ToolField htmlFor="password-length" label="Length" helper="Choose a length from 4 to 128 characters.">
               <div className="flex items-center gap-4">
                 <input
+                  id="password-length"
                   type="range"
                   min="4"
                   max="128"
                   value={length}
-                  onChange={(e) => setState({ len: e.target.value })}
-                  className="flex-1 accent-[#00ff9c] cursor-pointer"
+                  onChange={event => handleLengthChange(event.target.value)}
+                  aria-valuetext={`${length} characters`}
+                  className="min-w-0 flex-1 accent-[#00ff9c] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#00ff9c]"
                 />
+                <span className="min-w-12 text-right font-mono text-sm text-[#00ff9c]">{length}</span>
               </div>
-            </div>
+            </ToolField>
 
-            <div className="space-y-4">
-              <Label className="text-zinc-500 font-mono text-xs uppercase tracking-wider">Character Sets</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                <ToggleOption label="Uppercase [A-Z]" active={useUpper} onClick={() => toggleToggle("u", state.u)} />
-                <ToggleOption label="Lowercase [a-z]" active={useLower} onClick={() => toggleToggle("l", state.l)} />
-                <ToggleOption label="Numbers [0-9]" active={useNums} onClick={() => toggleToggle("n", state.n)} />
-                <ToggleOption label="Symbols [!@#]" active={useSyms} onClick={() => toggleToggle("s", state.s)} />
+            <fieldset className="space-y-3">
+              <legend className="text-xs font-bold uppercase tracking-widest text-zinc-200">Character sets</legend>
+              <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                <ToggleOption label="Uppercase [A-Z]" active={useUpper} onClick={() => toggleOption("u")} />
+                <ToggleOption label="Lowercase [a-z]" active={useLower} onClick={() => toggleOption("l")} />
+                <ToggleOption label="Numbers [0-9]" active={useNums} onClick={() => toggleOption("n")} />
+                <ToggleOption label="Symbols [!@#]" active={useSyms} onClick={() => toggleOption("s")} />
               </div>
-            </div>
-            
-            <div className="pt-4">
-              <Button 
-                onClick={generate}
-                className="w-full bg-[#00ff9c]/10 text-[#00ff9c] border border-[#00ff9c]/30 hover:bg-[#00ff9c]/20 hover:border-[#00ff9c] rounded-none font-mono uppercase tracking-widest transition-all"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Generate Random
-              </Button>
-            </div>
-            
-            <div className="bg-blue-900/10 border border-blue-900/30 p-4 flex items-start gap-3 mt-4">
-              <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-              <div className="text-xs text-blue-300/80 font-mono leading-relaxed">
-                You can also type your own password directly into the output box to test its strength!
-              </div>
-            </div>
-          </div>
-        </article>
+            </fieldset>
 
-        {/* OUTPUT & ANALYSIS PANEL */}
-        <article className="border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col lg:col-span-8">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <div className="flex items-center gap-2">
-              <span className="text-[#00ff9c] text-xs">[OUT]</span>
-              <span className="text-[#00ff9c] text-sm font-semibold glow flex items-center gap-2 uppercase tracking-widest">
-                Password Analysis <span className="cursor-blink">_</span>
-              </span>
-            </div>
-            <Button 
-              variant="ghost"
-              size="sm"
-              onClick={copyToClipboard}
-              className="h-6 px-2 text-xs font-mono rounded-none text-zinc-400 hover:text-[#00ff9c] hover:bg-[#00ff9c]/10 transition-colors border border-transparent hover:border-[#00ff9c]/30"
-            >
-              {copied ? <><Check className="w-3 h-3 mr-1" /> Copied</> : <><Copy className="w-3 h-3 mr-1" /> Copy</>}
-            </Button>
-          </header>
-          
-          <div className="p-6 flex flex-col flex-1 space-y-6 bg-black">
-            {/* Password Input/Output */}
-            <div className="space-y-2">
-              <Label className="text-zinc-500 font-mono text-xs uppercase tracking-wider">Test or Copy Password</Label>
+            <ToolActionPanel label="ACTIONS" className="px-0 py-0">
+              <ToolActionButton tone="accent" onClick={generate} disabled={!hasCharset}>
+                <RefreshCw aria-hidden="true" /> Generate random
+              </ToolActionButton>
+            </ToolActionPanel>
+
+            {!hasCharset ? (
+              <ToolStatus tone="attention" title="Select a character set">Choose at least one set before generating a password.</ToolStatus>
+            ) : (
+              <ToolStatus tone="info">You can also enter your own password in the analysis field.</ToolStatus>
+            )}
+          </ToolPanelBody>
+        </ToolPanel>
+
+        <ToolPanel className="lg:col-span-8">
+          <ToolPanelHeader>
+            <ToolPanelTitle marker="OUT">Password analysis</ToolPanelTitle>
+            <ToolActionButton onClick={copyToClipboard} disabled={!password} aria-label="Copy password">
+              <Copy aria-hidden="true" /> Copy
+            </ToolActionButton>
+          </ToolPanelHeader>
+          <ToolPanelBody className="space-y-6">
+            <ToolField htmlFor="password-test" label="Test or copy password" helper="Analysis runs locally after a short pause. Up to 256 characters can be analyzed.">
               <Input
+                id="password-test"
                 value={password}
-                onChange={(e) => handlePasswordChange(e.target.value)}
+                onChange={event => handlePasswordChange(event.target.value)}
                 placeholder="Type a password to audit..."
-                className="font-mono text-lg md:text-xl py-6 bg-[#050505] border-[#1a1a1a] text-zinc-200 rounded-none focus-visible:ring-[#00ff9c]/50 text-center"
+                className="rounded-none border-[#1a1a1a] bg-black! py-6 text-center font-mono text-lg text-zinc-200 focus-visible:ring-[#00ff9c]/50 md:text-xl"
                 spellCheck={false}
+                autoComplete="new-password"
               />
-            </div>
+            </ToolField>
 
-            {/* Analysis Results */}
-            {analysis && password && (
-              <div className="flex flex-col gap-6 animate-in fade-in zoom-in-95 duration-300">
-                {/* Score Header */}
-                <div className={`p-4 border flex items-center justify-between rounded-none ${getScoreColor(analysis.score)}`}>
+            {password.length > MAX_ANALYSIS_LENGTH ? (
+              <ToolStatus tone="attention" title="Password is too long to analyze">Enter 256 characters or fewer. The value stays in the field and is not truncated.</ToolStatus>
+            ) : analysis ? (
+              <div className="space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-4 border border-[#1a1a1a] bg-[#080808] p-4">
                   <div className="flex items-center gap-3">
-                    {analysis.score < 3 ? <ShieldAlert className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
+                    {analysis.score < 3 ? <ShieldAlert className="h-6 w-6 text-[#fbbf24]" aria-hidden="true" /> : <ShieldCheck className="h-6 w-6 text-[#00ff9c]" aria-hidden="true" />}
                     <div className="font-mono">
-                      <div className="text-xs opacity-70 uppercase tracking-widest">Overall Score</div>
-                      <div className="text-xl font-bold uppercase tracking-widest">{getScoreLabel(analysis.score)}</div>
+                      <div className="text-[10px] uppercase tracking-widest text-zinc-400">zxcvbn score</div>
+                      <div className="text-sm font-bold uppercase tracking-widest text-zinc-100">{getScoreLabel(analysis.score)}</div>
                     </div>
                   </div>
-                  <div className="text-right font-mono">
-                    <div className="text-xs opacity-70 uppercase tracking-widest">Entropy</div>
-                    <div className="text-xl font-bold">{Math.round(analysis.guesses_log10 * 3.321928)} bits</div>
+                  <div className="text-left font-mono sm:text-right">
+                    <div className="text-[10px] uppercase tracking-widest text-zinc-400">Estimated guesses</div>
+                    <div className="text-sm font-bold text-[#00ff9c]">10^{analysis.guesses_log10.toFixed(1)}</div>
                   </div>
                 </div>
 
-                {/* Warnings and Suggestions */}
                 {(analysis.feedback.warning || analysis.feedback.suggestions.length > 0) && (
-                  <div className="bg-orange-500/5 border border-orange-500/20 p-4 space-y-3 rounded-none">
-                    {analysis.feedback.warning && (
-                      <div className="flex items-start gap-2 text-orange-400 font-mono text-sm">
-                        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                        <span><strong>Warning:</strong> {analysis.feedback.warning}</span>
-                      </div>
-                    )}
-                    {analysis.feedback.suggestions.map((suggestion: string, idx: number) => (
-                      <div key={idx} className="flex items-start gap-2 text-orange-400/70 font-mono text-xs pl-6">
-                        <span>• {suggestion}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <ToolStatus tone="attention" title="Review this feedback">
+                    <div className="space-y-2">
+                      {analysis.feedback.warning && <p className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />{analysis.feedback.warning}</p>}
+                      {analysis.feedback.suggestions.length > 0 && <ul className="list-disc space-y-1 pl-5">{analysis.feedback.suggestions.map((suggestion, index) => <li key={`${index}-${suggestion}`}>{suggestion}</li>)}</ul>}
+                    </div>
+                  </ToolStatus>
                 )}
 
-                {/* Cracking Times Table */}
-                <div className="border border-[#1a1a1a] bg-[#050505] rounded-none">
-                  <header className="px-4 py-2 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-                    <span className="text-blue-400 text-xs font-mono uppercase tracking-widest">Estimated Cracking Times</span>
-                  </header>
+                <div className="border border-[#1a1a1a]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1a1a1a] bg-[#0a0a0a] px-4 py-3">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-[#00ff9c]">Estimated attack times</h3>
+                    <ToolBadge tone="info">Illustrative</ToolBadge>
+                  </div>
                   <div className="divide-y divide-[#1a1a1a]">
-                    <TimeRow 
-                      label="Online Attack (100 / hour)" 
-                      desc="No throttling, typical web login"
-                      time={analysis.crack_times_display.online_no_throttling_10_per_second} 
-                    />
-                    <TimeRow 
-                      label="Offline Attack (Slow Hash)" 
-                      desc="bcrypt, scrypt, Argon2 (10k / second)"
-                      time={analysis.crack_times_display.offline_slow_hashing_1e4_per_second} 
-                    />
-                    <TimeRow 
-                      label="Offline Attack (Fast Hash)" 
-                      desc="MD5, SHA-1, NTLM on GPU cluster (100B / second)"
-                      time={analysis.crack_times_display.offline_fast_hashing_1e10_per_second} 
-                    />
+                    <TimeRow label="Online, rate-limited (100 guesses/hour)" desc="A service applying login throttling" time={analysis.crack_times_display.online_throttling_100_per_hour} />
+                    <TimeRow label="Online, no throttling (10 guesses/second)" desc="An unthrottled online login" time={analysis.crack_times_display.online_no_throttling_10_per_second} />
+                    <TimeRow label="Offline, slow hash (10⁴ guesses/second)" desc="For example, bcrypt, scrypt, or PBKDF2 with a moderate work factor" time={analysis.crack_times_display.offline_slow_hashing_1e4_per_second} />
+                    <TimeRow label="Offline, fast hash (10¹⁰ guesses/second)" desc="An illustrative estimate for a fast hash such as MD5, SHA-1, or SHA-256" time={analysis.crack_times_display.offline_fast_hashing_1e10_per_second} />
                   </div>
                 </div>
-                
-                {/* Match Details */}
+                <ToolStatus tone="info">These are zxcvbn estimates, not a guarantee of security. Real attack times vary with rate limits, hardware, hash settings, and attacker resources.</ToolStatus>
+
                 {analysis.sequence.length > 0 && (
-                  <div className="text-xs font-mono text-zinc-600">
-                    <span className="uppercase tracking-widest mb-2 block text-zinc-500">Pattern Matches Detected:</span>
+                  <div className="space-y-2">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Pattern matches detected</div>
                     <div className="flex flex-wrap gap-2">
-                      {analysis.sequence.map((match: any, idx: number) => (
-                        <span key={idx} className="bg-[#1a1a1a] px-2 py-1 border border-[#2a2a2a] rounded-none">
+                      {analysis.sequence.map((match, index) => (
+                        <span key={`${index}-${match.i}-${match.j}`} className="max-w-full break-all border border-[#2a2a2a] bg-[#111111] px-2 py-1 font-mono text-[10px] text-zinc-300">
                           {match.pattern} ({match.token})
                         </span>
                       ))}
@@ -291,55 +242,56 @@ function PasswordGeneratorContent() {
                   </div>
                 )}
               </div>
+            ) : password ? (
+              <ToolStatus tone="info">Analyzing this password locally…</ToolStatus>
+            ) : (
+              <ToolEmptyState title="Enter a password to analyze">The score, guess estimate, feedback, and attack-time estimates will appear here.</ToolEmptyState>
             )}
-          </div>
-        </article>
+          </ToolPanelBody>
+        </ToolPanel>
       </div>
     </ToolLayout>
   );
 }
 
-function TimeRow({ label, desc, time }: { label: string, desc: string, time: string | number }) {
-  // Color code based on time unit
-  let color = "text-zinc-300";
-  const timeStr = time.toString();
-  if (timeStr === "centuries") color = "text-[#00ff9c] font-bold";
-  else if (timeStr.includes("years") || timeStr.includes("months")) color = "text-yellow-400";
-  else if (timeStr === "instant" || timeStr.includes("seconds") || timeStr.includes("minutes") || timeStr.includes("hours")) color = "text-red-500 font-bold";
+function getScoreLabel(score: PasswordAnalysis["score"]): string {
+  switch (score) {
+    case 0: return "Very weak";
+    case 1: return "Weak";
+    case 2: return "Fair";
+    case 3: return "Good";
+    case 4: return "Strong";
+  }
+}
 
+function TimeRow({ label, desc, time }: { label: string; desc: string; time: string | number }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-2">
-      <div>
-        <div className="text-sm font-mono text-zinc-300">{label}</div>
-        <div className="text-xs font-mono text-zinc-600">{desc}</div>
+    <div className="flex min-w-0 flex-col justify-between gap-2 p-4 sm:flex-row sm:items-center">
+      <div className="min-w-0">
+        <div className="break-words font-mono text-xs text-zinc-200">{label}</div>
+        <div className="mt-1 text-[10px] leading-relaxed text-zinc-400">{desc}</div>
       </div>
-      <div className={`font-mono text-sm uppercase tracking-widest ${color}`}>
-        {time}
-      </div>
+      <div className="shrink-0 font-mono text-xs uppercase tracking-wider text-zinc-100 sm:text-right">{time}</div>
     </div>
   );
 }
 
-function ToggleOption({ label, active, onClick }: { label: string, active: boolean, onClick: () => void }) {
+function ToggleOption({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
-    <button 
+    <ToolActionButton
+      aria-pressed={active}
+      tone={active ? "accent" : "neutral"}
       onClick={onClick}
-      className={`flex items-center gap-3 p-3 border font-mono text-xs transition-all text-left rounded-none ${
-        active 
-          ? "border-[#00ff9c]/50 bg-[#00ff9c]/5 text-[#00ff9c]" 
-          : "border-[#1a1a1a] bg-black text-zinc-500 hover:border-[#2a2a2a] hover:text-zinc-400"
-      }`}
+      className="h-auto min-h-11 flex-1 justify-start whitespace-normal px-3 py-2 text-left font-mono text-xs"
     >
-      <span className="shrink-0 w-3 h-3 border border-current flex items-center justify-center">
-        {active && <span className="w-1.5 h-1.5 bg-current" />}
+      <span aria-hidden="true" className="flex h-3 w-3 shrink-0 items-center justify-center border border-current">
+        {active && <span className="h-1.5 w-1.5 bg-current" />}
       </span>
       {label}
-    </button>
+    </ToolActionButton>
   );
 }
 
 export default function PasswordGenerator() {
-  return (
-    <PasswordGeneratorContent />
-  );
+  return <PasswordGeneratorContent />;
 }
