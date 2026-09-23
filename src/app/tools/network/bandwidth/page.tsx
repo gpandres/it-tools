@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
 import {
+  ToolActionButton,
+  ToolActionPanel,
   ToolField,
   ToolPanel,
   ToolPanelBody,
@@ -14,7 +16,6 @@ import {
 } from "@/components/tool-design";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function parseNumericInput(value: string) {
   const trimmed = value.trim();
@@ -117,37 +118,18 @@ function BandwidthToolContent() {
       description="Estimate transfer time from file size and link speed, with an optional TCP latency limit."
     >
       <div className="mx-auto w-full max-w-7xl min-w-0 space-y-6">
-        <Tabs
-          value={simpleMode ? "simple" : "advanced"}
-          onValueChange={(value) => setSimpleMode(value === "simple")}
-          className="min-w-0"
-        >
-          <TabsList aria-label="Calculation mode" variant="line" className="grid h-auto w-full grid-cols-2 gap-0 border border-[#1a1a1a] bg-black p-0 sm:w-72">
-            <TabsTrigger
-              value="simple"
-              className="h-10 rounded-none border-0 text-[10px] font-bold uppercase tracking-wider focus-visible:z-10 data-active:bg-[#00ff9c]/10 data-active:text-[#00ff9c] data-active:after:hidden"
-            >
-              Simple mode
-            </TabsTrigger>
-            <TabsTrigger
-              value="advanced"
-              className="h-10 rounded-none border-0 border-l border-[#1a1a1a] text-[10px] font-bold uppercase tracking-wider focus-visible:z-10 data-active:bg-[#00ff9c]/10 data-active:text-[#00ff9c] data-active:after:hidden"
-            >
-              Advanced mode
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <ToolActionPanel label="Mode">
+          <ToolActionButton tone={simpleMode ? "accent" : "neutral"} aria-pressed={simpleMode} onClick={() => setSimpleMode(true)}>Simple</ToolActionButton>
+          <ToolActionButton tone={!simpleMode ? "accent" : "neutral"} aria-pressed={!simpleMode} onClick={() => setSimpleMode(false)}>TCP / advanced</ToolActionButton>
+        </ToolActionPanel>
 
         <ToolPanel>
           <ToolPanelHeader>
-            <ToolPanelTitle marker="IN" className="text-[#ffb000] glow-amber">Transfer config</ToolPanelTitle>
+            <ToolPanelTitle marker="IN">Transfer config</ToolPanelTitle>
           </ToolPanelHeader>
           <ToolPanelBody>
-            <div className={`grid min-w-0 gap-6 ${simpleMode ? "" : "md:grid-cols-2"}`}>
-              <div className="min-w-0 space-y-5">
-                <h3 className="border-b border-[#1a1a1a] pb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                  {simpleMode ? "Download details" : "Transfer size and link speed"}
-                </h3>
+            <div className={`grid min-w-0 gap-6 ${simpleMode ? "" : "lg:grid-cols-2"}`}>
+              <div className={simpleMode ? "grid min-w-0 gap-5 lg:grid-cols-2" : "min-w-0 space-y-5"}>
                 <ToolField
                   htmlFor="file-size"
                   label="File size"
@@ -164,10 +146,10 @@ function BandwidthToolContent() {
                       min="0"
                       aria-invalid={hasInvalidFileSize}
                       aria-describedby={hasInvalidFileSize ? "file-size-error" : "file-size-help"}
-                      className="h-10 min-w-0 flex-1 rounded-none border-[#1a1a1a] bg-black font-mono text-[#00ff9c] focus-visible:ring-[#00ff9c]"
+                      className="h-10 min-w-0 flex-1 rounded-none border-[#1a1a1a] bg-black! font-mono text-zinc-300 focus-visible:ring-[#00ff9c]/50"
                     />
                     <Select value={fileUnit} onValueChange={(value) => setFileUnit(value ?? "GB")}>
-                      <SelectTrigger aria-label="File size unit" className="h-10 w-24 shrink-0 rounded-none border-[#1a1a1a] bg-black font-mono text-[#00ff9c] focus-visible:ring-[#00ff9c]">
+                      <SelectTrigger aria-label="File size unit" className="h-10 w-24 shrink-0 rounded-none border-[#1a1a1a] bg-black! font-mono text-zinc-300 focus-visible:ring-[#00ff9c]/50">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-none border border-[#1a1a1a] bg-black text-zinc-200">
@@ -195,10 +177,10 @@ function BandwidthToolContent() {
                       min="0"
                       aria-invalid={hasInvalidLinkSpeed}
                       aria-describedby={hasInvalidLinkSpeed ? "link-speed-error" : undefined}
-                      className="h-10 min-w-0 flex-1 rounded-none border-[#1a1a1a] bg-black font-mono text-[#00ff9c] focus-visible:ring-[#00ff9c]"
+                      className="h-10 min-w-0 flex-1 rounded-none border-[#1a1a1a] bg-black! font-mono text-zinc-300 focus-visible:ring-[#00ff9c]/50"
                     />
                     <Select value={speedUnit} onValueChange={(value) => setSpeedUnit(value ?? "Gbps")}>
-                      <SelectTrigger aria-label="Link speed unit" className="h-10 w-24 shrink-0 rounded-none border-[#1a1a1a] bg-black font-mono text-[#00ff9c] focus-visible:ring-[#00ff9c]">
+                      <SelectTrigger aria-label="Link speed unit" className="h-10 w-24 shrink-0 rounded-none border-[#1a1a1a] bg-black! font-mono text-zinc-300 focus-visible:ring-[#00ff9c]/50">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-none border border-[#1a1a1a] bg-black text-zinc-200">
@@ -231,7 +213,7 @@ function BandwidthToolContent() {
                       min="0"
                       aria-invalid={hasInvalidRtt}
                       aria-describedby={hasInvalidRtt ? "rtt-error" : undefined}
-                      className="h-10 rounded-none border-[#1a1a1a] bg-black font-mono text-[#00ff9c] focus-visible:ring-[#00ff9c]"
+                      className="h-10 rounded-none border-[#1a1a1a] bg-black! font-mono text-zinc-300 focus-visible:ring-[#00ff9c]/50"
                     />
                   </ToolField>
 
@@ -250,7 +232,7 @@ function BandwidthToolContent() {
                       min="0"
                       aria-invalid={hasInvalidWindowSize}
                       aria-describedby={hasInvalidWindowSize ? "tcp-window-error" : "tcp-window-help"}
-                      className="h-10 rounded-none border-[#1a1a1a] bg-black font-mono text-[#00ff9c] focus-visible:ring-[#00ff9c]"
+                      className="h-10 rounded-none border-[#1a1a1a] bg-black! font-mono text-zinc-300 focus-visible:ring-[#00ff9c]/50"
                     />
                   </ToolField>
                 </div>
@@ -273,7 +255,7 @@ function BandwidthToolContent() {
                 These values produce a result outside the supported numeric range. Try smaller values.
               </ToolStatus>
             ) : simpleMode ? (
-              <ToolStatGrid className="grid-cols-1">
+              <ToolStatGrid className="sm:grid-cols-1">
                 <ToolStat
                   label="Estimated download time"
                   value={theoreticalTimeStr}
@@ -285,7 +267,7 @@ function BandwidthToolContent() {
               <>
                 <ToolStatGrid className="grid-cols-1 sm:grid-cols-2">
                   <ToolStat label="Theoretical time" value={theoreticalTimeStr} context="Full configured link rate" tone="info" />
-                  <ToolStat label="Estimated real time" value={realTimeStr} context="Limited by link or TCP window / RTT" tone="success" />
+                  <ToolStat label="TCP-limited time" value={realTimeStr} context="Limited by link or TCP window / RTT" tone="success" />
                 </ToolStatGrid>
                 <ToolStatus tone="info" title="TCP throughput estimate">
                   {maxTcpThroughputStr}. This is a receive-window ceiling based on one window per RTT; actual transfers may be slower.

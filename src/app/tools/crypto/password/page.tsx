@@ -3,7 +3,6 @@
 import { ToolLayout } from "@/components/tool-layout";
 import {
   ToolActionButton,
-  ToolActionPanel,
   ToolBadge,
   ToolEmptyState,
   ToolField,
@@ -16,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useNotification } from "@/components/notification-provider";
 import { AlertTriangle, Copy, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import zxcvbn from "zxcvbn";
 
 const MAX_ANALYSIS_LENGTH = 256;
@@ -119,8 +118,8 @@ function PasswordGeneratorContent() {
 
   return (
     <ToolLayout
-      title="Password Guessability Estimator"
-      description="Generate passwords locally or estimate their guessability with zxcvbn. Attack times are illustrative and depend on the service or hash configuration."
+      title="Password Generator & Analyzer"
+      description="Generate a random password or check a password’s strength locally."
     >
       <div className="mx-auto grid w-full max-w-7xl min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-12">
         <ToolPanel className="lg:col-span-4">
@@ -138,7 +137,8 @@ function PasswordGeneratorContent() {
                   value={length}
                   onChange={event => handleLengthChange(event.target.value)}
                   aria-valuetext={`${length} characters`}
-                  className="min-w-0 flex-1 accent-[#00ff9c] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#00ff9c]"
+                  className="tool-range min-w-0 flex-1"
+                  style={{ "--tool-range-progress": `${((length - 4) / 124) * 100}%` } as CSSProperties}
                 />
                 <span className="min-w-12 text-right font-mono text-sm text-[#00ff9c]">{length}</span>
               </div>
@@ -154,11 +154,11 @@ function PasswordGeneratorContent() {
               </div>
             </fieldset>
 
-            <ToolActionPanel label="ACTIONS" className="px-0 py-0">
+            <div className="flex flex-wrap gap-2">
               <ToolActionButton tone="accent" onClick={generate} disabled={!hasCharset}>
                 <RefreshCw aria-hidden="true" /> Generate random
               </ToolActionButton>
-            </ToolActionPanel>
+            </div>
 
             {!hasCharset ? (
               <ToolStatus tone="attention" title="Select a character set">Choose at least one set before generating a password.</ToolStatus>
@@ -170,7 +170,7 @@ function PasswordGeneratorContent() {
 
         <ToolPanel className="lg:col-span-8">
           <ToolPanelHeader>
-            <ToolPanelTitle marker="OUT">Password analysis</ToolPanelTitle>
+            <ToolPanelTitle marker="OUT">Password</ToolPanelTitle>
             <ToolActionButton onClick={copyToClipboard} disabled={!password} aria-label="Copy password">
               <Copy aria-hidden="true" /> Copy
             </ToolActionButton>
@@ -182,7 +182,7 @@ function PasswordGeneratorContent() {
                 value={password}
                 onChange={event => handlePasswordChange(event.target.value)}
                 placeholder="Type a password to audit..."
-                className="rounded-none border-[#1a1a1a] bg-black! py-6 text-center font-mono text-lg text-zinc-200 focus-visible:ring-[#00ff9c]/50 md:text-xl"
+                className="h-10 rounded-none border-[#1a1a1a] bg-black! font-mono text-zinc-300 focus-visible:ring-[#00ff9c]/50"
                 spellCheck={false}
                 autoComplete="new-password"
               />
@@ -282,7 +282,7 @@ function ToggleOption({ label, active, onClick }: { label: string; active: boole
       aria-pressed={active}
       tone={active ? "accent" : "neutral"}
       onClick={onClick}
-      className="h-auto min-h-11 flex-1 justify-start whitespace-normal px-3 py-2 text-left font-mono text-xs"
+      className="h-auto min-h-10 w-full justify-start gap-3 whitespace-normal px-3 py-2 text-left font-mono text-xs"
     >
       <span aria-hidden="true" className="flex h-3 w-3 shrink-0 items-center justify-center border border-current">
         {active && <span className="h-1.5 w-1.5 bg-current" />}
