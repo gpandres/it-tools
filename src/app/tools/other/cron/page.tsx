@@ -1,124 +1,71 @@
 "use client";
 
+import { useMemo, useRef, useState } from "react";
+import cronstrue from "cronstrue";
+import { Copy } from "lucide-react";
 import { ToolLayout } from "@/components/tool-layout";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useState, useMemo } from "react";
-import cronstrue from "cronstrue/i18n";
+import { useNotification } from "@/components/notification-provider";
+import { ToolActionButton, ToolConfirmDialog, ToolEmptyState, ToolField, ToolPanel, ToolPanelBody, ToolPanelHeader, ToolPanelTitle, ToolStatus } from "@/components/tool-design";
+
+const examples = [
+  ["Every minute", "* * * * *"], ["Every 5 minutes", "*/5 * * * *"],
+  ["Hourly at minute 30", "30 * * * *"], ["Daily at 04:00", "0 4 * * *"],
+  ["Sunday at midnight", "0 0 * * 0"], ["Daily at 08:00 and 18:00", "0 8,18 * * *"],
+  ["First day of each month", "0 0 1 * *"],
+];
 
 export default function CronParser() {
-  const [cronExp, setCronExp] = useState("* * * * *");
-
-  const { description, error } = useMemo(() => {
+  const [expression, setExpression] = useState("* * * * *");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { notify } = useNotification();
+  const text = expression.trim();
+  const result = useMemo(() => {
+    if (!text) return { description: "", error: "" };
     try {
-      const parts = cronExp.trim().split(/\s+/);
-      if (parts.length < 5) {
-        return { error: "Cron expression must have at least 5 parts", description: "" };
-      }
-      
-      const desc = cronstrue.toString(cronExp, { throwExceptionOnParseError: true });
-      return { error: null, description: desc };
-    } catch (e) {
-      return { error: (e as Error).message || "Invalid cron expression", description: "" };
+      if (text.split(/\s+/).length < 5 || text.split(/\s+/).length > 7) throw new Error("Enter an expression with 5, 6 or 7 fields.");
+      return { description: cronstrue.toString(text, { throwExceptionOnParseError: true, use24HourTimeFormat: true }), error: "" };
+    } catch (error) {
+      return { description: "", error: error instanceof Error ? error.message : String(error) };
     }
-  }, [cronExp]);
+  }, [text]);
+  const parts = text.split(/\s+/);
+  const hasYear = parts.length === 7 || (parts.length === 6 && (/\d{4}$/.test(parts[5]) || parts[4] === "?" || parts[2] === "?"));
+  const fields = ["Minute", "Hour", "Day of month", "Month", "Day of week"];
+  if (parts.length === 7 || (parts.length === 6 && !hasYear)) fields.unshift("Second");
+  if (hasYear) fields.push("Year");
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(result.description); notify("Description copied"); }
+    catch { notify("Could not copy. Select the description and copy it manually.", "error"); }
+  };
 
-  const examples = [
-    { label: "Every minute", val: "* * * * *" },
-    { label: "Every 5 minutes", val: "*/5 * * * *" },
-    { label: "Every hour at minute 30", val: "30 * * * *" },
-    { label: "At 04:00 on every day", val: "0 4 * * *" },
-    { label: "At 00:00 on Sunday", val: "0 0 * * 0" },
-    { label: "Every day at 08:00 and 18:00", val: "0 8,18 * * *" },
-    { label: "At 00:00 on day 1 of month", val: "0 0 1 * *" },
-  ];
-
-  return (
-    <ToolLayout 
-      title="Cron Expression Parser" 
-      description="Translate cron schedules into human-readable text instantly."
-    >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
-        
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
-          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-[#00ff9c] text-xs">[IN]</span>
-            <span className="text-[#ffb000] text-sm font-semibold glow-amber uppercase tracking-widest">Cron Expression</span>
-          </header>
-          <div className="p-6 flex flex-col gap-6 flex-1">
-            <div className="space-y-3">
-              <Label htmlFor="cron-input" className="sr-only">Cron Expression</Label>
-              <Input
-                id="cron-input"
-                type="text"
-                value={cronExp}
-                onChange={(e) => setCronExp(e.target.value)}
-                placeholder="* * * * *"
-                className={`w-full font-mono text-2xl text-center tracking-widest bg-black border-[#1a1a1a] rounded-none focus-visible:ring-[#00ff9c] h-16 text-[#00ff9c] ${error ? 'border-red-500/50 text-red-400 focus-visible:ring-red-500' : ''}`}
-                spellCheck={false}
-              />
-            </div>
-            
-            <div className="grid grid-cols-5 gap-2 text-center text-xs font-mono text-zinc-500">
-              <div className="flex flex-col gap-1">
-                <span className="text-zinc-300">Minute</span>
-                <span>0-59</span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-zinc-300">Hour</span>
-                <span>0-23</span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-zinc-300">Day (Month)</span>
-                <span>1-31</span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-zinc-300">Month</span>
-                <span>1-12</span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-zinc-300">Day (Week)</span>
-                <span>0-6</span>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <Label className="text-xs font-mono text-zinc-500 uppercase tracking-wider mb-3 block">Common Examples</Label>
-              <div className="flex flex-wrap gap-2">
-                {examples.map(ex => (
-                  <button
-                    key={ex.val}
-                    onClick={() => setCronExp(ex.val)}
-                    className="px-3 py-1.5 font-mono text-xs border border-[#1a1a1a] bg-black text-zinc-400 hover:text-[#ffb000] hover:border-[#ffb000]/50 transition-colors rounded-none"
-                  >
-                    {ex.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article className="border border-[#1a1a1a] bg-[#050505] flex flex-col rounded-none">
-          <header className="flex items-center gap-2 px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <span className="text-[#00ff9c] text-xs">[OUT]</span>
-            <span className="text-[#00ff9c] text-sm font-semibold uppercase tracking-widest glow">Human Readable</span>
-          </header>
-          <div className="p-8 flex items-center justify-center flex-1 min-h-[250px] bg-zinc-950 dotted-bg">
-            {error ? (
-              <div className="text-center font-mono text-red-500 max-w-sm">
-                <span className="block mb-2 text-red-400/50">Error</span>
-                {error}
-              </div>
-            ) : (
-              <div className="text-center font-mono text-2xl text-zinc-200 leading-relaxed max-w-sm">
-                "{description}"
-              </div>
-            )}
-          </div>
-        </article>
-
-      </div>
-    </ToolLayout>
-  );
+  return <ToolLayout title="Cron Expression Parser" description="Translate cron expressions into readable schedules locally.">
+    <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-2">
+      <ToolPanel>
+        <ToolPanelHeader><ToolPanelTitle marker="IN">Expression</ToolPanelTitle>
+          <ToolConfirmDialog trigger={<ToolActionButton tone="danger" disabled={!expression}>Clear</ToolActionButton>} title="Clear cron expression?" description="The expression and its description will be removed." confirmLabel="Clear expression" onConfirm={() => setExpression("")} finalFocus={() => expression ? true : inputRef.current} />
+        </ToolPanelHeader>
+        <ToolPanelBody className="space-y-5">
+          <ToolField htmlFor="cron-input" label="Cron expression" helper="Accepts five fields, or extended expressions with seconds and/or a year.">
+            <Input id="cron-input" ref={inputRef} value={expression} onChange={event => setExpression(event.target.value)} spellCheck={false} autoComplete="off" placeholder="*/5 * * * *" aria-invalid={!!result.error} aria-describedby={result.error ? "cron-error" : undefined} className="h-10 rounded-none border-[#1a1a1a] bg-black! font-mono text-zinc-300" />
+          </ToolField>
+          {result.error && <ToolStatus id="cron-error" tone="error" title="Unable to describe expression">{result.error}</ToolStatus>}
+          {text && !result.error && <dl className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3">
+            {fields.map((field, index) => <div key={field} className="min-w-0 border border-[#1a1a1a] bg-black p-3"><dt className="text-xs text-zinc-400">{field}</dt><dd className="mt-2 break-all text-sm text-[#00ff9c]">{parts[index]}</dd></div>)}
+          </dl>}
+          <fieldset><legend className="mb-3 text-xs font-bold uppercase tracking-widest text-zinc-400">Examples</legend>
+            <div className="flex flex-wrap gap-2">{examples.map(([label, value]) => <ToolActionButton key={value} aria-pressed={text === value} tone={text === value ? "accent" : "neutral"} className="h-auto min-h-8 whitespace-normal text-left" onClick={() => setExpression(value)}>{label}</ToolActionButton>)}</div>
+          </fieldset>
+        </ToolPanelBody>
+      </ToolPanel>
+      <ToolPanel>
+        <ToolPanelHeader><ToolPanelTitle marker="OUT">Schedule description</ToolPanelTitle><ToolActionButton disabled={!result.description} onClick={copy}><Copy aria-hidden="true" />Copy</ToolActionButton></ToolPanelHeader>
+        <ToolPanelBody className="space-y-5">
+          {result.description ? <p role="status" className="break-words text-base leading-relaxed text-zinc-200">{result.description}</p> : <ToolEmptyState title={text ? "Check the expression" : "Awaiting expression"}>Enter a cron expression or choose an example.</ToolEmptyState>}
+          <p className="text-xs leading-relaxed text-zinc-400">This describes the expression; it does not schedule a job or verify a specific scheduler. Time zone and cron dialect depend on the system running it.</p>
+        </ToolPanelBody>
+      </ToolPanel>
+    </div>
+  </ToolLayout>;
 }
