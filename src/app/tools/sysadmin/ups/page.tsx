@@ -1,244 +1,109 @@
 "use client";
 
-import { useState, Suspense } from "react";
-
+import { useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { Battery, Zap, Clock, Info } from "lucide-react";
+import { ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody, ToolField, ToolStatGrid, ToolStat, ToolStatus, ToolDisclosure, ToolActionButton } from "@/components/tool-design";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UPS_PRESETS } from "@/lib/ups-presets";
 
-function UpsCalculatorContent() {
-  const [voltage, setVoltage] = useState("12");
-  const [capacityAh, setCapacityAh] = useState("9");
-  const [batteries, setBatteries] = useState("2");
-  const [loadWatts, setLoadWatts] = useState("300");
-  const [efficiency, setEfficiency] = useState("85");
-  const [topology, setTopology] = useState<"parallel" | "series">("parallel");
-  const [batteryDerating, setBatteryDerating] = useState("80");
-  const [showPresets, setShowPresets] = useState(false);
-
-  const v = Math.max(0, parseFloat(voltage) || 0);
-  const ah = Math.max(0, parseFloat(capacityAh) || 0);
-  const qty = Math.max(1, parseInt(batteries, 10) || 1);
-  const load = Math.max(0, parseFloat(loadWatts) || 0);
-  const eff = Math.min(100, Math.max(1, parseFloat(efficiency) || 1)) / 100;
-  const derating = Math.min(100, Math.max(1, parseFloat(batteryDerating) || 1)) / 100;
-
-  // Total Battery Capacity in Volt-Amp-Hours (VAh) / Watt-hours
-  const totalVAh = v * ah * qty;
-  
-  // Usable Capacity after inverter efficiency
-  const usableWh = totalVAh * eff * derating;
-
-  // Runtime in hours = Usable Capacity (Wh) / Load (W)
-  const runtimeHours = load > 0 ? usableWh / load : 0;
-  const runtimeMinutes = runtimeHours * 60;
-
-  // Current draw from battery bank
-  // Depending on series/parallel, the bank voltage might be V*qty or V.
-  // We'll calculate total battery draw in Watts: Load / Eff.
-  const batteryDrawWatts = load > 0 && eff > 0 ? load / eff : 0;
-  const bankVoltage = topology === "series" ? v * qty : v;
-  const batteryDrawAmps = bankVoltage > 0 ? batteryDrawWatts / bankVoltage : 0;
-
-  const applyPreset = (preset: (typeof UPS_PRESETS)[number]) => {
-    setVoltage(String(preset.voltage));
-    setCapacityAh(String(preset.capacityAh));
-    setBatteries(String(preset.batteries));
-    setTopology(preset.topology);
-  };
-
-  return (
-    <div className="max-w-5xl space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-      
-      {/* Controls */}
-      <div className="lg:col-span-5 space-y-6">
-        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 flex items-center gap-2">
-              <Battery className="w-4 h-4" /> Battery Specifications
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-mono text-zinc-400">Voltage (V)</label>
-                <input 
-                  type="number" min="0" step="1"
-                  value={voltage} 
-                  onChange={(e) => setVoltage(e.target.value)} 
-                  className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                  placeholder="e.g. 12"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-mono text-zinc-400">Capacity (Ah)</label>
-                <input 
-                  type="number" min="0" step="0.5"
-                  value={capacityAh} 
-                  onChange={(e) => setCapacityAh(e.target.value)} 
-                  className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                  placeholder="e.g. 9"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-end">
-                <label className="text-xs font-mono text-zinc-400">Number of Batteries</label>
-                <span className="text-[#00ff9c] font-mono font-bold">{qty}</span>
-              </div>
-              <input 
-                type="range" min="1" max="40" step="1"
-                value={qty} 
-                onChange={(e) => setBatteries(e.target.value)} 
-                className="w-full accent-[#00ff9c]" 
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-mono text-zinc-400">Battery Bank Topology</label>
-              <select
-                value={topology}
-                onChange={(e) => setTopology(e.target.value as "parallel" | "series")}
-                className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-              >
-                <option value="parallel">Parallel (same voltage, more Ah)</option>
-                <option value="series">Series (higher voltage, same Ah)</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-4 pt-2">
-            <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 flex items-center gap-2">
-              <Zap className="w-4 h-4" /> Load & Environment
-            </h3>
-            
-            <div className="space-y-2">
-              <label className="text-xs font-mono text-zinc-400">Total Load (Watts)</label>
-              <input 
-                type="number" min="0" step="10"
-                value={loadWatts} 
-                onChange={(e) => setLoadWatts(e.target.value)} 
-                className="w-full bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono font-bold focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                placeholder="e.g. 300"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-end">
-                <label className="text-xs font-mono text-zinc-400">Inverter Efficiency (%)</label>
-                <span className="text-zinc-300 font-mono font-bold">{efficiency}%</span>
-              </div>
-              <input 
-                type="range" min="50" max="100" step="1"
-                value={efficiency} 
-                onChange={(e) => setEfficiency(e.target.value)} 
-                className="w-full accent-[#00ff9c]" 
-              />
-              <p className="text-[10px] text-zinc-600 font-mono">Typically 80% - 90% for standard line-interactive UPS.</p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-end">
-                <label className="text-xs font-mono text-zinc-400">Battery Derating (%)</label>
-                <span className="text-amber-400 font-mono font-bold">{batteryDerating}%</span>
-              </div>
-              <input
-                type="range" min="50" max="100" step="1"
-                value={batteryDerating}
-                onChange={(e) => setBatteryDerating(e.target.value)}
-                className="w-full accent-amber-400"
-              />
-              <p className="text-[10px] text-zinc-600 font-mono">Adjusts for age, temperature and discharge-rate losses.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Results */}
-      <div className="lg:col-span-7 flex flex-col gap-6">
-        
-        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-8 flex flex-col items-center justify-center min-h-[250px] relative overflow-hidden group">
-          <div className="absolute inset-0 bg-[#00ff9c]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          
-          <Clock className="w-12 h-12 text-[#00ff9c] mb-4 opacity-80" />
-          <span className="text-zinc-500 text-sm font-bold uppercase tracking-widest mb-2 z-10">Estimated Runtime</span>
-          
-          <div className="flex items-baseline gap-2 z-10">
-            <span className="text-7xl font-mono text-[#00ff9c] glow-green tracking-tighter">
-              {runtimeMinutes > 0 ? (runtimeMinutes > 600 ? ">600" : runtimeMinutes.toFixed(1)) : "0"}
-            </span>
-            <span className="text-xl text-zinc-400 font-mono">min</span>
-          </div>
-          
-          {runtimeHours >= 1 && (
-            <span className="text-zinc-500 font-mono text-sm mt-2 z-10">
-              (~{runtimeHours.toFixed(2)} hours)
-            </span>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-4">
-            <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest block mb-2">Total Capacity</span>
-            <span className="text-2xl font-mono text-zinc-200">{totalVAh.toFixed(0)} <span className="text-sm opacity-60">Wh</span></span>
-          </div>
-          <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-4">
-            <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest block mb-2">Battery Draw</span>
-            <span className="text-2xl font-mono text-amber-400">{batteryDrawWatts.toFixed(0)} <span className="text-sm opacity-60">W</span></span>
-          </div>
-          <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-4">
-            <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest block mb-2">Bank Current</span>
-            <span className="text-2xl font-mono text-blue-300">{batteryDrawAmps.toFixed(1)} <span className="text-sm opacity-60">A</span></span>
-            <span className="text-[10px] text-zinc-600 font-mono block mt-1">{bankVoltage.toFixed(0)} V {topology}</span>
-          </div>
-        </div>
-
-        <div className="border border-[#1a1a1a] bg-[#0a0a0a] rounded-none p-4 flex gap-3 text-zinc-400">
-          <Info className="w-5 h-5 shrink-0 text-zinc-500" />
-          <p className="text-sm font-mono leading-relaxed opacity-80">
-            <strong>Estimate:</strong> This model includes inverter efficiency and battery derating, but it still does not model Peukert&apos;s Law, temperature curves or the UPS&apos;s low-voltage cutoff. Confirm runtime with the manufacturer&apos;s load curve; if runtime is under 15 minutes, the estimate may be optimistic.
-          </p>
-        </div>
-
-      </div>
-      </div>
-      <section className="border border-[#1a1a1a] bg-[#050505] rounded-none p-4">
-        <button type="button" onClick={() => setShowPresets(current => !current)} aria-expanded={showPresets} className="flex w-full items-center justify-between gap-4 text-left">
-          <div>
-            <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-zinc-500"><Battery className="h-4 w-4" /> Popular model presets</h3>
-            <p className="mt-1 text-[10px] font-mono text-zinc-600">Common manufacturer profiles · not a verified global sales ranking</p>
-          </div>
-          <span className="shrink-0 text-[10px] font-mono text-[#00ff9c]">{showPresets ? "Hide" : "Show"}</span>
-        </button>
-        {showPresets && <div className="mt-3 border-t border-[#1a1a1a] pt-3">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-            {UPS_PRESETS.map(preset => (
-              <button key={preset.id} type="button" onClick={() => applyPreset(preset)} className="group border border-[#1a1a1a] bg-black rounded-none p-3 text-left transition-colors hover:border-[#00ff9c]/60 hover:bg-[#00ff9c]/5">
-                <div className="flex items-start justify-between gap-2"><span className="text-[10px] font-bold uppercase tracking-wider text-[#00ff9c]">{preset.vendor}</span><span className="text-[9px] text-zinc-600">Apply</span></div>
-                <span className="mt-2 block font-mono text-xs text-zinc-200">{preset.model}</span>
-                <span className="mt-1 block font-mono text-[10px] text-zinc-500">{preset.rating}</span>
-                <span className="mt-2 block font-mono text-[10px] text-zinc-400">{preset.battery}</span>
-                <span className="mt-2 block text-[9px] leading-relaxed text-zinc-600">{preset.note}</span>
-              </button>
-            ))}
-          </div>
-          <p className="mt-3 text-[10px] font-mono leading-relaxed text-zinc-600"><strong className="text-amber-400">Important:</strong> the runtime shown below is a browser-side estimate, not the manufacturer runtime curve. Actual runtime depends on load profile, battery age, temperature, cutoff voltage and regional SKU.</p>
-        </div>}
-      </section>
-    </div>
-  );
-}
+const fields = [
+  { key: "voltage", label: "Voltage per battery (V)", helper: "Nominal voltage of one battery.", max: Infinity },
+  { key: "capacity", label: "Capacity per battery (Ah)", helper: "Amp-hour rating of one battery.", max: Infinity },
+  { key: "count", label: "Number of batteries", helper: "1–40 identical batteries.", max: 40 },
+  { key: "load", label: "Total load (W)", helper: "Actual power consumed by the connected equipment.", max: Infinity },
+  { key: "efficiency", label: "Inverter efficiency (%)", helper: "Percentage of battery power delivered to the load.", max: 100 },
+  { key: "derating", label: "Usable battery capacity (%)", helper: "Capacity remaining after age, temperature and discharge-rate losses.", max: 100 },
+] as const;
+type FieldKey = typeof fields[number]["key"];
+const control = "w-full min-w-0 rounded-none border-[#1a1a1a] bg-black! text-zinc-300";
+const format = (value: number) => value > 0 && value < .1 ? value.toExponential(2) : value.toLocaleString("en-US", { maximumFractionDigits: 1 });
 
 export default function UpsCalculatorTool() {
-  return (
-    <ToolLayout
-      title="UPS Runtime Calculator"
-      description="Calculate estimated battery backup time for your server rack or network equipment based on load and battery specifications."
-    >
-      <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
-        <UpsCalculatorContent />
-      </Suspense>
-    </ToolLayout>
-  );
+  const [values, setValues] = useState<Record<FieldKey, string>>({ voltage: "12", capacity: "9", count: "2", load: "300", efficiency: "85", derating: "80" });
+  const [topology, setTopology] = useState<"parallel" | "series">("parallel");
+  const [appliedPreset, setAppliedPreset] = useState("");
+  const errors = Object.fromEntries(fields.map(field => {
+    const value = Number(values[field.key]);
+    const invalid = !values[field.key].trim() || !Number.isFinite(value) || value <= 0 || value > field.max || (field.key === "count" && !Number.isInteger(value));
+    return [field.key, invalid ? field.key === "count" ? "Enter 1–40 whole batteries." : "Enter a finite value greater than zero" + (Number.isFinite(field.max) ? " and at most " + field.max : "") + "." : ""];
+  })) as Record<FieldKey, string>;
+  const voltage = Number(values.voltage);
+  const capacity = Number(values.capacity);
+  const count = Number(values.count);
+  const efficiency = Number(values.efficiency) / 100;
+  const totalWh = voltage * capacity * count;
+  const usableWh = totalWh * efficiency * Number(values.derating) / 100;
+  const runtime = usableWh / Number(values.load) * 60;
+  const draw = Number(values.load) / efficiency;
+  const bankVoltage = topology === "series" ? voltage * count : voltage;
+  const bankAh = topology === "parallel" ? capacity * count : capacity;
+  const current = draw / bankVoltage;
+  const invalid = Object.values(errors).some(Boolean);
+  const overflow = ![totalWh, usableWh, runtime, draw, bankVoltage, bankAh, current].every(Number.isFinite);
+  const unavailable = invalid || overflow;
+  const result = (value: number, unit: string) => unavailable ? "—" : format(value) + " " + unit;
+
+  return <ToolLayout title="UPS Runtime Calculator" description="Estimate backup time from battery capacity, load and inverter efficiency.">
+    <div className="mx-auto w-full max-w-6xl min-w-0 space-y-6">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-2">
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="IN">Battery & load</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {fields.map(field => <ToolField key={field.key} htmlFor={"ups-" + field.key} label={field.label}>
+                <Input id={"ups-" + field.key} type="number" min={field.key === "count" ? 1 : 0} max={Number.isFinite(field.max) ? field.max : undefined} step={field.key === "count" ? "1" : "any"} value={values[field.key]} onChange={event => { setValues(previous => ({ ...previous, [field.key]: event.target.value })); setAppliedPreset(""); }} className={control} aria-invalid={!!errors[field.key]} aria-describedby={"ups-" + field.key + "-help"} />
+                <p id={"ups-" + field.key + "-help"} className={"text-xs leading-relaxed " + (errors[field.key] ? "text-red-400" : "text-zinc-400")}>{errors[field.key] || field.helper}</p>
+              </ToolField>)}
+            </div>
+            <ToolField htmlFor="ups-topology" label="Battery bank topology">
+              <Select value={topology} onValueChange={value => { if (value === "parallel" || value === "series") { setTopology(value); setAppliedPreset(""); } }}>
+                <SelectTrigger id="ups-topology" className={control}><SelectValue>{topology === "parallel" ? "Parallel · same voltage, more Ah" : "Series · higher voltage, same Ah"}</SelectValue></SelectTrigger>
+                <SelectContent><SelectItem value="parallel">Parallel · same voltage, more Ah</SelectItem><SelectItem value="series">Series · higher voltage, same Ah</SelectItem></SelectContent>
+              </Select>
+            </ToolField>
+            {unavailable && <ToolStatus tone="error">{invalid ? "Correct the highlighted inputs to estimate runtime." : "These values exceed the calculation range. Reduce the battery capacity or load range."}</ToolStatus>}
+            {appliedPreset && <ToolStatus tone="success">Applied {appliedPreset}. Load and efficiency assumptions are unchanged.</ToolStatus>}
+          </ToolPanelBody>
+        </ToolPanel>
+        <div className="min-w-0 space-y-6">
+          <ToolPanel>
+            <ToolPanelHeader><ToolPanelTitle marker="OUT">Estimated runtime</ToolPanelTitle></ToolPanelHeader>
+            <ToolPanelBody className="space-y-4">
+              <ToolStat label="Battery backup time" value={result(runtime, "min")} tone="success" context={unavailable ? undefined : format(runtime / 60) + " hours · energy-based estimate"} />
+              <ToolStatGrid className="grid-cols-1 sm:grid-cols-2">
+                <ToolStat label="Nominal energy" value={result(totalWh, "Wh")} />
+                <ToolStat label="Energy delivered" value={result(usableWh, "Wh")} />
+                <ToolStat label="Battery draw" value={result(draw, "W")} tone="attention" />
+                <ToolStat label="Bank current" value={result(current, "A")} />
+                <ToolStat label="Bank voltage" value={result(bankVoltage, "V")} />
+                <ToolStat label="Bank capacity" value={result(bankAh, "Ah")} />
+              </ToolStatGrid>
+              <p className="text-xs leading-relaxed text-zinc-400">For the same batteries, series and parallel configurations have the same nominal energy. Bank voltage and current differ.</p>
+            </ToolPanelBody>
+          </ToolPanel>
+          <ToolStatus tone="neutral" title="Estimate, not a runtime curve">This model includes inverter efficiency and usable capacity, but not discharge curves, low-voltage cutoff or inverter idle consumption. Compare the result with the manufacturer&apos;s load curve and output power rating. Short runtimes can be optimistic.</ToolStatus>
+        </div>
+      </div>
+      <ToolPanel>
+        <ToolPanelHeader><ToolPanelTitle marker="SET">Battery presets</ToolPanelTitle></ToolPanelHeader>
+        <ToolPanelBody>
+          <ToolDisclosure title="Model battery profiles">
+            <p className="mb-4 text-xs leading-relaxed text-zinc-400">Starting values for common models. Confirm the battery specification for your regional SKU. Applying a profile changes only the battery values and topology.</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {UPS_PRESETS.map(preset => <ToolActionButton key={preset.id} className="h-auto min-w-0 flex-col items-start gap-2 whitespace-normal p-4 text-left" onClick={() => {
+                setValues(previous => ({ ...previous, voltage: String(preset.voltage), capacity: String(preset.capacityAh), count: String(preset.batteries) }));
+                setTopology(preset.topology);
+                setAppliedPreset(preset.vendor + " " + preset.model);
+              }}>
+                <span>{preset.vendor} · {preset.model}</span>
+                <span className="text-xs font-normal normal-case tracking-normal text-zinc-300">{preset.rating} · {preset.battery}</span>
+                <span className="text-xs font-normal normal-case tracking-normal text-zinc-400">{preset.note}</span>
+              </ToolActionButton>)}
+            </div>
+          </ToolDisclosure>
+        </ToolPanelBody>
+      </ToolPanel>
+    </div>
+  </ToolLayout>;
 }
