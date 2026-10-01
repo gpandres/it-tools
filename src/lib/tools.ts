@@ -952,5 +952,15 @@ export const toolsRegistry: ToolDefinition[] = [
     aliases: ["CSS Color Converter"],
     technologies: ["CSS", "Web"],
     offline: true,
+  },
+  {
+    id: "qr-nfc-stand",
+    name: "QR & NFC Stand Builder",
+    description: "Design three printable 3D stands for reviews, Wi-Fi and NFC with custom logos and text.",
+    category: "OTHER TOOLS",
+    path: "/tools/other/qr-stand",
+    keywords: ["qr", "nfc", "wifi", "3d", "stand", "stl", "print", "logo", "google", "reviews", "business"],
+    aliases: ["Review Stand", "QR 3D", "NFC Stand"],
+    offline: true,
   }
 ];

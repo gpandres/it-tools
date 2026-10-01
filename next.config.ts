@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  outputFileTracingIncludes: {
+    "/api/stand-engine/*": ["./node_modules/manifold-3d/manifold.js", "./node_modules/manifold-3d/manifold.wasm"],
+  },
   async headers() {
     return [
       {
@@ -41,7 +44,8 @@ const nextConfig: NextConfig = {
               "object-src 'none'",
               // Next.js emits inline hydration/bootstrap scripts. A nonce-based CSP
               // should replace this compatibility allowance before production hardening.
-              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://cdnjs.cloudflare.com`,
+              // The local 3D modelling worker compiles its own WebAssembly engine.
+              `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://cdnjs.cloudflare.com`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
               "font-src 'self' data:",
