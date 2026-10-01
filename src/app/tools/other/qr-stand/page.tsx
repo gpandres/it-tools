@@ -17,7 +17,7 @@ const StandPreview = dynamic(() => import("./stand-preview"), { ssr: false, load
 const control = "rounded-none border-[#1a1a1a] bg-black! text-zinc-300";
 
 function DesignIcon({ design }: { design: StandDesign }) {
-  return <svg viewBox="0 0 100 65" className="size-16 w-24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+  return <svg viewBox="0 0 100 65" className="h-14 w-20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
     {design === "wedge" ? <><path d="M12 57H87L70 37H30Z" /><path d="m38 40 15-33 27 8-13 28" /></>
       : design === "plinth" ? <><path d="M16 49H85V59H16Z" /><path d="M33 49V7H69V49" /></>
         : <><path d="M12 58H88M22 58 50 10 77 58M30 49H71" /><path d="m35 44 13-37 25 8-10 34Z" /></>}
