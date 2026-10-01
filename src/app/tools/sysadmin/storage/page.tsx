@@ -1,177 +1,61 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { HardDrive, Scale, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody, ToolField, ToolActionButton, ToolStatus } from "@/components/tool-design";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-function StorageCalculatorContent() {
-  const [value, setValue] = useState("1");
-  const [unit, setUnit] = useState("TB");
-
-  // Base 10 vs Base 2 Multipliers (relative to Bytes)
-  const multipliers: Record<string, number> = {
-    "B": 1,
-    "KB": 1e3,
-    "MB": 1e6,
-    "GB": 1e9,
-    "TB": 1e12,
-    "PB": 1e15,
-    "KiB": Math.pow(1024, 1),
-    "MiB": Math.pow(1024, 2),
-    "GiB": Math.pow(1024, 3),
-    "TiB": Math.pow(1024, 4),
-    "PiB": Math.pow(1024, 5),
-  };
-
-  const parsedValue = parseFloat(value);
-  const inputValue = Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0;
-  
-  // Convert input to raw bytes
-  const calculatedBytes = inputValue * (multipliers[unit] || 1);
-  const bytes = Number.isFinite(calculatedBytes) ? calculatedBytes : 0;
-
-  const calculate = (targetUnit: string) => {
-    return bytes / multipliers[targetUnit];
-  };
-
-  const formatResult = (num: number) => {
-    if (!isFinite(num)) return "0";
-    if (num === 0) return "0";
-    
-    // Formatting logic: if it's very large or small, toFixed(4), otherwise standard
-    const str = num.toFixed(4);
-    return parseFloat(str).toString(); // remove trailing zeros
-  };
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-5xl">
-      
-      {/* Input */}
-      <div className="lg:col-span-5 space-y-6">
-        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6">
-          <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 flex items-center gap-2 mb-6">
-            <Scale className="w-4 h-4" /> Capacity Input
-          </h3>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-mono text-zinc-400">Value to convert</label>
-              <div className="flex gap-2">
-                <input 
-                  type="number" min="0" step="any"
-                  value={value} 
-                  onChange={(e) => setValue(e.target.value)} 
-                  className="flex-1 min-w-0 bg-black border border-[#1a1a1a] p-3 text-[#00ff9c] font-mono text-xl focus:border-[#00ff9c] focus:outline-none transition-colors rounded-none focus-visible:ring-[#00ff9c]"
-                />
-                <select 
-                  value={unit} 
-                  onChange={(e) => setUnit(e.target.value)} 
-                  className="w-28 shrink-0 bg-black border border-[#1a1a1a] p-3 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                >
-                  <optgroup label="Decimal (Base 10)">
-                    <option value="KB">KB</option>
-                    <option value="MB">MB</option>
-                    <option value="GB">GB</option>
-                    <option value="TB">TB</option>
-                    <option value="PB">PB</option>
-                  </optgroup>
-                  <optgroup label="Binary (Base 2)">
-                    <option value="KiB">KiB</option>
-                    <option value="MiB">MiB</option>
-                    <option value="GiB">GiB</option>
-                    <option value="TiB">TiB</option>
-                    <option value="PiB">PiB</option>
-                  </optgroup>
-                  <option value="B">Bytes</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Quick Presets */}
-            <div className="flex gap-2 pt-2">
-              <Button onClick={() => { setValue("1"); setUnit("TB") }} variant="ghost" className="h-6 text-[10px] font-mono bg-[#1a1a1a] hover:bg-[#00ff9c]/20 hover:text-[#00ff9c] rounded-none">1 TB</Button>
-              <Button onClick={() => { setValue("500"); setUnit("GB") }} variant="ghost" className="h-6 text-[10px] font-mono bg-[#1a1a1a] hover:bg-[#00ff9c]/20 hover:text-[#00ff9c] rounded-none">500 GB</Button>
-              <Button onClick={() => { setValue("1"); setUnit("TiB") }} variant="ghost" className="h-6 text-[10px] font-mono bg-[#1a1a1a] hover:bg-[#00ff9c]/20 hover:text-[#00ff9c] rounded-none">1 TiB</Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="border border-[#1a1a1a] bg-[#0a0a0a] rounded-none p-4 flex gap-3 text-zinc-400">
-          <Info className="w-5 h-5 shrink-0 text-zinc-500" />
-          <p className="text-sm font-mono leading-relaxed">
-            <strong>Why is my 1TB drive only showing 931GB?</strong>
-            <br/><br/>
-            Hard drive manufacturers use <strong>Base 10 (Decimal)</strong> where 1 TB = 1,000,000,000,000 bytes.
-            <br/><br/>
-            Operating Systems (like Windows) use <strong>Base 2 (Binary)</strong> where 1 TiB = 1,099,511,627,776 bytes, but historically label it as &quot;TB&quot;. 
-            <br/><br/>
-            1 TB (Manufacturer) = 0.909 TiB (OS).
-          </p>
-        </div>
-      </div>
-
-      {/* Output Grid */}
-      <div className="lg:col-span-7">
-        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 h-full">
-          <h3 className="text-sm font-bold text-[#00ff9c] glow uppercase tracking-widest border-b border-[#1a1a1a] pb-2 mb-6">
-            Conversions
-          </h3>
-
-          <div className="grid grid-cols-2 gap-4">
-            {/* Decimal Side */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Decimal (SI)</h4>
-              
-              <OutputRow label="Kilobytes (KB)" value={formatResult(calculate("KB"))} />
-              <OutputRow label="Megabytes (MB)" value={formatResult(calculate("MB"))} />
-              <OutputRow label="Gigabytes (GB)" value={formatResult(calculate("GB"))} />
-              <OutputRow label="Terabytes (TB)" value={formatResult(calculate("TB"))} />
-              <OutputRow label="Petabytes (PB)" value={formatResult(calculate("PB"))} />
-            </div>
-
-            {/* Binary Side */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Binary (IEC)</h4>
-              
-              <OutputRow label="Kibibytes (KiB)" value={formatResult(calculate("KiB"))} highlight={unit === 'TB'} />
-              <OutputRow label="Mebibytes (MiB)" value={formatResult(calculate("MiB"))} highlight={unit === 'TB'} />
-              <OutputRow label="Gibibytes (GiB)" value={formatResult(calculate("GiB"))} highlight={unit === 'TB'} />
-              <OutputRow label="Tebibytes (TiB)" value={formatResult(calculate("TiB"))} highlight={unit === 'TB'} />
-              <OutputRow label="Pebibytes (PiB)" value={formatResult(calculate("PiB"))} />
-            </div>
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-[#1a1a1a]">
-            <OutputRow label="Raw Bytes" value={bytes.toLocaleString('en-US', { maximumFractionDigits: 0 })} />
-          </div>
-        </div>
-      </div>
-
-    </div>
-  );
-}
-
-function OutputRow({ label, value, highlight = false }: { label: string, value: string, highlight?: boolean }) {
-  return (
-    <div className="flex flex-col">
-      <span className="text-[10px] font-mono text-zinc-500">{label}</span>
-      <span className={`font-mono text-sm break-all ${highlight ? 'text-amber-400 font-bold' : 'text-zinc-200'}`}>
-        {value}
-      </span>
-    </div>
-  );
-}
+const decimal = ["KB", "MB", "GB", "TB", "PB"];
+const binary = ["KiB", "MiB", "GiB", "TiB", "PiB"];
+const multipliers: Record<string, number> = { B: 1, ...Object.fromEntries(decimal.map((unit, i) => [unit, 1000 ** (i + 1)])), ...Object.fromEntries(binary.map((unit, i) => [unit, 1024 ** (i + 1)])) };
+const control = "w-full min-w-0 rounded-none border-[#1a1a1a] bg-black! text-zinc-300";
+const format = (value: number) => value !== 0 && (value < .0001 || value >= 1e15) ? value.toExponential(6) : value.toLocaleString("en-US", { maximumFractionDigits: 6 });
 
 export default function StorageCalculatorTool() {
-  return (
-    <ToolLayout
-      title="Storage Capacity Calculator"
-      description="Convert between Decimal (GB, TB) and Binary (GiB, TiB) storage units to understand true disk capacity."
-    >
-      <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
-        <StorageCalculatorContent />
-      </Suspense>
-    </ToolLayout>
-  );
+  const [value, setValue] = useState("1");
+  const [unit, setUnit] = useState("TB");
+  const bytes = Number(value) * multipliers[unit];
+  const error = !value.trim() ? "Enter a capacity to convert." : !Number.isFinite(bytes) || Number(value) < 0 ? "Enter a finite, non-negative capacity." : "";
+
+  return <ToolLayout title="Storage Capacity Calculator" description="Compare decimal (GB, TB) and binary (GiB, TiB) storage units.">
+    <div className="mx-auto grid w-full max-w-5xl min-w-0 gap-6 lg:grid-cols-5">
+      <div className="min-w-0 space-y-6 lg:col-span-2">
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="IN">Capacity</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            <ToolField htmlFor="storage-value" label="Value to convert">
+              <Input id="storage-value" type="number" min="0" step="any" value={value} onChange={event => setValue(event.target.value)} className={control} aria-invalid={!!error} aria-describedby={error ? "storage-error" : undefined} />
+            </ToolField>
+            <ToolField htmlFor="storage-unit" label="Input unit">
+              <Select value={unit} onValueChange={value => { if (value) setUnit(value); }}>
+                <SelectTrigger id="storage-unit" className={control}><SelectValue>{unit === "B" ? "Bytes (B)" : unit + " · " + (decimal.includes(unit) ? "decimal" : "binary")}</SelectValue></SelectTrigger>
+                <SelectContent>{["B", ...decimal, ...binary].map(unit => <SelectItem key={unit} value={unit}>{unit === "B" ? "Bytes (B)" : unit + " · " + (decimal.includes(unit) ? "decimal" : "binary")}</SelectItem>)}</SelectContent>
+              </Select>
+            </ToolField>
+            <div role="group" aria-label="Capacity presets" className="flex flex-wrap gap-2">
+              {[["1", "TB"], ["500", "GB"], ["1", "TiB"]].map(([amount, presetUnit]) => <ToolActionButton key={presetUnit} onClick={() => { setValue(amount); setUnit(presetUnit); }}>{amount} {presetUnit}</ToolActionButton>)}
+            </div>
+            {error && <ToolStatus id="storage-error" tone="error">{error}</ToolStatus>}
+          </ToolPanelBody>
+        </ToolPanel>
+        <ToolStatus tone="neutral" title="Why does a 1 TB disk show about 931 GiB?">Decimal units use powers of 1,000; binary units use powers of 1,024. A 1 TB disk contains 1,000,000,000,000 bytes, about 931.323 GiB or 0.909 TiB. Some systems display a GB label for a binary value. Formatting and reserved space can reduce available capacity further.</ToolStatus>
+      </div>
+      <ToolPanel className="lg:col-span-3">
+        <ToolPanelHeader><ToolPanelTitle marker="OUT">Conversions</ToolPanelTitle></ToolPanelHeader>
+        <ToolPanelBody className="space-y-5">
+          <div className="grid min-w-0 grid-cols-1 gap-6 sm:grid-cols-2">
+            {[{ title: "Decimal · SI", units: decimal }, { title: "Binary · IEC", units: binary }].map(group => <div key={group.title} className="min-w-0 space-y-4">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400">{group.title}</h3>
+              <dl className="space-y-4">{group.units.map(target => <div key={target} className="space-y-1">
+                <dt className="text-xs text-zinc-400">{target}</dt><dd className="break-all text-sm text-zinc-200">{error ? "—" : format(bytes / multipliers[target])}</dd>
+              </div>)}</dl>
+            </div>)}
+          </div>
+          <dl className="border-t border-[#1a1a1a] pt-4"><dt className="text-xs text-zinc-400">Bytes</dt><dd className="mt-1 break-all text-sm text-[#00ff9c]">{error ? "—" : format(bytes)}</dd></dl>
+          <p className="text-xs leading-relaxed text-zinc-400">Results are approximate. Very small or large values use scientific notation.</p>
+        </ToolPanelBody>
+      </ToolPanel>
+    </div>
+  </ToolLayout>;
 }
