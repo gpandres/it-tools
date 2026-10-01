@@ -17,10 +17,25 @@ const StandPreview = dynamic(() => import("./stand-preview"), { ssr: false, load
 const control = "rounded-none border-[#1a1a1a] bg-black! text-zinc-300";
 
 function DesignIcon({ design }: { design: StandDesign }) {
-  return <svg viewBox="0 0 100 65" className="h-14 w-20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-    {design === "wedge" ? <><path d="M12 57H87L70 37H30Z" /><path d="m38 40 15-33 27 8-13 28" /></>
-      : design === "plinth" ? <><path d="M16 49H85V59H16Z" /><path d="M33 49V7H69V49" /></>
-        : <><path d="M12 58H88M22 58 50 10 77 58M30 49H71" /><path d="m35 44 13-37 25 8-10 34Z" /></>}
+  const face = design === "wedge" ? "matrix(1 0 -.24 1 31 9)" : design === "plinth" ? "translate(27 7)" : "matrix(1 0 -.16 1 29 7)";
+  return <svg viewBox="0 0 88 72" className="size-16 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true">
+    {design === "wedge" ? <>
+      <path d="M21 51 56 51 69 59 16 59Z" fill="currentColor" fillOpacity=".08" />
+      <path d="M65 9 72 53 69 59 55 51Z" fill="currentColor" fillOpacity=".18" />
+      <path d="M16 59v5h53v-5M69 64l3-6v-5" />
+    </> : design === "plinth" ? <>
+      <path d="M17 56 28 50h34l10 6Z" fill="currentColor" fillOpacity=".08" />
+      <path d="M17 56h55v7H17Z" fill="currentColor" fillOpacity=".18" />
+      <path d="m61 7 5 4v39l-5 4" fill="currentColor" fillOpacity=".18" />
+    </> : <>
+      <path d="m59 11 15 51h-7L54 23M28 48l-6 15h-6l6-17" fill="currentColor" fillOpacity=".18" />
+      <path d="m22 50 36 0 5 5H19Z" fill="currentColor" fillOpacity=".18" />
+    </>}
+    <g transform={face}>
+      <path d="M0 0h34v44H0Z" fill="currentColor" fillOpacity=".06" />
+      <path d="M7 9h7v7H7ZM20 9h7v7h-7ZM7 22h7v7H7Z" strokeWidth="2" />
+      <path d="M20 21v4h7v5M20 29h2M25 21h2M9 36h16" />
+    </g>
   </svg>;
 }
 
