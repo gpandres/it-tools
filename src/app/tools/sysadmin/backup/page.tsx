@@ -1,235 +1,90 @@
 "use client";
 
-import { useState, Suspense, useMemo } from "react";
+import { useState } from "react";
 import { ToolLayout } from "@/components/tool-layout";
-import { Database, Clock, HardDrive, Info } from "lucide-react";
-import { calculateBackupMetrics } from "@/lib/backup-calculations";
+import { ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody, ToolField, ToolStatGrid, ToolStat, ToolStatus } from "@/components/tool-design";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { calculateBackupMetrics, type BackupSizeUnit, type BackupSpeedUnit } from "@/lib/backup-calculations";
 
-function BackupCalculatorContent() {
-  const [dataSize, setDataSize] = useState("5");
-  const [sizeUnit, setSizeUnit] = useState("TB");
-  const [changeRate, setChangeRate] = useState("5");
-  const [transferSpeed, setTransferSpeed] = useState("1");
-  const [speedUnit, setSpeedUnit] = useState("Gbps");
-  const [retention, setRetention] = useState("30");
-  const [efficiency, setEfficiency] = useState("80");
-  const [storageOverhead, setStorageOverhead] = useState("20");
-
-  const size = Math.max(0, parseFloat(dataSize) || 0);
-  const rate = Math.min(100, Math.max(0, parseFloat(changeRate) || 0)) / 100;
-  const speed = Math.max(0, parseFloat(transferSpeed) || 0);
-  const retDays = Math.max(0, parseInt(retention, 10) || 0);
-  const effectiveEfficiency = Math.min(100, Math.max(1, parseFloat(efficiency) || 1)) / 100;
-  const overhead = Math.max(0, parseFloat(storageOverhead) || 0) / 100;
-
-  const getFormattedTime = (seconds: number) => {
-    if (seconds <= 0 || !isFinite(seconds)) return "0s";
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    if (hrs > 24) {
-      const days = Math.floor(hrs / 24);
-      const remHrs = hrs % 24;
-      return `${days}d ${remHrs}h ${mins}m`;
-    }
-    if (hrs > 0) return `${hrs}h ${mins}m`;
-    if (mins > 0) return `${mins}m ${secs}s`;
-    return `${secs}s`;
-  };
-
-  const calc = useMemo(() => {
-    const metrics = calculateBackupMetrics({
-      size,
-      sizeUnit: sizeUnit as "GB" | "TB",
-      changeRatePercent: rate * 100,
-      transferSpeed: speed,
-      speedUnit: speedUnit as "Gbps" | "MB/s",
-      retentionDays: retDays,
-      efficiencyPercent: effectiveEfficiency * 100,
-      overheadPercent: overhead * 100
-    });
-    return {
-      fullTime: getFormattedTime(metrics.fullTimeSeconds),
-      incTime: getFormattedTime(metrics.incrementalTimeSeconds),
-      storageTB: metrics.storageNeededTB.toFixed(2),
-      recommendedStorageTB: metrics.recommendedStorageTB.toFixed(2),
-      incSizeGB: (metrics.incrementalMB / 1024).toFixed(1)
-    };
-  }, [size, sizeUnit, rate, speed, speedUnit, retDays, effectiveEfficiency, overhead]);
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-6xl">
-      
-      {/* Controls */}
-      <div className="lg:col-span-5 space-y-6">
-        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 flex items-center gap-2">
-              <Database className="w-4 h-4" /> Data Profile
-            </h3>
-            
-            <div className="space-y-2">
-              <label className="text-xs font-mono text-zinc-400">Total Data Size</label>
-              <div className="flex gap-2">
-                <input 
-                  type="number" min="0" step="0.1"
-                  value={dataSize} 
-                  onChange={(e) => setDataSize(e.target.value)} 
-                  className="flex-1 bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono font-bold focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                  placeholder="e.g. 5"
-                />
-                <select 
-                  value={sizeUnit} 
-                  onChange={(e) => setSizeUnit(e.target.value)} 
-                  className="w-24 bg-black border border-[#1a1a1a] p-2 text-zinc-400 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                >
-                  <option value="GB">GB</option>
-                  <option value="TB">TB</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-end">
-                <label className="text-xs font-mono text-zinc-400">Daily Change Rate (%)</label>
-                <span className="text-[#00ff9c] font-mono font-bold">{changeRate}%</span>
-              </div>
-              <input 
-                type="range" min="1" max="100" step="1"
-                value={changeRate} 
-                onChange={(e) => setChangeRate(e.target.value)} 
-                className="w-full accent-[#00ff9c]" 
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4 pt-2">
-            <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Network & Retention
-            </h3>
-            
-            <div className="space-y-2">
-              <label className="text-xs font-mono text-zinc-400">Transfer Speed (Throughput)</label>
-              <div className="flex gap-2">
-                <input 
-                  type="number" min="0" step="0.1"
-                  value={transferSpeed} 
-                  onChange={(e) => setTransferSpeed(e.target.value)} 
-                  className="flex-1 bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                  placeholder="e.g. 1"
-                />
-                <select 
-                  value={speedUnit} 
-                  onChange={(e) => setSpeedUnit(e.target.value)} 
-                  className="w-24 bg-black border border-[#1a1a1a] p-2 text-zinc-400 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                >
-                  <option value="Gbps">Gbps</option>
-                  <option value="MB/s">MB/s</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-end">
-                <label className="text-xs font-mono text-zinc-400">Effective Throughput</label>
-                <span className="text-[#00ff9c] font-mono font-bold">{efficiency}%</span>
-              </div>
-              <input
-                type="range" min="1" max="100" step="1"
-                value={efficiency}
-                onChange={(e) => setEfficiency(e.target.value)}
-                className="w-full accent-[#00ff9c]"
-              />
-              <p className="text-[10px] text-zinc-600 font-mono">Accounts for protocol overhead, storage speed and congestion.</p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-mono text-zinc-400">Retention Period (Days)</label>
-              <input 
-                type="number" min="1" step="1"
-                value={retention} 
-                onChange={(e) => setRetention(e.target.value)} 
-                className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                placeholder="e.g. 30"
-              />
-              <p className="text-[10px] text-zinc-600 font-mono mt-1">Number of daily incrementals to keep alongside the Full Backup.</p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-end">
-                <label className="text-xs font-mono text-zinc-400">Storage Overhead</label>
-                <span className="text-amber-400 font-mono font-bold">{storageOverhead}%</span>
-              </div>
-              <input
-                type="range" min="0" max="50" step="5"
-                value={storageOverhead}
-                onChange={(e) => setStorageOverhead(e.target.value)}
-                className="w-full accent-amber-400"
-              />
-              <p className="text-[10px] text-zinc-600 font-mono">Reserved capacity for filesystem, metadata and operational headroom.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Results */}
-      <div className="lg:col-span-7 flex flex-col gap-6">
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 flex flex-col items-center justify-center min-h-[160px]">
-            <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">Full Backup Time</span>
-            <span className="text-4xl font-mono text-zinc-200">{calc.fullTime}</span>
-            <span className="text-xs text-zinc-600 font-mono mt-2">To transfer {size} {sizeUnit}</span>
-          </div>
-
-          <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 flex flex-col items-center justify-center min-h-[160px] relative overflow-hidden group">
-            <div className="absolute inset-0 bg-[#00ff9c]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4 z-10">Daily Incremental Time</span>
-            <span className="text-4xl font-mono text-[#00ff9c] glow-green z-10">{calc.incTime}</span>
-            <span className="text-xs text-zinc-500 font-mono mt-2 z-10">To transfer {calc.incSizeGB} GB/day</span>
-          </div>
-        </div>
-
-        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 flex flex-col items-center justify-center">
-          <HardDrive className="w-8 h-8 text-[#00ff9c] mb-3 opacity-80" />
-          <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Total Destination Storage Needed</span>
-          <span className="text-5xl font-mono text-zinc-200 tracking-tighter">
-            {calc.storageTB} <span className="text-2xl text-zinc-500">TB</span>
-          </span>
-          <span className="text-xs text-zinc-600 font-mono mt-2 max-w-sm text-center">
-            Includes 1 Full Backup + {retention} days of Incremental Backups.
-          </span>
-        </div>
-
-        <div className="border border-amber-500/30 bg-amber-500/5 rounded-none p-6 flex flex-col items-center justify-center">
-          <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Recommended Capacity</span>
-          <span className="text-3xl font-mono text-amber-300 tracking-tighter">
-            {calc.recommendedStorageTB} <span className="text-xl text-amber-500/70">TB</span>
-          </span>
-          <span className="text-xs text-zinc-600 font-mono mt-2 text-center">Includes {storageOverhead}% operational overhead.</span>
-        </div>
-
-        <div className="border border-[#1a1a1a] bg-[#0a0a0a] rounded-none p-4 flex gap-3 text-zinc-400 mt-auto">
-          <Info className="w-5 h-5 shrink-0 text-zinc-500" />
-          <p className="text-sm font-mono leading-relaxed opacity-80">
-            <strong>Note:</strong> The effective throughput and recommended capacity values account for the assumptions selected above. Validate them against deduplication, compression, backup type and the retention policy used by your platform.
-          </p>
-        </div>
-
-      </div>
-    </div>
-  );
+const fields = [
+  { key: "size", label: "Total data size", min: 0, step: "any", helper: "Decimal units: 1 TB = 1,000 GB." },
+  { key: "change", label: "Daily change rate (%)", min: 0, max: 100, step: "any", helper: "Percentage of the full dataset copied each day." },
+  { key: "speed", label: "Transfer speed", min: 0, step: "any", helper: "Must be greater than zero." },
+  { key: "efficiency", label: "Effective throughput (%)", min: 1, max: 100, step: "any", helper: "Accounts for protocol overhead, storage speed and congestion." },
+  { key: "retention", label: "Daily incrementals to retain", min: 0, step: "1", helper: "Kept alongside one full backup." },
+  { key: "overhead", label: "Storage overhead (%)", min: 0, max: 100, step: "any", helper: "Extra capacity for metadata and operational headroom." },
+] as const;
+type FieldKey = typeof fields[number]["key"];
+const control = "w-full min-w-0 rounded-none border-[#1a1a1a] bg-black! text-zinc-300";
+function formatTime(seconds: number) {
+  if (seconds === 0) return "0s";
+  if (seconds < 1) return "<1s";
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  if (hours >= 24) return Math.floor(hours / 24) + "d " + hours % 24 + "h " + minutes % 60 + "m";
+  if (hours) return hours + "h " + minutes % 60 + "m";
+  return minutes ? minutes + "m " + Math.floor(seconds % 60) + "s" : Math.floor(seconds) + "s";
 }
+const formatCapacity = (value: number) => value > 0 && value < .01 ? value.toExponential(3) : value.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
 export default function BackupCalculatorTool() {
-  return (
-    <ToolLayout
-      title="Backup Window Calculator"
-      description="Calculate backup transfer times and estimate total storage capacity needed based on retention policies and daily change rates."
-    >
-      <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
-        <BackupCalculatorContent />
-      </Suspense>
-    </ToolLayout>
-  );
+  const [values, setValues] = useState<Record<FieldKey, string>>({ size: "5", change: "5", speed: "1", efficiency: "80", retention: "30", overhead: "20" });
+  const [sizeUnit, setSizeUnit] = useState<BackupSizeUnit>("TB");
+  const [speedUnit, setSpeedUnit] = useState<BackupSpeedUnit>("Gbps");
+  const errors = Object.fromEntries(fields.map(field => {
+    const value = Number(values[field.key]);
+    const max = "max" in field ? field.max : Infinity;
+    const invalid = !values[field.key].trim() || !Number.isFinite(value) || value < field.min || value > max || (field.key === "speed" && value === 0) || (field.key === "retention" && !Number.isSafeInteger(value));
+    return [field.key, invalid ? (field.key === "speed" ? "Enter a finite speed greater than zero." : field.key === "retention" ? "Enter a non-negative whole number." : "Enter a finite value of at least " + field.min + (Number.isFinite(max) ? " and at most " + max : "") + ".") : ""];
+  })) as Record<FieldKey, string>;
+  const metrics = calculateBackupMetrics({ size: Number(values.size), sizeUnit, changeRatePercent: Number(values.change), transferSpeed: Number(values.speed), speedUnit, retentionDays: Number(values.retention), efficiencyPercent: Number(values.efficiency), overheadPercent: Number(values.overhead) });
+  const invalid = Object.values(errors).some(Boolean);
+  const overflow = !Object.values(metrics).every(Number.isFinite);
+  const unavailable = invalid || overflow;
+  const result = (value: string) => unavailable ? "—" : value;
+
+  return <ToolLayout title="Backup Window Calculator" description="Estimate full and incremental backup times and storage for one full backup plus daily changes.">
+    <div className="mx-auto grid w-full max-w-6xl min-w-0 gap-6 lg:grid-cols-2">
+      <ToolPanel>
+        <ToolPanelHeader><ToolPanelTitle marker="IN">Backup assumptions</ToolPanelTitle></ToolPanelHeader>
+        <ToolPanelBody className="space-y-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <ToolField htmlFor="backup-size-unit" label="Data unit">
+              <Select value={sizeUnit} onValueChange={value => { if (value === "GB" || value === "TB") setSizeUnit(value); }}>
+                <SelectTrigger id="backup-size-unit" className={control}><SelectValue>{sizeUnit}</SelectValue></SelectTrigger>
+                <SelectContent><SelectItem value="GB">GB</SelectItem><SelectItem value="TB">TB</SelectItem></SelectContent>
+              </Select>
+            </ToolField>
+            <ToolField htmlFor="backup-speed-unit" label="Speed unit">
+              <Select value={speedUnit} onValueChange={value => { if (value === "Gbps" || value === "MB/s") setSpeedUnit(value); }}>
+                <SelectTrigger id="backup-speed-unit" className={control}><SelectValue>{speedUnit}</SelectValue></SelectTrigger>
+                <SelectContent><SelectItem value="Gbps">Gbps</SelectItem><SelectItem value="MB/s">MB/s</SelectItem></SelectContent>
+              </Select>
+            </ToolField>
+            {fields.map(field => <ToolField key={field.key} htmlFor={"backup-" + field.key} label={field.label}>
+              <Input id={"backup-" + field.key} type="number" min={field.min} max={"max" in field ? field.max : undefined} step={field.step} value={values[field.key]} onChange={event => setValues(previous => ({ ...previous, [field.key]: event.target.value }))} className={control} aria-invalid={!!errors[field.key]} aria-describedby={"backup-" + field.key + "-help"} />
+              <p id={"backup-" + field.key + "-help"} className={"text-xs leading-relaxed " + (errors[field.key] ? "text-red-400" : "text-zinc-400")}>{errors[field.key] || field.helper}</p>
+            </ToolField>)}
+          </div>
+          {unavailable && <ToolStatus tone="error">{invalid ? "Correct the highlighted inputs to calculate the backup estimate." : "These values are too large to calculate. Reduce the dataset, retention or transfer duration."}</ToolStatus>}
+        </ToolPanelBody>
+      </ToolPanel>
+      <div className="min-w-0 space-y-6">
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="OUT">Time & capacity</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            <ToolStatGrid className="grid-cols-1 sm:grid-cols-2">
+              <ToolStat label="Full backup time" value={result(formatTime(metrics.fullTimeSeconds))} context="At the selected effective throughput" />
+              <ToolStat label="Daily incremental time" value={result(formatTime(metrics.incrementalTimeSeconds))} tone="success" context={unavailable ? undefined : formatCapacity(metrics.incrementalMB / 1000) + " GB per day"} />
+              <ToolStat label="Destination storage" value={result(formatCapacity(metrics.storageNeededTB) + " TB")} context="One full backup + retained incrementals" />
+              <ToolStat label="Recommended capacity" value={result(formatCapacity(metrics.recommendedStorageTB) + " TB")} tone="attention" context={unavailable ? undefined : "Includes " + values.overhead + "% extra capacity"} />
+            </ToolStatGrid>
+            <p className="text-xs leading-relaxed text-zinc-400">All sizes use decimal units. 1 Gbps = 125 MB/s before the effective-throughput adjustment. Zero daily changes require no incremental transfer.</p>
+          </ToolPanelBody>
+        </ToolPanel>
+        <ToolStatus tone="neutral" title="Planning estimate">Assumes one full backup and the selected number of daily incrementals. Compression, deduplication, concurrent jobs and additional full backups are not included. Check these assumptions against your backup policy.</ToolStatus>
+      </div>
+    </div>
+  </ToolLayout>;
 }

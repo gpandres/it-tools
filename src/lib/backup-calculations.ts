@@ -26,11 +26,11 @@ export function calculateBackupMetrics(input: {
   const retention = Math.max(0, Math.floor(Number.isFinite(input.retentionDays) ? input.retentionDays : 0));
   const efficiency = Math.min(100, Math.max(1, Number.isFinite(input.efficiencyPercent) ? input.efficiencyPercent : 1)) / 100;
   const overhead = Math.max(0, Number.isFinite(input.overheadPercent) ? input.overheadPercent : 0) / 100;
-  const sizeInMB = input.sizeUnit === "TB" ? size * 1024 * 1024 : size * 1024;
+  const sizeInMB = input.sizeUnit === "TB" ? size * 1000 * 1000 : size * 1000;
   const speedInMBps = input.speedUnit === "Gbps" ? speed * 125 : speed;
   const effectiveSpeedInMBps = speedInMBps * efficiency;
   const incrementalMB = sizeInMB * changeRate;
-  const storageNeededTB = (sizeInMB + incrementalMB * retention) / (1024 * 1024);
+  const storageNeededTB = (sizeInMB + incrementalMB * retention) / (1000 * 1000);
 
   return {
     fullBackupMB: sizeInMB,
