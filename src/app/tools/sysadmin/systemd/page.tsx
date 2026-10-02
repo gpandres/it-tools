@@ -1,308 +1,115 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import { ToolLayout } from "@/components/tool-layout";
-import { Terminal, Settings, Copy, Check, Plus, Trash2, ShieldCheck, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ToolPanel, ToolPanelHeader, ToolPanelTitle, ToolPanelBody, ToolField, ToolActionButton, ToolCodeField, ToolStatus, ToolEmptyState } from "@/components/tool-design";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-function SystemdGeneratorContent() {
-  const [serviceName, setServiceName] = useState("my-app");
-  const [description, setDescription] = useState("My Custom Node.js App");
-  const [execStart, setExecStart] = useState("/usr/bin/node /opt/myapp/server.js");
-  const [workingDir, setWorkingDir] = useState("/opt/myapp");
-  const [user, setUser] = useState("nobody");
-  const [restart, setRestart] = useState("on-failure");
-  const [restartSec, setRestartSec] = useState("5");
-  const [hardening, setHardening] = useState({
-    noNewPrivileges: true,
-    privateTmp: true,
-    protectHome: true,
-  });
-
-  const [envVars, setEnvVars] = useState<{ id: string; key: string; val: string }[]>([]);
-  const [copied, setCopied] = useState(false);
-
-  const cleanLine = (value: string) => value.replace(/[\r\n]+/g, " ").trim();
-  const safeServiceName = /^[A-Za-z0-9@_.-]+$/.test(serviceName.trim()) ? serviceName.trim() : "my-app";
-  const safeDescription = cleanLine(description) || safeServiceName;
-  const safeExecStart = cleanLine(execStart);
-  const safeWorkingDir = cleanLine(workingDir);
-  const safeUser = cleanLine(user);
-  const restartDelay = Math.max(0, parseFloat(restartSec) || 0);
-  const invalidEnvironmentCount = envVars.filter((env) => env.key && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(env.key.trim())).length;
-
-  const escapeEnvironmentValue = (value: string) => cleanLine(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-
-  const generateService = () => {
-    let out = `[Unit]\nDescription=${safeDescription}\nAfter=network-online.target\nWants=network-online.target\n\n`;
-    out += `[Service]\nType=simple\n`;
-    if (safeUser) out += `User=${safeUser}\n`;
-    if (safeWorkingDir) out += `WorkingDirectory=${safeWorkingDir}\n`;
-    if (safeExecStart) out += `ExecStart=${safeExecStart}\n`;
-    
-    out += `Restart=${restart}\n`;
-    if (restart !== "no") {
-      out += `RestartSec=${restartDelay}\n`;
-    }
-
-    if (envVars.length > 0) {
-      out += "\n";
-      envVars.forEach(env => {
-        const key = env.key.trim();
-        if (key && /^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
-          out += `Environment="${key}=${escapeEnvironmentValue(env.val)}"\n`;
-        }
-      });
-    }
-
-    if (hardening.noNewPrivileges) out += "NoNewPrivileges=true\n";
-    if (hardening.privateTmp) out += "PrivateTmp=true\n";
-    if (hardening.protectHome) out += "ProtectHome=true\n";
-
-    out += `\n[Install]\nWantedBy=multi-user.target`;
-    return out;
-  };
-
-  const code = generateService();
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const addEnv = () => {
-    setEnvVars([...envVars, { id: crypto.randomUUID(), key: "", val: "" }]);
-  };
-
-  const updateEnv = (id: string, field: "key" | "val", val: string) => {
-    setEnvVars(envVars.map(e => e.id === id ? { ...e, [field]: val } : e));
-  };
-
-  const removeEnv = (id: string) => {
-    setEnvVars(envVars.filter(e => e.id !== id));
-  };
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-6xl">
-      
-      {/* Controls */}
-      <div className="lg:col-span-6 space-y-6">
-        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none p-6 space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest border-b border-[#1a1a1a] pb-2 flex items-center gap-2">
-              <Settings className="w-4 h-4" /> Unit & Service Config
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-mono text-zinc-400">Service Name</label>
-                <div className="flex">
-                  <input 
-                    type="text" 
-                    value={serviceName} 
-                    onChange={(e) => setServiceName(e.target.value)} 
-                    className="w-full bg-black border border-[#1a1a1a] border-r-0 p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                    placeholder="my-app"
-                  />
-                  <span className="bg-[#1a1a1a] text-zinc-500 font-mono text-sm px-3 flex items-center">.service</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-mono text-zinc-400">Description</label>
-                <input 
-                  type="text" 
-                  value={description} 
-                  onChange={(e) => setDescription(e.target.value)} 
-                  className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-mono text-zinc-400">ExecStart (Command)</label>
-              <input 
-                type="text" 
-                value={execStart} 
-                onChange={(e) => setExecStart(e.target.value)} 
-                className="w-full bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                placeholder="/usr/bin/node /app/server.js"
-              />
-              <p className="text-[10px] text-zinc-600 font-mono">Use absolute paths for executables.</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-mono text-zinc-400">User</label>
-                <input 
-                  type="text" 
-                  value={user} 
-                  onChange={(e) => setUser(e.target.value)} 
-                  className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-mono text-zinc-400">Working Directory</label>
-                <input 
-                  type="text" 
-                  value={workingDir} 
-                  onChange={(e) => setWorkingDir(e.target.value)} 
-                  className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-mono text-zinc-400">Restart Policy</label>
-                <select 
-                  value={restart} 
-                  onChange={(e) => setRestart(e.target.value)} 
-                  className="w-full bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                >
-                  <option value="no">no (Never)</option>
-                  <option value="on-failure">on-failure (Exit code != 0)</option>
-                  <option value="always">always (Any exit)</option>
-                  <option value="on-abnormal">on-abnormal (Crash signals)</option>
-                </select>
-              </div>
-              {restart !== "no" && (
-                <div className="space-y-2">
-                  <label className="text-xs font-mono text-zinc-400">RestartSec (Delay)</label>
-                  <div className="flex">
-                    <input 
-                      type="number" 
-                      min="0" step="0.1"
-                      value={restartSec} 
-                      onChange={(e) => setRestartSec(e.target.value)} 
-                      className="w-full bg-black border border-[#1a1a1a] border-r-0 p-2 text-zinc-300 font-mono focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                    />
-                    <span className="bg-[#1a1a1a] text-zinc-500 font-mono text-xs px-3 flex items-center">sec</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-4 pt-4 border-t border-[#1a1a1a]">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                Environment Variables
-              </h3>
-              <Button onClick={addEnv} size="sm" className="h-7 text-xs bg-[#00ff9c]/10 text-[#00ff9c] border border-[#00ff9c]/30 hover:bg-[#00ff9c]/20 rounded-none">
-                <Plus className="w-3 h-3 mr-1" /> Add Env
-              </Button>
-            </div>
-            
-            <div className="space-y-2">
-              {envVars.length === 0 ? (
-                <div className="text-center p-4 text-zinc-600 font-mono text-xs border border-dashed border-[#1a1a1a] rounded-none">
-                  No environment variables defined.
-                </div>
-              ) : (
-                envVars.map((env) => (
-                  <div key={env.id} className="flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="KEY" 
-                      value={env.key} 
-                      onChange={(e) => updateEnv(env.id, "key", e.target.value)} 
-                      className="flex-1 bg-black border border-[#1a1a1a] p-2 text-[#00ff9c] font-mono text-sm focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                    />
-                    <span className="text-zinc-600 self-center">=</span>
-                    <input 
-                      type="text" 
-                      placeholder="value" 
-                      value={env.val} 
-                      onChange={(e) => updateEnv(env.id, "val", e.target.value)} 
-                      className="flex-1 bg-black border border-[#1a1a1a] p-2 text-zinc-300 font-mono text-sm focus:border-[#00ff9c] focus:outline-none rounded-none focus-visible:ring-[#00ff9c]"
-                    />
-                    <button onClick={() => removeEnv(env.id)} className="text-zinc-600 hover:text-red-500 px-2">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-4 pt-4 border-t border-[#1a1a1a]">
-            <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4" /> Service Hardening
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {([
-                ["noNewPrivileges", "NoNewPrivileges"],
-                ["privateTmp", "PrivateTmp"],
-                ["protectHome", "ProtectHome"],
-              ] as const).map(([key, label]) => (
-                <label key={key} className="flex items-center gap-2 border border-[#1a1a1a] bg-black p-2 text-[10px] font-mono text-zinc-400 cursor-pointer hover:border-[#00ff9c]/50 rounded-none">
-                  <input
-                    type="checkbox"
-                    checked={hardening[key]}
-                    onChange={(event) => setHardening((current) => ({ ...current, [key]: event.target.checked }))}
-                    className="accent-[#00ff9c]"
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-            <p className="text-[10px] text-zinc-600 font-mono">Review filesystem and device requirements before enabling these restrictions in production.</p>
-          </div>
-
-          {(safeServiceName !== serviceName.trim() || invalidEnvironmentCount > 0) && (
-            <div className="border border-amber-500/40 bg-amber-500/5 rounded-none p-3 flex gap-2 text-amber-300">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              <p className="text-[10px] font-mono leading-relaxed">
-                Invalid unit identifiers are replaced with a safe fallback and invalid environment keys are omitted from the preview.
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Output */}
-      <div className="lg:col-span-6 flex flex-col gap-4">
-        <div className="border border-[#1a1a1a] bg-[#050505] rounded-none flex flex-col flex-1 h-full">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a1a] bg-[#0a0a0a]">
-            <div className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-zinc-500" />
-              <span className="text-zinc-400 text-xs font-mono">/etc/systemd/system/{safeServiceName || "service"}.service</span>
-            </div>
-            <button
-              onClick={handleCopy}
-              className="text-zinc-500 hover:text-[#00ff9c] transition-colors flex items-center gap-1 text-xs uppercase tracking-wider font-bold"
-            >
-              {copied ? <><Check className="w-3 h-3"/> Copied</> : <><Copy className="w-3 h-3"/> Copy</>}
-            </button>
-          </header>
-          
-          <pre className="p-4 text-[#00ff9c] font-mono text-sm overflow-x-auto whitespace-pre-wrap flex-1">
-            {code}
-          </pre>
-        </div>
-        
-        <div className="border border-[#1a1a1a] bg-[#0a0a0a] rounded-none p-4 text-zinc-400">
-          <span className="text-xs font-bold uppercase tracking-widest text-zinc-500 block mb-2">Installation Commands</span>
-          <code className="text-xs font-mono block mb-1 text-zinc-300">sudo nano /etc/systemd/system/{safeServiceName || "app"}.service</code>
-          <code className="text-xs font-mono block mb-1 text-zinc-300">sudo systemctl daemon-reload</code>
-          <code className="text-xs font-mono block mb-1 text-zinc-300">sudo systemctl enable --now {safeServiceName || "app"}</code>
-        </div>
-      </div>
-
-    </div>
-  );
-}
+const control = "w-full min-w-0 rounded-none border-[#1a1a1a] bg-black! text-zinc-300";
+const policies = { no: "Never", "on-failure": "On failure", always: "Always", "on-abnormal": "On abnormal termination" };
+const restrictions = { noNewPrivileges: "NoNewPrivileges", privateTmp: "PrivateTmp", protectHome: "ProtectHome" } as const;
+const singleLine = (value: string) => !/[\r\n\0]/.test(value);
+const quoteLiteral = (value: string) => '"' + value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\t/g, "\\t").replace(/%/g, "%%") + '"';
 
 export default function SystemdGeneratorTool() {
-  return (
-    <ToolLayout
-      title="Systemd Service Generator"
-      description="Visually construct a Linux systemd .service file to easily daemonize your scripts, apps, and containers."
-    >
-      <Suspense fallback={<div className="p-8 text-center text-zinc-500 font-mono glow-amber">Loading...</div>}>
-        <SystemdGeneratorContent />
-      </Suspense>
-    </ToolLayout>
-  );
+  const [values, setValues] = useState({ name: "my-app", description: "My Custom Node.js App", command: "/usr/bin/node /opt/myapp/server.js", directory: "/opt/myapp", user: "nobody", delay: "5" });
+  const [restart, setRestart] = useState<keyof typeof policies>("on-failure");
+  const [hardening, setHardening] = useState({ noNewPrivileges: true, privateTmp: true, protectHome: true });
+  const [envVars, setEnvVars] = useState<{ id: string; key: string; val: string }[]>([]);
+  const name = values.name.trim().replace(/\.service$/, "");
+  const errors = {
+    name: !/^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(name) || name.length > 247 ? "Use 1–247 letters, digits, dots, hyphens or underscores; start with a letter or digit." : "",
+    description: !singleLine(values.description) || /\\$/.test(values.description.trim()) ? "Use a single line without a trailing backslash." : "",
+    command: !values.command.trim() || !singleLine(values.command) || /\\$/.test(values.command.trim()) ? "Enter a single-line command without a trailing backslash." : "",
+    directory: values.directory && (!singleLine(values.directory) || !values.directory.startsWith("/") || /[\\\s]$/.test(values.directory)) ? "Use an absolute directory path without trailing whitespace or a backslash, or leave empty." : "",
+    user: values.user && !/^(?:[a-zA-Z_][a-zA-Z0-9_-]*\$?|[0-9]+)$/.test(values.user) ? "Enter a user name or numeric UID, or leave empty for root." : "",
+    delay: restart !== "no" && (!values.delay.trim() || !Number.isFinite(Number(values.delay)) || Number(values.delay) < 0) ? "Enter a finite, non-negative delay in seconds." : "",
+  };
+  const envErrors = envVars.map(env => !/^[A-Za-z_][A-Za-z0-9_]*$/.test(env.key) ? "Enter a valid variable name." : envVars.filter(other => other.key === env.key).length > 1 ? "Variable names must be unique." : !singleLine(env.val) ? "Use a single-line value." : "");
+  const invalid = Object.values(errors).some(Boolean) || envErrors.some(Boolean);
+  const code = [
+    "[Unit]", "Description=" + (values.description.trim() || name).replace(/%/g, "%%"), "After=network-online.target", "Wants=network-online.target", "",
+    "[Service]", "Type=simple",
+    ...(values.user ? ["User=" + values.user] : []),
+    ...(values.directory ? ["WorkingDirectory=" + values.directory.replace(/%/g, "%%")] : []),
+    "ExecStart=" + values.command.trim(), "Restart=" + restart,
+    ...(restart !== "no" ? ["RestartSec=" + Number(values.delay)] : []),
+    ...envVars.map(env => "Environment=" + quoteLiteral(env.key + "=" + env.val)),
+    ...(Object.keys(restrictions) as (keyof typeof restrictions)[]).filter(key => hardening[key]).map(key => restrictions[key] + "=true"),
+    "", "[Install]", "WantedBy=multi-user.target", "",
+  ].join("\n");
+  const fields = [
+    { key: "name", label: "Service name", helper: "A .service suffix is added once. Template units are not supported." },
+    { key: "description", label: "Description", helper: "A short description of the service." },
+    { key: "command", label: "ExecStart command", helper: "Use an absolute executable path. This is systemd command syntax, not a shell: pipes and redirects need an explicit shell. Use %% for a literal percent and $$ for a literal dollar." },
+    { key: "user", label: "Run as user", helper: "The account must exist on the target machine. Empty means root." },
+    { key: "directory", label: "Working directory", helper: "Optional absolute path. Spaces are preserved; percent signs are escaped automatically." },
+  ] as const;
+
+  return <ToolLayout title="Systemd Service Generator" description="Build and download a systemd service unit locally, with environment variables and optional hardening.">
+    <div className="mx-auto grid w-full max-w-6xl min-w-0 items-start gap-6 lg:grid-cols-2">
+      <div className="min-w-0 space-y-6">
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="IN">Unit & service</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            {fields.map(field => <ToolField key={field.key} htmlFor={"service-" + field.key} label={field.label}>
+              <Input id={"service-" + field.key} value={values[field.key]} onChange={event => setValues(previous => ({ ...previous, [field.key]: event.target.value }))} className={control} aria-invalid={!!errors[field.key]} aria-describedby={"service-" + field.key + "-help"} />
+              <p id={"service-" + field.key + "-help"} className={"text-xs leading-relaxed " + (errors[field.key] ? "text-red-400" : "text-zinc-400")}>{errors[field.key] || field.helper}</p>
+            </ToolField>)}
+            <ToolField htmlFor="service-restart" label="Restart policy">
+              <Select value={restart} onValueChange={value => { if (value && value in policies) setRestart(value as keyof typeof policies); }}>
+                <SelectTrigger id="service-restart" className={control}><SelectValue>{policies[restart]}</SelectValue></SelectTrigger>
+                <SelectContent>{(Object.keys(policies) as (keyof typeof policies)[]).map(policy => <SelectItem key={policy} value={policy}>{policies[policy]}</SelectItem>)}</SelectContent>
+              </Select>
+            </ToolField>
+            {restart !== "no" && <ToolField htmlFor="service-delay" label="Restart delay (seconds)">
+              <Input id="service-delay" type="number" min="0" step="any" value={values.delay} onChange={event => setValues(previous => ({ ...previous, delay: event.target.value }))} className={control} aria-invalid={!!errors.delay} aria-describedby={errors.delay ? "service-delay-error" : undefined} />
+              {errors.delay && <p id="service-delay-error" className="text-xs text-red-400">{errors.delay}</p>}
+            </ToolField>}
+          </ToolPanelBody>
+        </ToolPanel>
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="ENV">Environment</ToolPanelTitle><ToolActionButton onClick={() => setEnvVars(previous => [...previous, { id: crypto.randomUUID(), key: "", val: "" }])}><Plus aria-hidden="true" /> Add variable</ToolActionButton></ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            {!envVars.length && <ToolEmptyState title="No environment variables">Add a variable when the service needs it.</ToolEmptyState>}
+            {envVars.map((env, index) => <div key={env.id} className="space-y-3 border border-[#1a1a1a] p-3">
+              <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                <ToolField htmlFor={"env-key-" + env.id} label={"Variable " + (index + 1) + " name"}><Input id={"env-key-" + env.id} value={env.key} onChange={event => setEnvVars(previous => previous.map(item => item.id === env.id ? { ...item, key: event.target.value } : item))} className={control} aria-invalid={!!envErrors[index]} aria-describedby={envErrors[index] ? "env-error-" + env.id : undefined} /></ToolField>
+                <ToolField htmlFor={"env-value-" + env.id} label={"Variable " + (index + 1) + " value"}><Input id={"env-value-" + env.id} value={env.val} onChange={event => setEnvVars(previous => previous.map(item => item.id === env.id ? { ...item, val: event.target.value } : item))} className={control} /></ToolField>
+              </div>
+              {envErrors[index] && <p id={"env-error-" + env.id} className="text-xs text-red-400">{envErrors[index]}</p>}
+              <ToolActionButton aria-label={"Remove variable " + (index + 1)} onClick={() => setEnvVars(previous => previous.filter(item => item.id !== env.id))}><Trash2 aria-hidden="true" /> Remove</ToolActionButton>
+            </div>)}
+            <p className="text-xs text-zinc-400">Values are literal: spaces, quotes, backslashes and percent signs are preserved. Avoid storing secrets in unit files.</p>
+          </ToolPanelBody>
+        </ToolPanel>
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="SEC">Service hardening</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            {(Object.keys(restrictions) as (keyof typeof restrictions)[]).map(key => <div key={key} className="flex items-center gap-3 text-xs text-zinc-300"><Checkbox id={"hardening-" + key} checked={hardening[key]} onCheckedChange={checked => setHardening(previous => ({ ...previous, [key]: checked === true }))} /><label htmlFor={"hardening-" + key}>{restrictions[key]}</label></div>)}
+            <p className="text-xs leading-relaxed text-zinc-400">ProtectHome restricts access to home directories. Check that these settings allow the files and devices your service needs.</p>
+          </ToolPanelBody>
+        </ToolPanel>
+      </div>
+      <div className="min-w-0 space-y-6">
+        <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="OUT">Service unit</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            {invalid ? <ToolStatus tone="error">Correct the highlighted fields before copying or downloading the service.</ToolStatus> : <><p className="break-all text-xs text-zinc-400">/etc/systemd/system/{name}.service</p><ToolCodeField language="systemd" code={code} filename={name + ".service"} /></>}
+          </ToolPanelBody>
+        </ToolPanel>
+        {!invalid && <ToolPanel>
+          <ToolPanelHeader><ToolPanelTitle marker="RUN">Install on target</ToolPanelTitle></ToolPanelHeader>
+          <ToolPanelBody className="space-y-4">
+            <p className="text-xs leading-relaxed text-zinc-400">Save the unit at the path above. Verify it on the target Linux host before enabling the service.</p>
+            <ToolCodeField language="shell" downloadable={false} code={["sudo systemd-analyze verify /etc/systemd/system/" + name + ".service", "sudo systemctl daemon-reload", "sudo systemctl enable --now " + name + ".service"].join("\n")} />
+          </ToolPanelBody>
+        </ToolPanel>}
+        {(!values.user || values.user === "root") && <ToolStatus tone="attention">This service runs as root. Use a dedicated account when elevated privileges are not required.</ToolStatus>}
+      </div>
+    </div>
+  </ToolLayout>;
 }
